@@ -42,7 +42,7 @@ public final class AssetFetcher {
 
     /* JADX WARN: Type inference failed for: r1v0, types: [com.goydevv.studrblx.net.AssetFetcher$bitmaps$1] */
     static {
-        final int iMin = (int) Math.min(8388608L, Runtime.getRuntime().maxMemory() / 24);
+        final int iMin = (int) Math.min(4194304L, Runtime.getRuntime().maxMemory() / 32);
         bitmaps = new LruCache<Long, Bitmap>(iMin) { // from class: com.goydevv.studrblx.net.AssetFetcher$bitmaps$1
             @Override // android.util.LruCache
             public /* bridge */ /* synthetic */ int sizeOf(Long l, Bitmap bitmap) {

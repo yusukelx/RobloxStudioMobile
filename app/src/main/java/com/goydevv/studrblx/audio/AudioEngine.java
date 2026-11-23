@@ -430,7 +430,7 @@ public final class AudioEngine {
                             v = v3;
                         }
                     }
-                    if (v.getFailed()) {
+                    if (v == null || v.getFailed()) {
                     } else {
                         float vol = RangesKt.coerceIn(num(s, "Volume", 0.5f), 0.0f, 10.0f);
                         Object obj3 = s.get("SoundGroup");

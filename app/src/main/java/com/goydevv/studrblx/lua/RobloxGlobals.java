@@ -40,139 +40,49 @@ public final class RobloxGlobals {
     private RobloxGlobals() {
     }
 
-    /* JADX WARN: Can't fix incorrect switch cases order, some code will duplicate */
-    /* JADX WARN: Code duplicated, block: B:44:0x00dd  */
-    /* JADX WARN: Code duplicated, block: B:45:0x00e2  */
-    /* JADX WARN: Code duplicated, block: B:49:0x00f7  */
-    /* JADX WARN: Code duplicated, block: B:54:0x0104  */
-    /* JADX WARN: Code duplicated, block: B:57:0x010b  */
-    /* JADX WARN: Code duplicated, block: B:74:0x00d5 A[SYNTHETIC] */
-    /* JADX WARN: Code duplicated, block: B:75:0x00e5 A[SYNTHETIC] */
-    /* JADX WARN: Code duplicated, block: B:76:0x00db A[SYNTHETIC] */
-    /* JADX WARN: Code duplicated, block: B:77:0x0100 A[ADDED_TO_REGION, REMOVE, SYNTHETIC] */
-    /* JADX WARN: Code duplicated, block: B:80:0x00c1 A[SYNTHETIC] */
-    /* JADX WARN: Failed to restore switch over string. Please report as a decompilation issue */
     public final Instance resolveRequirePath(Instance caller, String path) {
-        Instance parent;
-        String clean = "";
-        String strFullName;
-        Instance instanceFindFirstChild$default;
         Intrinsics.checkNotNullParameter(caller, "caller");
         Intrinsics.checkNotNullParameter(path, "path");
-        Instance cur = caller;
-        Iterable iterableSplit$default = StringsKt.split((CharSequence) path, new char[]{'/'}, false, 0);
-        Collection arrayList = new ArrayList();
-        for (Object obj : iterableSplit$default) {
-            if (((String) obj).length() > 0) {
-                arrayList.add(obj);
-            }
+        List<String> parts = new ArrayList<>();
+        for (String seg : path.split("/")) {
+            if (seg.length() > 0) parts.add(seg);
         }
-        List<String> parts = CollectionsKt.toMutableList(arrayList);
         if (parts.isEmpty()) {
             throw new LuaError("require path \"" + path + "\" is empty");
         }
-        String str = (String) parts.get(0);
-        switch (str.hashCode()) {
-            case 46:
-                if (str.equals(".")) {
-                    cur = caller.getParent();
-                    parts.remove(0);
-                    for (String name : parts) {
-                        if (!Intrinsics.areEqual(name, ".")) {
-                            if (Intrinsics.areEqual(name, "..")) {
-                                if (cur != null) {
-                                    parent = cur.getParent();
-                                } else {
-                                    parent = null;
-                                }
-                                cur = parent;
-                            } else {
-                                clean = StringsKt.removeSuffix(StringsKt.removeSuffix(name, (CharSequence) ".luau"), (CharSequence) ".lua");
-                                if (cur != null || (instanceFindFirstChild$default = Instance.findFirstChild$default(cur, clean, false, 2, null)) == null) {
-                                    if (cur != null || (strFullName = cur.fullName()) == null) {
-                                        strFullName = "nil";
-                                    }
-                                    throw new LuaError("require(\"" + path + "\"): " + clean + " is not a child of " + strFullName);
-                                }
-                                cur = instanceFindFirstChild$default;
-                            }
-                        }
-                    }
-                    if (cur != null) {
-                        return cur;
-                    }
-                    throw new LuaError("require(\"" + path + "\") went above the game");
-                }
-                throw new LuaError("require path \"" + path + "\" must start with ./, ../ or @self (aliases aren't supported)");
-            case 1472:
-                if (str.equals("..")) {
-                    Instance parent2 = caller.getParent();
-                    Instance cur2 = parent2 != null ? parent2.getParent() : null;
-                    parts.remove(0);
-                    cur = cur2;
-                    while (Intrinsics.areEqual(CollectionsKt.firstOrNull(parts), "..")) {
-                        cur = cur != null ? cur.getParent() : null;
-                        parts.remove(0);
-                    }
-                    Unit unit = Unit.INSTANCE;
-                    while (true) {
-                        String name = parts.isEmpty() ? "" : (String) parts.get(0);
-                        if (!Intrinsics.areEqual(name, ".")) {
-                            if (Intrinsics.areEqual(name, "..")) {
-                                if (cur != null) {
-                                    parent = cur.getParent();
-                                } else {
-                                    parent = null;
-                                }
-                                cur = parent;
-                            } else {
-                                clean = StringsKt.removeSuffix(StringsKt.removeSuffix(name, (CharSequence) ".luau"), (CharSequence) ".lua");
-                                if (cur != null) {
-                                }
-                            }
-                        }
-                        break;
-                    }
-                    if (cur != null) {
-                        strFullName = "nil";
-                    } else {
-                        strFullName = "nil";
-                    }
-                    throw new LuaError("require(\"" + path + "\"): " + clean + " is not a child of " + strFullName);
-                }
-                throw new LuaError("require path \"" + path + "\" must start with ./, ../ or @self (aliases aren't supported)");
-            case 62631820:
-                if (str.equals("@self")) {
-                    parts.remove(0);
-                    while (true) {
-                        String name = parts.isEmpty() ? "" : (String) parts.get(0);
-                        if (!Intrinsics.areEqual(name, ".")) {
-                            if (Intrinsics.areEqual(name, "..")) {
-                                if (cur != null) {
-                                    parent = cur.getParent();
-                                } else {
-                                    parent = null;
-                                }
-                                cur = parent;
-                            } else {
-                                clean = StringsKt.removeSuffix(StringsKt.removeSuffix(name, (CharSequence) ".luau"), (CharSequence) ".lua");
-                                if (cur != null) {
-                                }
-                            }
-                        }
-                        break;
-                    }
-                    if (cur != null) {
-                        strFullName = "nil";
-                    } else {
-                        strFullName = "nil";
-                    }
-                    throw new LuaError("require(\"" + path + "\"): " + clean + " is not a child of " + strFullName);
-                }
-                throw new LuaError("require path \"" + path + "\" must start with ./, ../ or @self (aliases aren't supported)");
-            default:
-                throw new LuaError("require path \"" + path + "\" must start with ./, ../ or @self (aliases aren't supported)");
+        String first = parts.remove(0);
+        Instance cur;
+        if (first.equals(".")) {
+            cur = caller.getParent();
+        } else if (first.equals("..")) {
+            cur = caller.getParent() != null ? caller.getParent().getParent() : null;
+        } else if (first.equals("@self")) {
+            cur = caller;
+        } else {
+            throw new LuaError("require path \"" + path + "\" must start with ./, ../ or @self");
         }
+        for (String name : parts) {
+            if (cur == null) {
+                throw new LuaError("require(\"" + path + "\") went above the game");
+            }
+            if (name.equals(".")) continue;
+            if (name.equals("..")) {
+                cur = cur.getParent();
+                continue;
+            }
+            String clean = name;
+            if (clean.endsWith(".luau")) clean = clean.substring(0, clean.length() - 5);
+            else if (clean.endsWith(".lua")) clean = clean.substring(0, clean.length() - 4);
+            Instance next = Instance.findFirstChild$default(cur, clean, false, 2, null);
+            if (next == null) {
+                throw new LuaError("require(\"" + path + "\"): " + clean + " is not a valid member of " + cur.getClassName() + " \"" + cur.fullName() + "\"");
+            }
+            cur = next;
+        }
+        if (cur == null) {
+            throw new LuaError("require(\"" + path + "\") went above the game");
+        }
+        return cur;
     }
 
     public final void install(final LuaRuntime rt) {

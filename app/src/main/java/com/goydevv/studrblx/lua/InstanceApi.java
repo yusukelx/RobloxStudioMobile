@@ -58,6 +58,7 @@ public final class InstanceApi {
     private final LuaTable connMeta;
     private final Set<String> events;
     private final HashMap<String, LuaValue> methodCache;
+    private static final java.util.Set<String> STRICT_CONTAINERS = new java.util.HashSet<>(java.util.Arrays.asList("ReplicatedStorage", "ReplicatedFirst", "ServerStorage", "ServerScriptService", "StarterPack", "Folder", "Configuration"));
     private final LuaRuntime rt;
     private final Set<String> sequenceClasses;
     private final LuaTable signalMeta;
@@ -1320,6 +1321,9 @@ public final class InstanceApi {
             if (z) {
                 throw new LuaError(((Object) str) + " is not a valid member of " + inst.getClassName() + " \"" + inst.fullName() + "\"");
             }
+        }
+        if (STRICT_CONTAINERS.contains(inst.getClassName()) && !hasK(inst, str)) {
+            throw new LuaError(((Object) str) + " is not a valid member of " + inst.getClassName() + " \"" + inst.fullName() + "\"");
         }
         if (this.warnedMissing.add(inst.getClassName() + "." + ((Object) str))) {
             OutputLog.INSTANCE.warn(((Object) str) + " is not a known member of " + inst.getClassName() + " (treated as nil)");

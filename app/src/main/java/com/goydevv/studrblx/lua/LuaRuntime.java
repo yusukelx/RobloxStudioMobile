@@ -1342,6 +1342,9 @@ public final class LuaRuntime {
         }
     }
 
+    private final java.util.IdentityHashMap<ScriptThread, Instance> moduleThreads = new java.util.IdentityHashMap<>();
+    private final java.util.IdentityHashMap<Instance, Instance> moduleRequirer = new java.util.IdentityHashMap<>();
+
     public final LuaValue require(final Instance module) throws Exception {
         Intrinsics.checkNotNullParameter(module, "module");
         LuaValue cached = this.moduleCache.get(module);
@@ -1356,6 +1359,14 @@ public final class LuaRuntime {
             ScriptThread co = currentCoroutine();
             if (co == null) {
                 throw new LuaError("Requested module was required recursively or is still loading");
+            }
+            Instance chain = this.moduleThreads.get(co);
+            int guard = 0;
+            while (chain != null && guard++ < 10000) {
+                if (chain == module) {
+                    throw new LuaError("Requested module was required recursively");
+                }
+                chain = this.moduleRequirer.get(chain);
             }
             pending.add(co);
             throw new LuauYield(new LuauState.Continuation() {
@@ -1383,8 +1394,16 @@ public final class LuaRuntime {
         } finally {
             this.luau.releaseRef(env);
         }
-        ScriptThread co = this.luau.newThread(fn);
+        final ScriptThread co = this.luau.newThread(fn);
         co.setRawResults(true);
+        ScriptThread callerThread = currentCoroutine();
+        Instance callerModule = callerThread != null ? this.moduleThreads.get(callerThread) : null;
+        this.moduleThreads.put(co, module);
+        if (callerModule != null) {
+            this.moduleRequirer.put(module, callerModule);
+        } else {
+            this.moduleRequirer.remove(module);
+        }
         final ArrayList<ScriptThread> waiters = new ArrayList<>();
         final String[] failure = new String[1];
         this.moduleLoading.put(module, waiters);
@@ -1392,6 +1411,8 @@ public final class LuaRuntime {
             @Override
             public void finished(ScriptThread t, LuauState.ResumeResult r) {
                 LuaRuntime.this.moduleLoading.remove(module);
+                LuaRuntime.this.moduleThreads.remove(t);
+                LuaRuntime.this.moduleRequirer.remove(module);
                 if (r.isError()) {
                     failure[0] = r.error;
                     LuaRuntime.this.reportError(r.error, r.traceback);

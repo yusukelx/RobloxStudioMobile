@@ -712,6 +712,7 @@ public final class PlaySession implements TreeListener {
                 maybeRunScript((Instance) it2.next());
             }
         }
+        runScriptsUnder(ps);
         spawnCharacter();
         systemMessage("Chat '/?' or '/help' for a list of chat commands.", -4934476);
     }
@@ -746,6 +747,7 @@ public final class PlaySession implements TreeListener {
                 Instance.setParent$default(instance2.cloneTree(), pg, 0, 2, null);
             }
         }
+        runScriptsUnder(pg);
     }
 
     private final void installBridge() {
@@ -949,6 +951,13 @@ public final class PlaySession implements TreeListener {
     static final Instance isRunnable$lambda$19(Instance it) {
         Intrinsics.checkNotNullParameter(it, "it");
         return it.getParent();
+    }
+
+    private final void runScriptsUnder(Instance root) {
+        if (root == null) return;
+        for (Instance script : Instance.descendants$default(root, null, 1, null)) {
+            maybeRunScript(script);
+        }
     }
 
     public final void maybeRunScript(Instance s) {
@@ -1536,6 +1545,7 @@ public final class PlaySession implements TreeListener {
         Instance model2 = model;
         Instance.set$default(p3, "Character", model2, false, 4, null);
         this.rt.fire(p3, "CharacterAdded", this.rt.wrap(model2));
+        runScriptsUnder(model2);
         if (!this.dressable || this.avatarApplied >= 0) {
             z3 = true;
             this.rt.fire(p3, "CharacterAppearanceLoaded", this.rt.wrap(model2));

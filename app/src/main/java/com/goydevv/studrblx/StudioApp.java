@@ -1,6 +1,8 @@
 package com.goydevv.studrblx;
 
 import android.app.ActivityManager;
+import androidx.emoji2.bundled.BundledEmojiCompatConfig;
+import androidx.emoji2.text.EmojiCompat;
 import android.app.Application;
 import android.app.ApplicationExitInfo;
 import android.content.Context;

@@ -92,7 +92,7 @@ public final class ViewportView extends FrameLayout {
         this.hud = new PlayHud(ctx, this.studio);
         this.gl.setEGLContextClientVersion(2);
         this.gl.setEGLConfigChooser(new MsaaConfigChooser());
-        this.gl.setPreserveEGLContextOnPause(true);
+        this.gl.setPreserveEGLContextOnPause(false);
         this.gl.setRenderer(this.renderer);
         this.gl.setRenderMode(1);
         addView(this.gl, new FrameLayout.LayoutParams(-1, -1));

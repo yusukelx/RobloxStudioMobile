@@ -1260,6 +1260,24 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         return material(mat)[0] > 1.5f;
     }
 
+    public final void trimMemory() {
+        this.gpuMeshes.clear();
+        this.unionGpu.clear();
+        this.storedUnionGpu.clear();
+        this.textures.clear();
+        this.surfaceTex.clear();
+        this.matCache.clear();
+        this.matTexGpu.clear();
+        this.variantBinds.clear();
+        this.r15Tex.clear();
+        this.rawKeys.clear();
+        this.rawKeysR.clear();
+        this.repeatKeys.clear();
+        this.batches.reset(false);
+        ArraysKt.fill(this.batchLit, (Object) null, 0, this.batchLit.length);
+        this.shadowValid = false;
+    }
+
     @Override // android.opengl.GLSurfaceView.Renderer
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         int iUpload;

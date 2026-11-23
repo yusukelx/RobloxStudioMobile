@@ -1413,12 +1413,16 @@ public final class InstanceApi {
             } else {
                 map = map2;
             }
-            if (textChatCallback && v.isnil()) {
-                map.remove(key);
-            } else if (v.isfunction()) {
-                map.put(key, v);
+            if (textChatCallback) {
+                if (v.isnil()) {
+                    map.remove(key);
+                } else if (v.isfunction()) {
+                    map.put(key, v);
+                } else {
+                    throw new LuaError(key + " must be a function or nil");
+                }
             } else {
-                throw new LuaError(key + " must be a function or nil");
+                map.put(key, v);
             }
             return;
         }

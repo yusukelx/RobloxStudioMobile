@@ -844,6 +844,12 @@ public final class AudioEngine {
                 return;
             }
             File f = new File(strCacheFile);
+            String bad = INSTANCE.checkAudioFile(f);
+            if (bad != null) {
+                $v.setFailed(true);
+                OutputLog.INSTANCE.warn("Sound rbxassetid://" + $v.getId() + " can't be played: " + bad);
+                return;
+            }
             MediaPlayer mp = new MediaPlayer();
             mp.setAudioAttributes(new AudioAttributes.Builder().setUsage(14).setContentType(4).build());
             mp.setDataSource(f.getPath());
@@ -874,6 +880,19 @@ public final class AudioEngine {
     }
 
     static final void create$lambda$12$lambda$9(Voice $v, MediaPlayer it) {
+        try {
+            create$lambda$12$lambda$9$prepared($v, it);
+        } catch (Throwable e) {
+            $v.setFailed(true);
+            OutputLog.INSTANCE.warn("Sound rbxassetid://" + $v.getId() + ": " + e.getMessage());
+        }
+    }
+
+    private static void create$lambda$12$lambda$9$prepared(Voice $v, MediaPlayer it) {
+        if ($v.getMp() != it) {
+            it.release();
+            return;
+        }
         $v.setPrepared(true);
         $v.setLength(((double) it.getDuration()) / 1000.0d);
         if ($v.getSeek() > 0.0d) {
@@ -905,6 +924,54 @@ public final class AudioEngine {
         $v.setFailed(true);
         OutputLog.INSTANCE.warn("Sound rbxassetid://" + $v.getId() + " can't be played on this device (" + what + "/" + extra + ")");
         return true;
+    }
+
+    public final String checkAudioFile(File f) {
+        if (f == null || !f.isFile()) {
+            return "file is missing";
+        }
+        long len = f.length();
+        if (len < 16) {
+            return "file is empty or truncated";
+        }
+        byte[] b = new byte[16];
+        try (java.io.FileInputStream in = new java.io.FileInputStream(f)) {
+            int n = 0;
+            while (n < b.length) {
+                int r = in.read(b, n, b.length - n);
+                if (r < 0) {
+                    break;
+                }
+                n += r;
+            }
+            if (n < b.length) {
+                return "file is truncated";
+            }
+        } catch (Exception e) {
+            return "file can't be read";
+        }
+        if (b[0] == 'O' && b[1] == 'g' && b[2] == 'g' && b[3] == 'S') {
+            return null;
+        }
+        if (b[0] == 'I' && b[1] == 'D' && b[2] == '3') {
+            return null;
+        }
+        if ((b[0] & 0xFF) == 0xFF && (b[1] & 0xE0) == 0xE0) {
+            return null;
+        }
+        if (b[0] == 'R' && b[1] == 'I' && b[2] == 'F' && b[3] == 'F' && b[8] == 'W' && b[9] == 'A' && b[10] == 'V' && b[11] == 'E') {
+            return null;
+        }
+        if (b[0] == 'f' && b[1] == 'L' && b[2] == 'a' && b[3] == 'C') {
+            return null;
+        }
+        if (b[4] == 'f' && b[5] == 't' && b[6] == 'y' && b[7] == 'p') {
+            return null;
+        }
+        if (b[0] == '<' || b[0] == '{') {
+            return "server returned a text response instead of audio";
+        }
+        return "unsupported audio format";
     }
 
     private final void setSpeed(MediaPlayer mp, float speed) {
@@ -1124,7 +1191,15 @@ public final class AudioEngine {
             MediaPlayer mp = new MediaPlayer();
             mp.setAudioAttributes(new AudioAttributes.Builder().setUsage(1).setContentType(2).build());
             String strCacheFile = AssetFetcher.INSTANCE.cacheFile($id);
-            Intrinsics.checkNotNull(strCacheFile);
+            if (strCacheFile == null) {
+                mp.release();
+                throw new IllegalStateException("Audio file is not cached");
+            }
+            String bad = INSTANCE.checkAudioFile(new File(strCacheFile));
+            if (bad != null) {
+                mp.release();
+                throw new IllegalStateException(bad);
+            }
             mp.setDataSource(strCacheFile);
             mp.setOnPreparedListener(new MediaPlayer.OnPreparedListener() { // from class: com.goydevv.studrblx.audio.AudioEngine$$ExternalSyntheticLambda1
                 @Override // android.media.MediaPlayer.OnPreparedListener
@@ -1155,8 +1230,17 @@ public final class AudioEngine {
     }
 
     static final void togglePreview$lambda$19$lambda$18$lambda$15(Preview $p, float $volume, MediaPlayer it) {
-        AudioEngine audioEngine = INSTANCE;
-        if (preview != $p) {
+        try {
+            togglePreview$prepared($p, $volume, it);
+        } catch (Throwable e) {
+            $p.setState(PreviewState.ERROR);
+            $p.setError("This audio can't be played on this device");
+            INSTANCE.notifyPreview();
+        }
+    }
+
+    private static void togglePreview$prepared(Preview $p, float $volume, MediaPlayer it) {
+        if (preview != $p || previewPlayer != it) {
             it.release();
             return;
         }

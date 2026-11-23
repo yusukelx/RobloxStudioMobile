@@ -995,6 +995,10 @@ public final class MainActivity extends AppCompatActivity implements MainActions
         AssetFetcher.INSTANCE.trimMemory(80);
         RobloxTextures.trimMemory(80);
         com.goydevv.studrblx.engine.AnimLibrary.INSTANCE.trimMemory(80);
+        com.goydevv.studrblx.engine.CollisionMeshes.INSTANCE.trimMemory();
+        com.goydevv.studrblx.render.UnionMeshes.INSTANCE.trimMemory(80);
+        MaterialTextures.INSTANCE.trimMemory(80);
+        com.goydevv.studrblx.audio.AudioEngine.INSTANCE.stopPreview();
     }
 
     @Override
@@ -1004,7 +1008,12 @@ public final class MainActivity extends AppCompatActivity implements MainActions
         ImageLoader.INSTANCE.trimMemory(level);
         AssetFetcher.INSTANCE.trimMemory(level);
         RobloxTextures.trimMemory(level);
-        if (level >= 40) com.goydevv.studrblx.engine.AnimLibrary.INSTANCE.trimMemory(level);
+        if (level >= 40) {
+            com.goydevv.studrblx.engine.AnimLibrary.INSTANCE.trimMemory(level);
+            com.goydevv.studrblx.engine.CollisionMeshes.INSTANCE.trimMemory();
+            com.goydevv.studrblx.render.UnionMeshes.INSTANCE.trimMemory(level);
+            MaterialTextures.INSTANCE.trimMemory(level);
+        }
     }
 
     @Override
@@ -1014,6 +1023,10 @@ public final class MainActivity extends AppCompatActivity implements MainActions
         AssetFetcher.INSTANCE.trimMemory(80);
         RobloxTextures.trimMemory(80);
         com.goydevv.studrblx.engine.AnimLibrary.INSTANCE.trimMemory(80);
+        com.goydevv.studrblx.engine.CollisionMeshes.INSTANCE.trimMemory();
+        com.goydevv.studrblx.render.UnionMeshes.INSTANCE.trimMemory(80);
+        MaterialTextures.INSTANCE.trimMemory(80);
+        com.goydevv.studrblx.audio.AudioEngine.INSTANCE.stopPreview();
     }
 
     static final Unit webAsker$lambda$33(final MainActivity this$0, final String host, final String who, final Function1 answer) {

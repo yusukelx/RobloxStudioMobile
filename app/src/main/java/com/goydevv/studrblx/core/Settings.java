@@ -386,6 +386,53 @@ public final class Settings {
         return f("pluginScale", 0.0f);
     }
 
+    public final int getEditorGraphicsQuality() {
+        return i("editorGfx", 8);
+    }
+
+    public final void setEditorGraphicsQuality(int v) {
+        p().edit().putInt("editorGfx", RangesKt.coerceIn(v, 1, 10)).apply();
+        changed();
+    }
+
+    public final int getRenderScale() {
+        return i("renderScale", 100);
+    }
+
+    public final void setRenderScale(int v) {
+        p().edit().putInt("renderScale", RangesKt.coerceIn(v, 50, 100)).apply();
+        changed();
+    }
+
+    public final String getLodLevel() {
+        return s("lodLevel", "Automatic");
+    }
+
+    public final void setLodLevel(String v) {
+        Intrinsics.checkNotNullParameter(v, "v");
+        p().edit().putString("lodLevel", v).apply();
+        changed();
+    }
+
+    public final String getShadowQuality() {
+        return s("shadowQuality", "Medium");
+    }
+
+    public final void setShadowQuality(String v) {
+        Intrinsics.checkNotNullParameter(v, "v");
+        p().edit().putString("shadowQuality", v).apply();
+        changed();
+    }
+
+    public final boolean getPostProcessing() {
+        return b("postFx", true);
+    }
+
+    public final void setPostProcessing(boolean v) {
+        p().edit().putBoolean("postFx", v).apply();
+        changed();
+    }
+
     public final void setPluginUiScale(float v) {
         SharedPreferences.Editor editorEdit;
         SharedPreferences.Editor editorPutFloat;

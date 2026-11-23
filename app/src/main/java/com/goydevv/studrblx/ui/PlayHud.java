@@ -412,58 +412,42 @@ public final class PlayHud extends FrameLayout {
             this.active = z;
         }
 
+        private static final java.util.HashMap<String, android.graphics.Bitmap> TEX = new java.util.HashMap<>();
+
+        private android.graphics.Bitmap tex(String name) {
+            synchronized (TEX) {
+                if (!TEX.containsKey(name)) {
+                    android.graphics.Bitmap bmp = null;
+                    try (java.io.InputStream in = getContext().getAssets().open("ui/TopBar/" + name + "@3x.png")) {
+                        bmp = android.graphics.BitmapFactory.decodeStream(in);
+                    } catch (java.io.IOException ignored) {
+                    }
+                    TEX.put(name, bmp);
+                }
+                return TEX.get(name);
+            }
+        }
+
+        private void drawTex(Canvas c, android.graphics.Bitmap bmp, float cx, float cy) {
+            float s = this.this$0.d / 3.0f;
+            float hw = bmp.getWidth() * s / 2.0f;
+            float hh = bmp.getHeight() * s / 2.0f;
+            c.drawBitmap(bmp, null, new android.graphics.RectF(cx - hw, cy - hh, cx + hw, cy + hh), this.p);
+        }
+
         @Override // android.view.View
         protected void onDraw(Canvas c) {
             Intrinsics.checkNotNullParameter(c, "c");
+            String icon = this.kind == 0 ? "coloredlogo" : this.kind == 1 ? (this.active ? "chatOn" : "chatOff") : (this.active ? "leaderboardOn" : "leaderboardOff");
+            android.graphics.Bitmap base = tex("iconBase");
+            android.graphics.Bitmap glyph = tex(icon);
+            if (base == null || glyph == null) return;
             float cx = getWidth() / 2.0f;
             float cy = getHeight() / 2.0f;
-            float r = getWidth() / 2.0f;
-            this.p.setStyle(Paint.Style.FILL);
-            this.p.setColor(isPressed() ? 0xE6282B33 : 0xCC121419);
-            c.drawCircle(cx, cy, r - (this.this$0.d * 0.6f), this.p);
-            this.p.setStyle(Paint.Style.STROKE);
-            this.p.setStrokeWidth(this.this$0.d * 1.0f);
-            this.p.setColor(0x33FFFFFF);
-            c.drawCircle(cx, cy, r - (this.this$0.d * 0.8f), this.p);
-            this.p.setStyle(Paint.Style.FILL);
-            this.p.setColor(-1);
-            switch (this.kind) {
-                case 0:
-                    this.p.setStyle(Paint.Style.STROKE);
-                    this.p.setStrokeWidth(this.this$0.d * 2.6f);
-                    c.save();
-                    c.rotate(15.0f, cx, cy);
-                    float s = this.this$0.d * 8.0f;
-                    c.drawRoundRect(cx - s, cy - s, cx + s, cy + s, this.this$0.d * 2.0f, this.this$0.d * 2.0f, this.p);
-                    this.p.setStyle(Paint.Style.FILL);
-                    c.drawRect(cx - (this.this$0.d * 2.2f), cy - (this.this$0.d * 2.2f), (this.this$0.d * 2.2f) + cx, (this.this$0.d * 2.2f) + cy, this.p);
-                    c.restore();
-                    break;
-                case 1:
-                    if (!this.active) {
-                        this.p.setAlpha(150);
-                    }
-                    c.drawRoundRect(cx - (this.this$0.d * 9.0f), cy - (this.this$0.d * 7.0f), (this.this$0.d * 9.0f) + cx, (this.this$0.d * 5.0f) + cy, this.this$0.d * 4.0f, this.this$0.d * 4.0f, this.p);
-                    Path path = new Path();
-                    PlayHud playHud = this.this$0;
-                    path.moveTo(cx - (playHud.d * 4.0f), (playHud.d * 4.0f) + cy);
-                    path.lineTo(cx - (playHud.d * 6.0f), (playHud.d * 10.0f) + cy);
-                    path.lineTo((playHud.d * 1.0f) + cx, (playHud.d * 4.0f) + cy);
-                    path.close();
-                    c.drawPath(path, this.p);
-                    this.p.setAlpha(255);
-                    break;
-                default:
-                    if (!this.active) {
-                        this.p.setAlpha(150);
-                    }
-                    c.drawCircle(cx - (this.this$0.d * 4.0f), cy - (this.this$0.d * 4.0f), this.this$0.d * 3.2f, this.p);
-                    c.drawCircle((this.this$0.d * 4.5f) + cx, cy - (this.this$0.d * 3.0f), this.this$0.d * 2.8f, this.p);
-                    c.drawRoundRect(cx - (this.this$0.d * 10.0f), (this.this$0.d * 0.5f) + cy, (this.this$0.d * 2.0f) + cx, cy + (this.this$0.d * 9.0f), this.this$0.d * 4.0f, this.this$0.d * 4.0f, this.p);
-                    c.drawRoundRect(cx + (this.this$0.d * 0.0f), cy + (this.this$0.d * 1.5f), cx + (this.this$0.d * 10.0f), cy + (this.this$0.d * 8.0f), this.this$0.d * 3.5f, this.this$0.d * 3.5f, this.p);
-                    this.p.setAlpha(255);
-                    break;
-            }
+            this.p.setFilterBitmap(true);
+            drawTex(c, base, cx, cy);
+            if (isPressed()) drawTex(c, base, cx, cy);
+            drawTex(c, glyph, cx, cy);
         }
 
         @Override // android.view.View
@@ -557,16 +541,24 @@ public final class PlayHud extends FrameLayout {
                     spannableStringBuilder.append(pre);
                     int prefixEnd = spannableStringBuilder.length();
                     if (!chatLine.getSystem()) {
-                        spannableStringBuilder.setSpan(new ForegroundColorSpan(chatLine.getColor()), prefixStart, prefixEnd, 33);
+                        boolean[] rich = new boolean[prefixEnd - prefixStart];
                         if (pre instanceof Spanned) {
                             Spanned richPrefix = (Spanned) pre;
                             for (ForegroundColorSpan span : richPrefix.getSpans(0, pre.length(), ForegroundColorSpan.class)) {
-                                int start = prefixStart + richPrefix.getSpanStart(span);
-                                int end = prefixStart + richPrefix.getSpanEnd(span);
-                                spannableStringBuilder.setSpan(new ForegroundColorSpan(span.getForegroundColor()), start, end, 33 | (255 << 16));
+                                java.util.Arrays.fill(rich, richPrefix.getSpanStart(span), richPrefix.getSpanEnd(span), true);
                             }
                         }
-                        spannableStringBuilder.setSpan(new StyleSpan(1), prefixStart, prefixEnd, 33 | (255 << 16));
+                        for (int s = 0; s < rich.length; ) {
+                            if (rich[s]) {
+                                s++;
+                                continue;
+                            }
+                            int e = s;
+                            while (e < rich.length && !rich[e]) e++;
+                            spannableStringBuilder.setSpan(new ForegroundColorSpan(chatLine.getColor()), prefixStart + s, prefixStart + e, 33);
+                            s = e;
+                        }
+                        spannableStringBuilder.setSpan(new StyleSpan(1), prefixStart, prefixEnd, 33);
                     }
                     spannableStringBuilder.append(' ');
                 }

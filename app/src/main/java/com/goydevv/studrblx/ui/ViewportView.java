@@ -90,7 +90,7 @@ public final class ViewportView extends FrameLayout {
         this.gui = new GuiOverlay(ctx, this.studio);
         this.controls = new TouchLayer(this, ctx);
         this.hud = new PlayHud(ctx, this.studio);
-        this.gl.setEGLContextClientVersion(2);
+        this.gl.setEGLContextFactory(new Es3ContextFactory());
         this.gl.setEGLConfigChooser(new MsaaConfigChooser());
         this.gl.setPreserveEGLContextOnPause(false);
         this.gl.setRenderer(this.renderer);
@@ -185,6 +185,22 @@ public final class ViewportView extends FrameLayout {
     }
 
     /* JADX INFO: compiled from: ViewportView.kt */
+    private static final class Es3ContextFactory implements GLSurfaceView.EGLContextFactory {
+        @Override // android.opengl.GLSurfaceView.EGLContextFactory
+        public javax.microedition.khronos.egl.EGLContext createContext(EGL10 egl, EGLDisplay display, EGLConfig config) {
+            javax.microedition.khronos.egl.EGLContext ctx = egl.eglCreateContext(display, config, EGL10.EGL_NO_CONTEXT, new int[]{12440, 3, 12344});
+            if (ctx == null || ctx == EGL10.EGL_NO_CONTEXT) {
+                ctx = egl.eglCreateContext(display, config, EGL10.EGL_NO_CONTEXT, new int[]{12440, 2, 12344});
+            }
+            return ctx;
+        }
+
+        @Override // android.opengl.GLSurfaceView.EGLContextFactory
+        public void destroyContext(EGL10 egl, EGLDisplay display, javax.microedition.khronos.egl.EGLContext context) {
+            egl.eglDestroyContext(display, context);
+        }
+    }
+
     private static final class MsaaConfigChooser implements GLSurfaceView.EGLConfigChooser {
         private static final EGLConfig chooseConfig$pick(EGL10 $egl, EGLDisplay $display, int samples, int depth) {
             List attrs = CollectionsKt.mutableListOf(12324, 8, 12323, 8, 12322, 8, 12321, 8, 12325, Integer.valueOf(depth), 12352, 4);

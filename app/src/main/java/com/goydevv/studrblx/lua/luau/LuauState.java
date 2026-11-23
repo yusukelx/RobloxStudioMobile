@@ -905,7 +905,7 @@ public final class LuauState {
             case LuaValue.TSTRING: {
                 LuaString s = v.checkstring();
                 byte[] b = s.m_offset == 0 && s.m_length == s.m_bytes.length ? s.m_bytes : Arrays.copyOfRange(s.m_bytes, s.m_offset, s.m_offset + s.m_length);
-                LuauNative.pushBytes(p, b);
+                LuauNative.pushBytes(p, Utf8Bridge.fromLuaJ(b));
                 return;
             }
             case LuaValue.TFUNCTION:
@@ -1042,7 +1042,7 @@ public final class LuauState {
             case LuauNative.TNUMBER:
                 return LuaValue.valueOf(LuauNative.toNumber(p, idx));
             case LuauNative.TSTRING:
-                return LuaString.valueOf(LuauNative.toBytes(p, idx));
+                return LuaString.valueOf(Utf8Bridge.toLuaJ(LuauNative.toBytes(p, idx)));
             case LuauNative.TVECTOR: {
                 float[] f = LuauNative.toVector(p, idx);
                 return host.vector(f[0], f[1], f[2]);

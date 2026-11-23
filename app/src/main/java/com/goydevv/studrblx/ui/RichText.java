@@ -39,6 +39,12 @@ public final class RichText {
     private RichText() {
     }
 
+    public final void clearCache() {
+        synchronized (cache) {
+            cache.clear();
+        }
+    }
+
     public final CharSequence parse(String src) {
         CharSequence charSequenceBuild;
         CharSequence charSequence;
@@ -47,7 +53,12 @@ public final class RichText {
             Map map = cache;
             CharSequence charSequence2 = (CharSequence) map.get(src);
             if (charSequence2 == null) {
-                charSequenceBuild = INSTANCE.build(src);
+                CharSequence parsed = INSTANCE.build(src);
+                try {
+                    charSequenceBuild = EmojiCompat.get().process(parsed);
+                } catch (IllegalStateException ignored) {
+                    charSequenceBuild = parsed;
+                }
                 map.put(src, charSequenceBuild);
             } else {
                 charSequenceBuild = charSequence2;

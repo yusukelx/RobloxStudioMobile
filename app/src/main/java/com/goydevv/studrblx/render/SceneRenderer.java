@@ -250,7 +250,6 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
     private int skyProg;
     private Mesh skyboxMesh;
     private int skyboxProg;
-    private float slowAvg;
     private Mesh sphere;
     private float statTimer;
     private final HashMap<String, List<Pair<Mesh, Integer>>> storedUnionGpu;

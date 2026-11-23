@@ -2581,7 +2581,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         Matrix.multiplyMM(this.lightVP, 0, this.lightProj, 0, this.lightView, 0);
         long change = Instance.changeCount;
         this.shadowAge++;
-        if (this.shadowValid && this.studio.isPlaying() && this.fps < 40.0f && this.frames % 2 == 1) {
+        if (this.shadowValid && this.studio.isPlaying() && this.frames % 2 == 1) {
             ArraysKt.copyInto(this.lastLightVP, this.lightVP, 0, 0, this.lastLightVP.length);
             return;
         }

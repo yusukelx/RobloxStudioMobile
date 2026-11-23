@@ -104,6 +104,7 @@ public final class GuiOverlay extends View {
     private final Paint imgPaint;
     private Vector3 lastPointer;
     private final LinkedHashMap<TKey, StaticLayout> layouts;
+    private int emojiLoadState = -1;
     private IdentityHashMap<Instance, EditBox> newBoxes;
     private ArrayList<Hit> newHits;
     private ArrayList<Pair<Instance, RectF>> newPicks;
@@ -683,6 +684,17 @@ public final class GuiOverlay extends View {
 
     private final StaticLayout layoutFor(TKey k) {
         StaticLayout staticLayoutBuild;
+        int loadState;
+        try {
+            loadState = EmojiCompat.get().getLoadState();
+        } catch (IllegalStateException ignored) {
+            loadState = EmojiCompat.LOAD_STATE_DEFAULT;
+        }
+        if (loadState != this.emojiLoadState) {
+            this.emojiLoadState = loadState;
+            this.layouts.clear();
+            this.scaledSizes.clear();
+        }
         Map map = this.layouts;
         StaticLayout staticLayout = (StaticLayout) map.get(k);
         if (staticLayout == null) {
@@ -4005,8 +4017,8 @@ public final class GuiOverlay extends View {
     }
 
     private final void drawRichStroke(Canvas canvas, StaticLayout sl, TextPaint p) {
-        String plain = sl.getText().toString();
-        StaticLayout.Builder.obtain(plain, 0, plain.length(), p, sl.getWidth()).setAlignment(sl.getAlignment()).setIncludePad(false).setLineSpacing(0.0f, sl.getSpacingMultiplier()).build().draw(canvas);
+        CharSequence text = sl.getText();
+        StaticLayout.Builder.obtain(text, 0, text.length(), p, sl.getWidth()).setAlignment(sl.getAlignment()).setIncludePad(false).setLineSpacing(0.0f, sl.getSpacingMultiplier()).build().draw(canvas);
     }
 
     public final Hit buttonAt(float x, float y) {

@@ -96,6 +96,15 @@ public final class UnionMeshes {
         return epoch;
     }
 
+    public final void trimMemory(int level) {
+        if (level >= 40) {
+            ready.clear();
+            bad.clear();
+            inlineKeys.clear();
+            epoch++;
+        }
+    }
+
     private final byte[] bytesOf(Object v) {
         byte[] bytes;
         if (v instanceof BinaryString) {

@@ -140,7 +140,7 @@ public final class PlaySession implements TreeListener {
     private float occluded;
     private final IdentityHashMap<Instance, CFrame> offsets;
     private boolean physicsDirty;
-    private float pitchTarget;
+    private volatile float pitchTarget;
     private Instance playAsTemplate;
     private Float playAsYaw;
     private Instance player;
@@ -170,7 +170,7 @@ public final class PlaySession implements TreeListener {
     private Vector3 vel;
     private float walkT;
     private boolean writing;
-    private float yawTarget;
+    private volatile float yawTarget;
 
     public PlaySession(Studio studio, DataModel dm) {
         Intrinsics.checkNotNullParameter(studio, "studio");

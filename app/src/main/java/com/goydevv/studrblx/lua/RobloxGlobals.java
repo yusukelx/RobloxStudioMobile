@@ -1485,6 +1485,9 @@ public final class RobloxGlobals {
                 return RobloxGlobals.install$lambda$48$lambda$47$lambda$46$lambda$45((Varargs) obj);
             }
         }));
+        LuaTable tmt = new LuaTable();
+        tmt.set("__type", "RaycastParams");
+        luaTable.setmetatable(tmt);
         return luaTable;
     }
 
@@ -1521,6 +1524,9 @@ public final class RobloxGlobals {
         luaTable.set("MaxParts", 0);
         luaTable.set("CollisionGroup", "Default");
         luaTable.set("RespectCanCollide", LuaValue.FALSE);
+        LuaTable tmt = new LuaTable();
+        tmt.set("__type", "OverlapParams");
+        luaTable.setmetatable(tmt);
         return luaTable;
     }
 

@@ -67,6 +67,9 @@ public final class PlayHud extends FrameLayout {
     private final Typeface regular;
     private int seenChat;
     private final Studio studio;
+    private String chatCfgSig = "";
+    private int chatBaseW;
+    private int chatBaseH;
 
     /* JADX WARN: 'super' call moved to the top of the method (can break code semantics) */
     public PlayHud(Context ctx, Studio studio) {
@@ -167,7 +170,9 @@ public final class PlayHud extends FrameLayout {
         linearLayout2.addView(editText2, layoutParams4);
         boolean phone = getResources().getConfiguration().smallestScreenWidthDp < 600;
         LinearLayout linearLayout3 = this.chatBox;
-        FrameLayout.LayoutParams layoutParams5 = new FrameLayout.LayoutParams(dp(phone ? 270.0f : 330.0f), dp(phone ? 130.0f : 165.0f));
+        this.chatBaseW = dp(phone ? 270.0f : 330.0f);
+        this.chatBaseH = dp(phone ? 130.0f : 165.0f);
+        FrameLayout.LayoutParams layoutParams5 = new FrameLayout.LayoutParams(this.chatBaseW, this.chatBaseH);
         layoutParams5.leftMargin = dp(12.0f);
         layoutParams5.topMargin = dp(56.0f);
         Unit unit5 = Unit.INSTANCE;
@@ -245,7 +250,8 @@ public final class PlayHud extends FrameLayout {
         PlaySession p = this.studio.getPlay();
         boolean enabled = !((p == null || p.getCoreChat()) ? false : true);
         this.chatBtn.setVisibility(enabled ? 0 : 8);
-        this.chatBox.setVisibility((enabled && this.chatOpen) ? 0 : 8);
+        boolean cfgOn = !Boolean.FALSE.equals(this.chatBox.getTag());
+        this.chatBox.setVisibility((enabled && cfgOn && this.chatOpen) ? 0 : 8);
         this.chatBtn.setActive(this.chatOpen);
         this.chatBtn.invalidate();
     }
@@ -253,6 +259,7 @@ public final class PlayHud extends FrameLayout {
     public final void onFrame() {
         PlaySession p;
         if (getVisibility() == 0 && (p = this.studio.getPlay()) != null) {
+            applyChatConfig(p);
             int v = p.getChatVersion();
             if (v != this.seenChat) {
                 this.seenChat = v;
@@ -267,6 +274,64 @@ public final class PlayHud extends FrameLayout {
             }
             this.layer.invalidate();
         }
+    }
+
+    private static int cfgColor(Instance cfg, String prop, int def) {
+        Object v = cfg == null ? null : cfg.get(prop);
+        return v instanceof com.goydevv.studrblx.model.Color3 ? ((com.goydevv.studrblx.model.Color3) v).toArgb() : def;
+    }
+
+    private static float cfgNum(Instance cfg, String prop, float def) {
+        Object v = cfg == null ? null : cfg.get(prop);
+        return v instanceof Number ? ((Number) v).floatValue() : def;
+    }
+
+    private static int withAlpha(int rgb, float transparency) {
+        int a = Math.round(Math.max(0.0f, Math.min(1.0f, 1.0f - transparency)) * 255.0f);
+        return (a << 24) | (rgb & 16777215);
+    }
+
+    private void applyChatConfig(PlaySession p) {
+        Instance win = com.goydevv.studrblx.engine.TextChat.config(p.getDm(), "ChatWindowConfiguration");
+        Instance bar = com.goydevv.studrblx.engine.TextChat.config(p.getDm(), "ChatInputBarConfiguration");
+        boolean winOn = com.goydevv.studrblx.engine.TextChat.flag(win, "Enabled", true);
+        boolean barOn = com.goydevv.studrblx.engine.TextChat.flag(bar, "Enabled", true);
+        int winBg = withAlpha(cfgColor(win, "BackgroundColor3", -15131875), cfgNum(win, "BackgroundTransparency", 0.3f));
+        int winText = cfgColor(win, "TextColor3", -1);
+        float winSize = cfgNum(win, "TextSize", 14.0f);
+        float wScale = cfgNum(win, "WidthScale", 1.0f);
+        float hScale = cfgNum(win, "HeightScale", 1.0f);
+        int barBg = withAlpha(cfgColor(bar, "BackgroundColor3", -15131875), cfgNum(bar, "BackgroundTransparency", 0.2f));
+        int barText = cfgColor(bar, "TextColor3", -1);
+        int barHint = cfgColor(bar, "PlaceholderColor3", -5066062);
+        float barSize = cfgNum(bar, "TextSize", 14.0f);
+        String sig = winOn + "|" + barOn + "|" + winBg + "|" + winText + "|" + winSize + "|" + wScale + "|" + hScale + "|" + barBg + "|" + barText + "|" + barHint + "|" + barSize;
+        if (sig.equals(this.chatCfgSig)) {
+            return;
+        }
+        this.chatCfgSig = sig;
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(winOn ? winBg : 0);
+        bg.setCornerRadius(dp(8.0f));
+        this.chatBox.setBackground(bg);
+        this.chatLog.setVisibility(winOn ? 0 : 8);
+        this.chatLog.applyStyle(winText, d * Math.max(6.0f, Math.min(48.0f, winSize)));
+        GradientDrawable bbg = new GradientDrawable();
+        bbg.setColor(barBg);
+        bbg.setCornerRadius(dp(6.0f));
+        this.chatBar.setBackground(bbg);
+        this.chatBar.setTextColor(barText);
+        this.chatBar.setHintTextColor(barHint);
+        this.chatBar.setTextSize(Math.max(6.0f, Math.min(48.0f, barSize)));
+        this.chatBar.setVisibility(barOn ? 0 : 8);
+        android.view.ViewGroup.LayoutParams lp = this.chatBox.getLayoutParams();
+        if (lp != null) {
+            lp.width = Math.max(dp(120.0f), Math.round(this.chatBaseW * Math.max(0.5f, Math.min(2.0f, wScale))));
+            lp.height = winOn ? Math.max(dp(48.0f), Math.round(this.chatBaseH * Math.max(0.5f, Math.min(2.0f, hScale)))) : -2;
+            this.chatBox.setLayoutParams(lp);
+        }
+        this.chatBox.setTag(Boolean.valueOf(winOn || barOn));
+        updateChatVisibility();
     }
 
     public final void togglePlayerList() {
@@ -440,6 +505,14 @@ public final class PlayHud extends FrameLayout {
             this.lines = CollectionsKt.emptyList();
         }
 
+        public final void applyStyle(int color, float size) {
+            this.tp.setColor(color);
+            this.tp.setTextSize(size);
+            this.shadow.setTextSize(size);
+            build();
+            invalidate();
+        }
+
         public final void reload() {
             List<PlaySession.ChatLine> list;
             ArrayList<PlaySession.ChatLine> chatLines;
@@ -474,17 +547,19 @@ public final class PlayHud extends FrameLayout {
             Collection arrayList = new ArrayList(CollectionsKt.collectionSizeOrDefault(iterable, 10));
             for (PlaySession.ChatLine chatLine : iterable) {
                 SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
-                if (chatLine.getFrom() != null) {
-                    int length = spannableStringBuilder.length();
-                    spannableStringBuilder.append((CharSequence) ("[" + chatLine.getFrom() + "]: "));
-                    spannableStringBuilder.setSpan(new ForegroundColorSpan(chatLine.getColor()), length, spannableStringBuilder.length(), 33);
-                    spannableStringBuilder.setSpan(new StyleSpan(1), length, spannableStringBuilder.length(), 33);
-                    spannableStringBuilder.append((CharSequence) chatLine.getText());
-                    r14 = 0;
-                } else {
-                    spannableStringBuilder.append((CharSequence) chatLine.getText());
-                    r14 = 0;
-                    spannableStringBuilder.setSpan(new ForegroundColorSpan(chatLine.getColor()), 0, spannableStringBuilder.length(), 33);
+                r14 = 0;
+                if (chatLine.getFrom() != null && !chatLine.getFrom().isEmpty()) {
+                    CharSequence pre = RichText.INSTANCE.parse(chatLine.getFrom());
+                    spannableStringBuilder.append(pre);
+                    if (!chatLine.getSystem()) {
+                        spannableStringBuilder.setSpan(new ForegroundColorSpan(chatLine.getColor()), 0, spannableStringBuilder.length(), 33 | (255 << 16));
+                        spannableStringBuilder.setSpan(new StyleSpan(1), 0, spannableStringBuilder.length(), 33 | (255 << 16));
+                    }
+                    spannableStringBuilder.append(' ');
+                }
+                spannableStringBuilder.append(RichText.INSTANCE.parse(chatLine.getText()));
+                if (chatLine.getSystem() && chatLine.getColor() != 0) {
+                    spannableStringBuilder.setSpan(new ForegroundColorSpan(chatLine.getColor()), 0, spannableStringBuilder.length(), 33 | (255 << 16));
                 }
                 arrayList.add(StaticLayout.Builder.obtain(spannableStringBuilder, r14, spannableStringBuilder.length(), this.tp, w).setAlignment(Layout.Alignment.ALIGN_NORMAL).setIncludePad(r14 != 0).build());
             }

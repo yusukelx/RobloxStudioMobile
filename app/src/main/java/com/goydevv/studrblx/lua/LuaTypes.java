@@ -355,9 +355,33 @@ public final class LuaTypes {
         throw new LuaError(key.tojstring() + " cannot be assigned to");
     }
 
+    private static String fnum(float f) {
+        if (Float.isNaN(f)) return "nan";
+        if (Float.isInfinite(f)) return f > 0 ? "inf" : "-inf";
+        String r = new java.math.BigDecimal(Float.toString(f)).stripTrailingZeros().toPlainString();
+        return "-0".equals(r) ? "0" : r;
+    }
+
+    private static final String[] EASING_STYLES = {"Linear", "Sine", "Back", "Quad", "Quart", "Quint", "Bounce", "Elastic", "Exponential", "Circular", "Cubic"};
+    private static final String[] EASING_DIRS = {"In", "Out", "InOut"};
+
+    static String describe(Object o) {
+        if (o instanceof Color3) {
+            Color3 c = (Color3) o;
+            return fnum(c.getR()) + ", " + fnum(c.getG()) + ", " + fnum(c.getB());
+        }
+        if (o instanceof TweenInfoV) {
+            TweenInfoV t = (TweenInfoV) o;
+            String st = t.getStyle() >= 0 && t.getStyle() < EASING_STYLES.length ? EASING_STYLES[t.getStyle()] : String.valueOf(t.getStyle());
+            String dr = t.getDirection() >= 0 && t.getDirection() < EASING_DIRS.length ? EASING_DIRS[t.getDirection()] : String.valueOf(t.getDirection());
+            return "Time:" + fnum(t.getTime()) + " DelayTime:" + fnum(t.getDelay()) + " RepeatCount:" + t.getRepeatCount() + " Reverses:" + (t.getReverses() ? "True" : "False") + " EasingDirection:" + dr + " EasingStyle:" + st;
+        }
+        return o.toString();
+    }
+
     static final LuaValue meta$lambda$5(LuaValue it) {
         Intrinsics.checkNotNullParameter(it, "it");
-        LuaString luaStringValueOf = LuaValue.valueOf(it.touserdata().toString());
+        LuaString luaStringValueOf = LuaValue.valueOf(describe(it.touserdata()));
         Intrinsics.checkNotNullExpressionValue(luaStringValueOf, "valueOf(...)");
         return luaStringValueOf;
     }
@@ -1240,9 +1264,10 @@ public final class LuaTypes {
             case "PointToObjectSpace": case "pointToObjectSpace": return INSTANCE.method(new Function1<Varargs, Varargs>() { @Override public Varargs invoke(Varargs a) { return lambda$47$lambda$38(a); } });
             case "VectorToWorldSpace": case "vectorToWorldSpace": return INSTANCE.method(new Function1<Varargs, Varargs>() { @Override public Varargs invoke(Varargs a) { return lambda$47$lambda$39(a); } });
             case "VectorToObjectSpace": case "vectorToObjectSpace": return INSTANCE.method(new Function1<Varargs, Varargs>() { @Override public Varargs invoke(Varargs a) { return lambda$47$lambda$40(a); } });
-            case "GetComponents": case "components": return INSTANCE.method(new Function1<Varargs, Varargs>() { @Override public Varargs invoke(Varargs a) { return lambda$47$lambda$41(a); } });
-            case "ToEulerAnglesXYZ": case "toEulerAnglesXYZ": return INSTANCE.method(new Function1<Varargs, Varargs>() { @Override public Varargs invoke(Varargs a) { return lambda$47$lambda$42(a); } });
-            case "ToEulerAnglesYXZ": case "toEulerAnglesYXZ": case "ToOrientation": case "toOrientation": return INSTANCE.method(new Function1<Varargs, Varargs>() { @Override public Varargs invoke(Varargs a) { return lambda$47$lambda$44(a); } });
+            case "GetComponents": case "components": return INSTANCE.method(new Function1<Varargs, Varargs>() { @Override public Varargs invoke(Varargs a) { return lambda$47$lambda$44(a); } });
+            case "Orthonormalize": return INSTANCE.method(new Function1<Varargs, Varargs>() { @Override public Varargs invoke(Varargs a) { return lambda$47$lambda$45(a); } });
+            case "ToEulerAnglesXYZ": case "toEulerAnglesXYZ": case "ToEulerAngles": return INSTANCE.method(new Function1<Varargs, Varargs>() { @Override public Varargs invoke(Varargs a) { return lambda$47$lambda$41(a); } });
+            case "ToEulerAnglesYXZ": case "toEulerAnglesYXZ": case "ToOrientation": case "toOrientation": return INSTANCE.method(new Function1<Varargs, Varargs>() { @Override public Varargs invoke(Varargs a) { return lambda$47$lambda$42(a); } });
             case "ToAxisAngle": case "toAxisAngle": return INSTANCE.method(new Function1<Varargs, Varargs>() { @Override public Varargs invoke(Varargs a) { return lambda$47$lambda$46(a); } });
             default: return LuaValue.NIL;
         }
@@ -2431,6 +2456,10 @@ public final class LuaTypes {
         Intrinsics.checkNotNullParameter(o, "o");
         Intrinsics.checkNotNullParameter(k, "k");
         RayHitInfo h = ((RaycastResultV) o).getHit();
+        if (k.equals("Instance")) {
+            LuaRuntime hrt = ((RaycastResultV) o).getRt();
+            return (hrt == null || h.getInst() == null) ? LuaValue.NIL : hrt.wrap(h.getInst());
+        }
         switch (k.hashCode()) {
             case -1955878649:
                 if (k.equals("Normal")) {

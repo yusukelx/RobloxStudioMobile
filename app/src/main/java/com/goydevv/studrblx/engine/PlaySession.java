@@ -7319,61 +7319,8 @@ public final class PlaySession implements TreeListener {
             }
             if (StringsKt.startsWith(lowerCase, "e ", false) || StringsKt.startsWith(lowerCase, "emote ", false)) {
                 String string2 = StringsKt.trim((CharSequence) com.goydevv.studrblx.util.KtCompat.substringAfter(lowerCase, ' ')).toString();
-                switch (string2.hashCode()) {
-                    case -1339095329:
-                        if (string2.equals("dance2")) {
-                            if (StringsKt.startsWith(string2, "dance", false)) {
-                                str = string2;
-                            } else {
-                                str = "dance";
-                            }
-                        }
-                        break;
-                    case -1339095328:
-                        if (string2.equals("dance3")) {
-                            if (StringsKt.startsWith(string2, "dance", false)) {
-                                str = string2;
-                            } else {
-                                str = "dance";
-                            }
-                        }
-                        break;
-                    case 3642105:
-                        if (string2.equals("wave")) {
-                            if (StringsKt.startsWith(string2, "dance", false)) {
-                                str = string2;
-                            } else {
-                                str = "dance";
-                            }
-                        }
-                        break;
-                    case 94627149:
-                        if (string2.equals("cheer")) {
-                            if (StringsKt.startsWith(string2, "dance", false)) {
-                                str = string2;
-                            } else {
-                                str = "dance";
-                            }
-                        }
-                        break;
-                    case 95350707:
-                        if (string2.equals("dance")) {
-                            if (StringsKt.startsWith(string2, "dance", false)) {
-                                str = string2;
-                            } else {
-                                str = "dance";
-                            }
-                        }
-                        break;
-                    case 106845584:
-                        if (string2.equals("point")) {
-                            if (StringsKt.startsWith(string2, "dance", false)) {
-                                str = string2;
-                            } else {
-                                str = "dance";
-                            }
-                        }
-                        break;
+                if (CollectionsKt.listOf(new String[]{"wave", "point", "cheer", "dance", "dance2", "dance3", "laugh"}).contains(string2)) {
+                    str = string2;
                 }
                 this.emote = str;
                 this.emoteTime = 0.0f;
@@ -7387,48 +7334,14 @@ public final class PlaySession implements TreeListener {
                 return;
             }
         }
-        Object obj = instance.get("DisplayName");
-        String str2 = obj instanceof String ? (String) obj : null;
-        if (str2 != null) {
-            String name2 = str2;
-            if ((name2.length() == 0) != false) {
-                name2 = instance.getName();
-            }
-            name = name2;
-            if (name == null) {
-                name = instance.getName();
-            }
-        } else {
-            name = instance.getName();
+        if (TextChat.runCommand(this, string)) {
+            return;
         }
-        String str3 = name;
-        addLine(new ChatLine(str3, string, nameColor(instance.getName()), false, 0L, 16, null));
-        Instance instance2 = this.character;
-        if (instance2 != null && (instanceFindFirstChild$default2 = Instance.findFirstChild$default(instance2, "Head", false, 2, null)) != null) {
-            bubble(instanceFindFirstChild$default2, string);
-        }
-        LuaRuntime luaRuntime2 = this.rt;
-        LuaString luaStringValueOf2 = LuaValue.valueOf(string);
-        Intrinsics.checkNotNullExpressionValue(luaStringValueOf2, "valueOf(...)");
-        luaRuntime2.fire(instance, "Chatted", luaStringValueOf2);
-        Instance instanceFindService = this.dm.findService("TextChatService");
-        if (instanceFindService != null && (instanceFindFirstChild$default = Instance.findFirstChild$default(instanceFindService, "TextChannels", false, 2, null)) != null) {
-            instanceFindFirstChild$default3 = Instance.findFirstChild$default(instanceFindFirstChild$default, "RBXGeneral", false, 2, null);
-        }
-        if (instanceFindFirstChild$default3 != null) {
-            LuaTable luaTable = new LuaTable();
-            luaTable.set("Text", string);
-            luaTable.set("PrefixText", str3 + ":");
-            luaTable.set("Status", LuaTypes.INSTANCE.wrap(new EnumItemV("TextChatMessageStatus", "Success", 1)));
-            LuaTable luaTable2 = new LuaTable();
-            luaTable2.set("UserId", 1);
-            luaTable2.set("Name", instance.getName());
-            Unit unit = Unit.INSTANCE;
-            luaTable.set("TextSource", luaTable2);
-            luaTable.set("TextChannel", this.rt.wrap(instanceFindFirstChild$default3));
-            this.rt.fire(instanceFindFirstChild$default3, "MessageReceived", luaTable);
-            this.rt.fire(this.dm.getService("TextChatService"), "MessageReceived", luaTable);
-        }
+        TextChat.send(this, TextChat.channel(this.dm, "RBXGeneral"), string, "");
+    }
+
+    public final void addChatLine(String from, String text, int color, boolean system) {
+        addLine(new ChatLine(from, text, color, system, 0L, 16, null));
     }
 
     static final boolean bubble$lambda$157(Instance $part, PlaySession this$0, Bubble it) {

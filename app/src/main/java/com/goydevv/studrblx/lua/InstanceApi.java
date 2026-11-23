@@ -448,7 +448,7 @@ public final class InstanceApi {
     }
 
     private final boolean methodAllowed(Instance inst, String name) {
-        if (this.commonMethods.contains(name)) {
+        if (this.commonMethods.contains(name) || ApiExtras.allows(inst, name)) {
             return true;
         }
         for (Map.Entry<String, Set<String>> entry : this.classMethods.entrySet()) {
@@ -684,6 +684,7 @@ public final class InstanceApi {
                 if (inst.isA("BasePart")) return PartData.INSTANCE.color(inst);
                 return inst.get(k);
             case "BrickColor":
+                if (inst.isA("BasePart")) return new com.goydevv.studrblx.model.BrickColorV(com.goydevv.studrblx.model.BrickColors.INSTANCE.closest(PartData.INSTANCE.color(inst)));
                 return inst.get("BrickColor");
             case "Transparency":
                 if (inst.isA("BasePart")) return Float.valueOf(PartData.INSTANCE.transparency(inst));
@@ -855,6 +856,10 @@ public final class InstanceApi {
                 inst.set(k, v, true);
                 return;
             case "BrickColor":
+                if (inst.isA("BasePart") && v instanceof com.goydevv.studrblx.model.BrickColorV) {
+                    PartData.INSTANCE.setColor(inst, ((com.goydevv.studrblx.model.BrickColorV) v).getColor());
+                    return;
+                }
                 inst.set("BrickColor", v, true);
                 return;
             case "Health":
@@ -2128,6 +2133,10 @@ public final class InstanceApi {
     public final org.luaj.vm2.Varargs callMethod(java.lang.String name, org.luaj.vm2.Varargs args) {
         Instance inst = self(args, name);
         String cn = inst.getClassName();
+        Varargs extra = ApiExtras.call(this, this.rt, inst, name, args);
+        if (extra != null) {
+            return extra;
+        }
         switch (name) {
             case "FindFirstChild": {
                 String n = args.checkjstring(2);
@@ -3015,12 +3024,13 @@ public final class InstanceApi {
             Vector3 unit = dir.div(maxDist);
             Object rpObj = args.arg(4).isuserdata() ? args.arg(4).touserdata() : null;
             final RaycastParamsV rp = rpObj instanceof RaycastParamsV ? (RaycastParamsV) rpObj : null;
+            final Function1<Instance, Boolean> tf = filterFrom(args.arg(4));
             com.goydevv.studrblx.engine.RayHit hit = com.goydevv.studrblx.engine.Geometry.INSTANCE.raycast(
                 this.rt.getStudio().renderParts(), origin, unit, maxDist,
                 new Function1<Instance, Boolean>() {
                     @Override
                     public Boolean invoke(Instance p) {
-                        if (rp == null) return Boolean.TRUE;
+                        if (rp == null) return tf.invoke(p);
                         boolean inList = false;
                         for (Instance fi : rp.getFilter()) {
                             if (p == fi || p.isDescendantOf(fi)) { inList = true; break; }
@@ -3030,7 +3040,7 @@ public final class InstanceApi {
                 }
             );
             if (hit == null) return LuaValue.NIL;
-            return LuaTypes.INSTANCE.wrap(new RaycastResultV(new RayHitInfo(hit.getPart(), hit.getPosition(), hit.getNormal(), hit.getT(), PartData.INSTANCE.material(hit.getPart()))));
+            return LuaTypes.INSTANCE.wrap(new RaycastResultV(new RayHitInfo(hit.getPart(), hit.getPosition(), hit.getNormal(), hit.getT(), PartData.INSTANCE.material(hit.getPart())), this.rt));
         }
         if ("GetPartBoundsInRadius".equals(name)) {
             Object pObj = args.arg(2).isuserdata() ? args.arg(2).touserdata() : null;
@@ -3110,12 +3120,13 @@ public final class InstanceApi {
             float maxDist = dir.getMagnitude();
             if (maxDist <= 1.0E-5f) return LuaValue.NIL;
             final RaycastParamsV rp = rpObj instanceof RaycastParamsV ? (RaycastParamsV) rpObj : null;
+            final Function1<Instance, Boolean> tf = filterFrom(args.arg(4));
             com.goydevv.studrblx.engine.RayHit hit = com.goydevv.studrblx.engine.Geometry.INSTANCE.raycast(
                 this.rt.getStudio().renderParts(), origin, dir.div(maxDist), maxDist,
                 new Function1<Instance, Boolean>() {
                     @Override
                     public Boolean invoke(Instance p) {
-                        if (rp == null) return Boolean.TRUE;
+                        if (rp == null) return tf.invoke(p);
                         boolean inList = false;
                         for (Instance fi : rp.getFilter()) {
                             if (p == fi || p.isDescendantOf(fi)) { inList = true; break; }
@@ -3125,7 +3136,7 @@ public final class InstanceApi {
                 }
             );
             if (hit == null) return LuaValue.NIL;
-            return LuaTypes.INSTANCE.wrap(new RaycastResultV(new RayHitInfo(hit.getPart(), hit.getPosition(), hit.getNormal(), hit.getT(), PartData.INSTANCE.material(hit.getPart()))));
+            return LuaTypes.INSTANCE.wrap(new RaycastResultV(new RayHitInfo(hit.getPart(), hit.getPosition(), hit.getNormal(), hit.getT(), PartData.INSTANCE.material(hit.getPart())), this.rt));
         }
         if ("BulkMoveTo".equals(name)) {
             if (args.arg(2).istable() && args.arg(3).istable()) {

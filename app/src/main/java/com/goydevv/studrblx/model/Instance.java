@@ -325,8 +325,8 @@ public class Instance {
         if (this.destroyed) {
             return;
         }
-        setParent$default(this, null, 0, 2, null);
         markDestroyed();
+        setParent$default(this, null, 0, 2, null);
     }
 
     private final void markDestroyed() {

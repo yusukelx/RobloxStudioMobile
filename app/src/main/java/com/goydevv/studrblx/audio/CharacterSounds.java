@@ -29,8 +29,7 @@ public final class CharacterSounds {
     private static volatile File dir;
     private static volatile boolean started;
     private static volatile boolean muted;
-    private static int runStream;
-    private static float runRate = -1.0f;
+    private static long nextRunStepNs;
 
     private CharacterSounds() {
     }
@@ -180,37 +179,28 @@ public final class CharacterSounds {
     }
 
     public static synchronized void running(boolean on, float speed, float volume) {
+        if (!on || muted) {
+            nextRunStepNs = 0L;
+            return;
+        }
         SoundPool p = pool;
         if (p == null) return;
         try {
-            if (!on || muted) {
-                stopRun();
-                return;
-            }
-            float rate = Math.max(0.5f, Math.min(2.0f, speed / 16.0f));
-            if (runStream == 0) {
-                int id = ready(RUN);
-                if (id == 0) return;
+            int id = ready(RUN);
+            if (id == 0) return;
+            long now = System.nanoTime();
+            if (nextRunStepNs == 0L || now >= nextRunStepNs) {
+                float rate = Math.max(0.5f, Math.min(2.0f, speed / 16.0f));
                 float v = Math.max(0.0f, Math.min(1.0f, volume));
-                runStream = p.play(id, v, v, 0, -1, rate);
-                runRate = rate;
-            } else if (Math.abs(rate - runRate) > 0.05f) {
-                p.setRate(runStream, rate);
-                runRate = rate;
+                p.play(id, v, v, 1, 0, rate);
+                float cadence = Math.max(0.24f, Math.min(0.58f, 0.38f * 16.0f / Math.max(8.0f, speed)));
+                nextRunStepNs = now + (long) (cadence * 1.0E9f);
             }
         } catch (Throwable ignored) {
         }
     }
 
     public static synchronized void stopRun() {
-        SoundPool p = pool;
-        if (p != null && runStream != 0) {
-            try {
-                p.stop(runStream);
-            } catch (Throwable ignored) {
-            }
-        }
-        runStream = 0;
-        runRate = -1.0f;
+        nextRunStepNs = 0L;
     }
 }

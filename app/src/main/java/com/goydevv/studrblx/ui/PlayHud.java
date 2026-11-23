@@ -654,19 +654,78 @@ public final class PlayHud extends FrameLayout {
             }
         }
 
-        private TextPaint btp;
         private final Path tailPath = new Path();
         private final RectF bubbleRect = new RectF();
+        private final java.util.WeakHashMap<PlaySession.Bubble, BubbleLayout> bubbleLayouts = new java.util.WeakHashMap<>();
+        private int emojiLoadState = -1;
+
+        private static final class BubbleLayout {
+            final StaticLayout layout;
+            final float lineWidth;
+            final int maxWidth;
+            final float textSize;
+            final String fontFamily;
+            final int fontWeight;
+            final boolean italic;
+            final int emojiLoadState;
+
+            BubbleLayout(StaticLayout layout, float lineWidth, int maxWidth, float textSize, String fontFamily, int fontWeight, boolean italic, int emojiLoadState) {
+                this.layout = layout;
+                this.lineWidth = lineWidth;
+                this.maxWidth = maxWidth;
+                this.textSize = textSize;
+                this.fontFamily = fontFamily;
+                this.fontWeight = fontWeight;
+                this.italic = italic;
+                this.emojiLoadState = emojiLoadState;
+            }
+
+            boolean matches(PlaySession.Bubble bubble, int width, int state) {
+                return maxWidth == width && textSize == bubble.textSize && fontWeight == bubble.fontWeight && italic == bubble.italic && emojiLoadState == state && java.util.Objects.equals(fontFamily, bubble.fontFamily);
+            }
+        }
+
+        private final BubbleLayout bubbleLayout(PlaySession.Bubble bubble, int maxWidth, float density, int loadState) {
+            BubbleLayout cached = bubbleLayouts.get(bubble);
+            if (cached != null && cached.matches(bubble, maxWidth, loadState)) return cached;
+            TextPaint paint = new TextPaint(1);
+            paint.setTextSize(bubble.textSize * density);
+            try {
+                paint.setTypeface(Fonts.INSTANCE.forFamily(bubble.fontFamily, bubble.fontWeight, bubble.italic).getTypeface());
+            } catch (Throwable ignored) {
+                paint.setTypeface(this.this$0.regular);
+            }
+            CharSequence text = bubble.getText();
+            if (loadState == EmojiCompat.LOAD_STATE_SUCCEEDED) {
+                try {
+                    text = EmojiCompat.get().process(text);
+                } catch (IllegalStateException ignored) {
+                }
+            }
+            StaticLayout layout = StaticLayout.Builder.obtain(text, 0, text.length(), paint, maxWidth).setAlignment(Layout.Alignment.ALIGN_CENTER).setIncludePad(false).build();
+            float lineWidth = 0.0f;
+            for (int i = 0; i < layout.getLineCount(); i++) lineWidth = Math.max(lineWidth, layout.getLineWidth(i));
+            BubbleLayout result = new BubbleLayout(layout, lineWidth, maxWidth, bubble.textSize, bubble.fontFamily, bubble.fontWeight, bubble.italic, loadState);
+            bubbleLayouts.put(bubble, result);
+            return result;
+        }
 
         private final void drawBubbles(Canvas c, PlaySession p) {
             if (p.getBubbles().isEmpty()) {
                 return;
             }
-            if (this.btp == null) {
-                this.btp = new TextPaint(1);
-            }
             float d = this.this$0.d;
             int maxW = this.this$0.dp(220.0f);
+            int loadState;
+            try {
+                loadState = EmojiCompat.get().getLoadState();
+            } catch (IllegalStateException ignored) {
+                loadState = EmojiCompat.LOAD_STATE_DEFAULT;
+            }
+            if (loadState != this.emojiLoadState) {
+                this.emojiLoadState = loadState;
+                this.bubbleLayouts.clear();
+            }
             LinkedHashMap<Instance, ArrayList<PlaySession.Bubble>> byPart = new LinkedHashMap<>();
             for (PlaySession.Bubble b : p.getBubbles()) {
                 ArrayList<PlaySession.Bubble> l = byPart.get(b.getPart());
@@ -689,23 +748,10 @@ public final class PlayHud extends FrameLayout {
                     float fade = b.getAge() > 11.0f ? 12.0f - b.getAge() : 1.0f;
                     fade = Math.max(0.0f, Math.min(1.0f, fade)) * (idx == 0 ? 1.0f : 0.8f);
                     if (fade <= 0.0f || b.getText().isEmpty()) continue;
-                    this.btp.setTextSize(b.textSize * d);
-                    try {
-                        this.btp.setTypeface(Fonts.INSTANCE.forFamily(b.fontFamily, b.fontWeight, b.italic).getTypeface());
-                    } catch (Throwable ignored) {
-                        this.btp.setTypeface(this.this$0.regular);
-                    }
-                    this.btp.setColor((((int) (fade * 255.0f)) << 24) | (b.textColor & 0xFFFFFF));
-                    CharSequence bubbleText = b.getText();
-                    try {
-                        bubbleText = EmojiCompat.get().process(bubbleText);
-                    } catch (IllegalStateException ignored) {
-                    }
-                    StaticLayout layout = StaticLayout.Builder.obtain(bubbleText, 0, bubbleText.length(), this.btp, maxW).setAlignment(Layout.Alignment.ALIGN_CENTER).setIncludePad(false).build();
-                    float lineW = 0.0f;
-                    for (int li = 0; li < layout.getLineCount(); li++) {
-                        lineW = Math.max(lineW, layout.getLineWidth(li));
-                    }
+                    BubbleLayout cached = bubbleLayout(b, maxW, d, loadState);
+                    StaticLayout layout = cached.layout;
+                    layout.getPaint().setColor((((int) (fade * 255.0f)) << 24) | (b.textColor & 0xFFFFFF));
+                    float lineW = cached.lineWidth;
                     int padX = this.this$0.dp(10.0f);
                     int padY = this.this$0.dp(6.0f);
                     float w = lineW + padX * 2;

@@ -287,6 +287,7 @@ public final class MainActivity extends AppCompatActivity implements MainActions
     @Override // androidx.fragment.app.FragmentActivity, androidx.activity.ComponentActivity, androidx.core.app.ComponentActivity, android.app.Activity
     protected void onCreate(Bundle savedInstanceState) {
         Studio studio;
+        setTheme(com.goydevv.studrblx.R.style.Theme_Mobilestudiotest);
         super.onCreate(savedInstanceState);
         try {
             String[] prevCrash = StudioApp.checkPreviousCrashReport(this);
@@ -436,7 +437,8 @@ public final class MainActivity extends AppCompatActivity implements MainActions
         if (savedInstanceState == null) {
             handleIntent(getIntent());
         }
-        if (firstLaunch) {
+        boolean noPlace = app == null || !app.getPlaceOpened();
+        if (firstLaunch || noPlace) {
             Intent intent = getIntent();
             if (!Intrinsics.areEqual(intent != null ? intent.getAction() : null, "android.intent.action.VIEW")) {
                 showStart();

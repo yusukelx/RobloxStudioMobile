@@ -77,6 +77,7 @@ public final class Icons {
         fetchStudioIcons(ctx.getApplicationContext(), false);
         RobloxTextures.init(ctx.getApplicationContext());
         com.goydevv.studrblx.audio.CharacterSounds.init(ctx.getApplicationContext());
+        com.goydevv.studrblx.lua.RobloxDefaults.preload();
     }
 
     public final boolean getStudioIconsInstalled() {

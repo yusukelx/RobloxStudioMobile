@@ -138,6 +138,7 @@ public final class AccountUi {
                 cancelled.element = true;
             }
         });
+        if (!alive(act)) return;
         dlg.show();
         net.execute(new Runnable() { // from class: com.goydevv.studrblx.ui.AccountUi$$ExternalSyntheticLambda86
             @Override // java.lang.Runnable
@@ -163,12 +164,31 @@ public final class AccountUi {
         });
     }
 
+    static boolean alive(Activity a) {
+        return a != null && !a.isFinishing() && !a.isDestroyed();
+    }
+
+    static void safeDismiss(android.content.DialogInterface d) {
+        if (d == null) return;
+        try {
+            if (d instanceof Dialog) {
+                Dialog dd = (Dialog) d;
+                if (!dd.isShowing()) return;
+                android.view.Window w = dd.getWindow();
+                if (w == null || !w.getDecorView().isAttachedToWindow()) return;
+            }
+            d.dismiss();
+        } catch (Throwable ignored) {
+        }
+    }
+
     static final void background$lambda$7$lambda$6(Activity $act, AlertDialog $dlg, Ref.BooleanRef $cancelled, Object $result, Function1 $done, Function1 $failed) {
-        if ($act.isFinishing()) {
+        if (!alive($act)) {
+            safeDismiss($dlg);
             return;
         }
         try {
-            $dlg.dismiss();
+            safeDismiss($dlg);
         } catch (Exception e) {
         }
         if ($cancelled.element) {
@@ -481,7 +501,7 @@ public final class AccountUi {
     static final Unit show$lambda$26(Ref.ObjectRef $dlg, final Activity $act, final Accounts.Account $a) {
         AlertDialog alertDialog = (AlertDialog) $dlg.element;
         if (alertDialog != null) {
-            alertDialog.dismiss();
+            safeDismiss(alertDialog);
         }
         Accounts.INSTANCE.switchTo($act, $a);
         Avatar.INSTANCE.refresh($act);
@@ -528,7 +548,7 @@ public final class AccountUi {
     static final Unit show$lambda$28(Ref.ObjectRef $dlg, Activity $act) {
         AlertDialog alertDialog = (AlertDialog) $dlg.element;
         if (alertDialog != null) {
-            alertDialog.dismiss();
+            safeDismiss(alertDialog);
         }
         Accounts.INSTANCE.useGuest($act);
         Avatar.INSTANCE.refresh($act);
@@ -555,7 +575,7 @@ public final class AccountUi {
         Intrinsics.checkNotNullParameter(it, "it");
         AlertDialog alertDialog = (AlertDialog) $dlg.element;
         if (alertDialog != null) {
-            alertDialog.dismiss();
+            safeDismiss(alertDialog);
         }
         $fn.invoke();
         return Unit.INSTANCE;
@@ -776,7 +796,7 @@ public final class AccountUi {
 
     static final Unit signIn$lambda$57(Dialog $dlg, View it) {
         Intrinsics.checkNotNullParameter(it, "it");
-        $dlg.dismiss();
+        safeDismiss($dlg);
         return Unit.INSTANCE;
     }
 
@@ -792,7 +812,28 @@ public final class AccountUi {
         RobloxCloud.INSTANCE.resetSession();
         cm.removeAllCookies(null);
         cm.flush();
-        dlg.dismiss();
+        safeDismiss(dlg);
+        if (!alive($act)) {
+            final Context appCtx = $act.getApplicationContext();
+            net.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        RobloxCloud.User u = RobloxCloud.INSTANCE.currentUser(appCtx);
+                        OutputLog.INSTANCE.info("Signed in to Roblox as @" + u.getName());
+                        main.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Avatar.INSTANCE.refresh(appCtx);
+                            }
+                        });
+                    } catch (Throwable t) {
+                        OutputLog.INSTANCE.warn("Sign-in finished but the account could not be loaded: " + t.getMessage());
+                    }
+                }
+            });
+            return;
+        }
         INSTANCE.background($act, "Signing in…", new Function0() { // from class: com.goydevv.studrblx.ui.AccountUi$$ExternalSyntheticLambda56
             @Override // kotlin.jvm.functions.Function0
             public final Object invoke() {
@@ -1352,7 +1393,7 @@ public final class AccountUi {
         } else {
             alertDialog = (AlertDialog) $dlg.element;
         }
-        alertDialog.dismiss();
+        safeDismiss(alertDialog);
         ((Row) $rows.get(pos)).getOnClick().invoke();
     }
 

@@ -174,7 +174,52 @@ public final class SpecialProps {
         return s;
     }
 
+    private static Object derived(Instance inst, String k) {
+        if (inst.isA("BasePart")) {
+            switch (k) {
+                case "CenterOfMass":
+                case "AssemblyCenterOfMass":
+                    return PartData.INSTANCE.cframe(inst).getPosition();
+                case "ExtentsSize":
+                    return PartData.INSTANCE.size(inst);
+                case "ExtentsCFrame":
+                    return PartData.INSTANCE.cframe(inst);
+                default:
+                    return NONE;
+            }
+        }
+        if ("WorldPivot".equals(k) && inst.isA("PVInstance") && !inst.isA("BasePart")) {
+            Object stored = stored(inst, "WorldPivot");
+            if (stored instanceof CFrame) return stored;
+            Object pp = inst.get("PrimaryPart");
+            if (pp instanceof Instance && ((Instance) pp).isA("BasePart")) return PartData.INSTANCE.cframe((Instance) pp);
+            for (Instance d : Instance.descendants$default(inst, null, 1, null)) {
+                if (d.isA("BasePart")) return PartData.INSTANCE.cframe(d);
+            }
+            return CFrame.INSTANCE.getIDENTITY();
+        }
+        if ("Active".equals(k) && (inst.isA("JointInstance") || "WeldConstraint".equals(inst.getClassName()))) {
+            Object en = stored(inst, "Enabled");
+            boolean enabled = !(en instanceof Boolean) || (Boolean) en;
+            Object p0 = inst.get("Part0");
+            Object p1 = inst.get("Part1");
+            return Boolean.valueOf(enabled && p0 instanceof Instance && p1 instanceof Instance && ((Instance) p0).getParent() != null && ((Instance) p1).getParent() != null);
+        }
+        if ("BodyColors".equals(inst.getClassName()) && k.endsWith("Color") && !k.endsWith("Color3")) {
+            Object c = stored(inst, k + "3");
+            if (c instanceof Color3) return new com.goydevv.studrblx.model.BrickColorV(com.goydevv.studrblx.model.BrickColors.INSTANCE.closest((Color3) c));
+            return NONE;
+        }
+        return NONE;
+    }
+
+    public static boolean derivedHas(Instance inst, String k) {
+        return derived(inst, k) != NONE;
+    }
+
     public static Object get(LuaRuntime rt, Instance inst, String k) {
+        Object dv = derived(inst, k);
+        if (dv != NONE) return dv;
         String cls = inst.getClassName();
         Studio studio = rt.getStudio();
         PlaySession play = rt.getPlay();

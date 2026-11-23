@@ -23,10 +23,11 @@
 
         <activity
             android:name=".MainActivity"
-            android:configChanges="density|smallestScreenSize|screenSize|uiMode|screenLayout|orientation|navigation|keyboardHidden|keyboard"
+            android:configChanges="density|smallestScreenSize|screenSize|uiMode|screenLayout|orientation|navigation|keyboardHidden|keyboard|fontScale|fontWeightAdjustment|locale|layoutDirection|colorMode|touchscreen|mcc|mnc"
             android:exported="true"
             android:launchMode="singleTask"
             android:screenOrientation="sensorLandscape"
+            android:theme="@style/Theme.Mobilestudiotest.Launch"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

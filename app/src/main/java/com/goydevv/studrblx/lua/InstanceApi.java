@@ -58,6 +58,7 @@ public final class InstanceApi {
     private final LuaTable connMeta;
     private final Set<String> events;
     private final HashMap<String, LuaValue> methodCache;
+    private static final java.util.Set<String> DEFAULT_SERVICES = new java.util.HashSet<>(java.util.Arrays.asList("Workspace", "Players", "Lighting", "MaterialService", "ReplicatedFirst", "ReplicatedStorage", "ServerScriptService", "ServerStorage", "StarterGui", "StarterPack", "StarterPlayer", "Teams", "SoundService", "TextChatService", "Chat", "LocalizationService", "TestService"));
     private static final java.util.Set<String> STRICT_CONTAINERS = new java.util.HashSet<>(java.util.Arrays.asList("ReplicatedStorage", "ReplicatedFirst", "ServerStorage", "ServerScriptService", "StarterPack", "Folder", "Configuration"));
     private final LuaRuntime rt;
     private final Set<String> sequenceClasses;
@@ -670,6 +671,17 @@ public final class InstanceApi {
         if (inst == null || k == null) return null;
         Object special = SpecialProps.get(this.rt, inst, k);
         if (special != SpecialProps.NONE) return special;
+        Object got = getStored(inst, k);
+        if (got != null) return got;
+        String rk = PropNames.INSTANCE.resolve(inst, k);
+        if (rk != null && !rk.equals(k)) {
+            got = inst.get(rk);
+            if (got != null) return got;
+        }
+        return RobloxDefaults.get(inst.getClassName(), k);
+    }
+
+    private Object getStored(Instance inst, String k) {
         switch (k) {
             case "Name": return inst.getName();
             case "ClassName": return inst.getClassName();
@@ -775,6 +787,9 @@ public final class InstanceApi {
             return true;
         }
         if (SpecialProps.has(inst, name)) {
+            return true;
+        }
+        if (RobloxDefaults.has(inst.getClassName(), name)) {
             return true;
         }
         Set<String> set = this.SPECIAL_PROPS.get(inst.getClassName());
@@ -1309,6 +1324,14 @@ public final class InstanceApi {
         }
         if (hasK(inst, str)) {
             Object v = getK(inst, str);
+            if (v == null) {
+                Instance namedChild = Instance.findFirstChild$default(inst, str, false, 2, null);
+                if (namedChild != null) return this.rt.wrap(namedChild);
+                if ("DataModel".equals(inst.getClassName()) && ("Workspace".equals(str) || "workspace".equals(str))) {
+                    Instance ws = Instance.findFirstChild$default(inst, "Workspace", false, 2, null);
+                    if (ws != null) return this.rt.wrap(ws);
+                }
+            }
             return this.rt.toLua(v, inst, PropNames.INSTANCE.resolve(inst, str));
         }
         HashMap<String, LuaValue> map2 = this.rt.getCallbacks().get(inst);
@@ -1321,6 +1344,10 @@ public final class InstanceApi {
         Instance instanceFindFirstChild$default2 = Instance.findFirstChild$default(inst, str, false, 2, null);
         if (instanceFindFirstChild$default2 != null) {
             return this.rt.wrap(instanceFindFirstChild$default2);
+        }
+        if (inst instanceof com.goydevv.studrblx.model.DataModel && DEFAULT_SERVICES.contains(str)) {
+            Instance svc = ((com.goydevv.studrblx.model.DataModel) inst).getService(str);
+            if (svc != null) return this.rt.wrap(svc);
         }
         String strContentAlias = contentAlias(inst, str);
         if (strContentAlias != null) {

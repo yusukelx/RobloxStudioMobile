@@ -76,6 +76,7 @@ public final class Icons {
         }
         fetchStudioIcons(ctx.getApplicationContext(), false);
         RobloxTextures.init(ctx.getApplicationContext());
+        com.goydevv.studrblx.audio.CharacterSounds.init(ctx.getApplicationContext());
     }
 
     public final boolean getStudioIconsInstalled() {
@@ -222,19 +223,13 @@ public final class Icons {
         Intrinsics.checkNotNullParameter(cls, "cls");
         String c = cls;
         int guard = 0;
-        while (c != null) {
-            int guard2 = guard + 1;
-            if (guard < 12) {
-                Bitmap bitmapLoad = load("instance", c);
-                if (bitmapLoad != null) {
-                    return bitmapLoad;
-                }
-                if (!Intrinsics.areEqual(c, "Instance")) {
-                    c = ClassDb.INSTANCE.superclass(c);
-                    guard = guard2;
-                }
+        while (c != null && guard++ < 12) {
+            Bitmap bitmapLoad = load("instance", c);
+            if (bitmapLoad != null) {
+                return bitmapLoad;
             }
-            return null;
+            if (c.equals("Instance")) break;
+            c = ClassDb.INSTANCE.superclass(c);
         }
         return null;
     }

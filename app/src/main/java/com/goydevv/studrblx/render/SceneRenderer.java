@@ -2554,7 +2554,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         Matrix.multiplyMM(this.lightVP, 0, this.lightProj, 0, this.lightView, 0);
         long change = Instance.changeCount;
         this.shadowAge++;
-        if (this.shadowValid && this.studio.isPlaying() && ((this.fps < 35.0f && this.frames % 3 != 0) || (this.frames % 2 == 1))) {
+        if (this.shadowValid && this.studio.isPlaying() && this.fps < 40.0f && this.frames % 2 == 1) {
             ArraysKt.copyInto(this.lastLightVP, this.lightVP, 0, 0, this.lastLightVP.length);
             return;
         }
@@ -2622,20 +2622,18 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                             Iterator<Instance> it3 = it2;
                             GLES20.glUniformMatrix4fv(this.dModel, 1, false, this.model, 0);
                             Iterable subs = g.getSubs();
-                            if (subs != null) {
-                                Iterable iterable = subs;
-                                Collection arrayList = new ArrayList(CollectionsKt.collectionSizeOrDefault(iterable, 10));
-                                Iterator it4 = iterable.iterator();
-                                while (it4.hasNext()) {
-                                    arrayList.add((Mesh) ((Pair) it4.next()).getFirst());
-                                }
-                                meshes = (List) arrayList;
-                            } else {
-                                meshes = CollectionsKt.listOf(g.getMesh());
-                            }
                             Mesh current3 = current2;
-                            for (Iterator it5 = meshes.iterator(); it5.hasNext(); it5 = it5) {
-                                Mesh m = (Mesh) it5.next();
+                            if (subs != null) {
+                                for (Object so : subs) {
+                                    Mesh m = (Mesh) ((Pair) so).getFirst();
+                                    if (m != current3) {
+                                        this.bind(m, this.daPos, -1);
+                                        current3 = m;
+                                    }
+                                    if (m.getCount() <= 3600) { GLES20.glDrawArrays(m.getMode(), 0, m.getCount()); }
+                                }
+                            } else {
+                                Mesh m = g.getMesh();
                                 if (m != current3) {
                                     this.bind(m, this.daPos, -1);
                                     current3 = m;

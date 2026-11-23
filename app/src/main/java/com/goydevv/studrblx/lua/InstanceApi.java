@@ -668,6 +668,8 @@ public final class InstanceApi {
     */
     public final java.lang.Object getK(com.goydevv.studrblx.model.Instance inst, java.lang.String k) {
         if (inst == null || k == null) return null;
+        Object special = SpecialProps.get(this.rt, inst, k);
+        if (special != SpecialProps.NONE) return special;
         switch (k) {
             case "Name": return inst.getName();
             case "ClassName": return inst.getClassName();
@@ -772,6 +774,9 @@ public final class InstanceApi {
         if (inst.isA("Constraint") && this.CONSTRAINT_READOUTS.contains(name)) {
             return true;
         }
+        if (SpecialProps.has(inst, name)) {
+            return true;
+        }
         Set<String> set = this.SPECIAL_PROPS.get(inst.getClassName());
         if (set != null && set.contains(name)) {
             z = true;
@@ -865,6 +870,25 @@ public final class InstanceApi {
                 return;
             case "Health":
                 inst.set(inst.getProps().containsKey("Health") ? "Health" : "Health_XML", v, true);
+                return;
+            case "Orientation":
+            case "Rotation":
+                if (inst.isA("BasePart") && v instanceof Vector3) {
+                    Vector3 o = (Vector3) v;
+                    float r = (float) (Math.PI / 180.0d);
+                    CFrame cur = PartData.INSTANCE.cframe(inst);
+                    CFrame rot = "Orientation".equals(k) ? CFrame.INSTANCE.fromOrientation(o.getX() * r, o.getY() * r, o.getZ() * r) : CFrame.INSTANCE.angles(o.getX() * r, o.getY() * r, o.getZ() * r);
+                    inst.set("CFrame", rot.withPosition(cur.getPosition()), true);
+                    return;
+                }
+                inst.set(k, v, true);
+                return;
+            case "AssemblyLinearVelocity":
+            case "Velocity":
+                if (inst.isA("BasePart") && v instanceof Vector3 && this.rt.getPlay() != null) {
+                    this.rt.getPlay().setVelocity(inst, (Vector3) v);
+                }
+                inst.set(k, v, true);
                 return;
             case "Playing":
                 if ("Sound".equals(inst.getClassName()) && Boolean.TRUE.equals(v)) {
@@ -1287,12 +1311,12 @@ public final class InstanceApi {
             Object v = getK(inst, str);
             return this.rt.toLua(v, inst, PropNames.INSTANCE.resolve(inst, str));
         }
-        if (this.events.contains(str)) {
-            return (this.universalEvents.contains(str) || (instanceFindFirstChild$default = Instance.findFirstChild$default(inst, str, false, 2, null)) == null) ? signal(inst, str) : this.rt.wrap(instanceFindFirstChild$default);
-        }
         HashMap<String, LuaValue> map2 = this.rt.getCallbacks().get(inst);
         if (map2 != null && (luaValue = map2.get(str)) != null) {
             return luaValue;
+        }
+        if (this.events.contains(str)) {
+            return (this.universalEvents.contains(str) || (instanceFindFirstChild$default = Instance.findFirstChild$default(inst, str, false, 2, null)) == null) ? signal(inst, str) : this.rt.wrap(instanceFindFirstChild$default);
         }
         Instance instanceFindFirstChild$default2 = Instance.findFirstChild$default(inst, str, false, 2, null);
         if (instanceFindFirstChild$default2 != null) {

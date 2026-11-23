@@ -18,6 +18,7 @@ import com.goydevv.studrblx.model.DataModel;
 import com.goydevv.studrblx.model.DataTypesKt;
 import com.goydevv.studrblx.model.EnumValue;
 import com.goydevv.studrblx.model.Enums;
+import com.goydevv.studrblx.model.FontValue;
 import com.goydevv.studrblx.model.Instance;
 import com.goydevv.studrblx.model.InstanceFactory;
 import com.goydevv.studrblx.model.NumberRange;
@@ -438,6 +439,15 @@ public final class PlaySession implements TreeListener {
         public final void setAge(float f) {
             this.age = f;
         }
+
+        public int bgColor = 0xFAFAFA;
+        public float bgTransparency = 0.1f;
+        public int textColor = 0x393B3D;
+        public float textSize = 16.0f;
+        public boolean tail = true;
+        public String fontFamily = "BuilderSans";
+        public int fontWeight = 500;
+        public boolean italic = false;
     }
 
     public final ArrayList<ChatLine> getChatLines() {
@@ -707,6 +717,7 @@ public final class PlaySession implements TreeListener {
     }
 
     public final void stop() {
+        com.goydevv.studrblx.audio.CharacterSounds.stopRun();
         this.dm.getListeners().remove(this);
         this.rt.shutdown();
         OutputLog.INSTANCE.info("Playtest stopped");
@@ -820,10 +831,7 @@ public final class PlaySession implements TreeListener {
             folder.setArchivable(false);
             folder.attachRaw(tcs);
         }
-        ensureChatConfig(tcs, "ChatWindowConfiguration", new Object[]{"Enabled", true, "BackgroundColor3", new Color3(0.0980f, 0.1059f, 0.1137f), "BackgroundTransparency", 0.3f, "TextColor3", new Color3(1.0f, 1.0f, 1.0f), "TextSize", 14.0f, "TextStrokeColor3", new Color3(0.0f, 0.0f, 0.0f), "TextStrokeTransparency", 0.5f, "HeightScale", 1.0f, "WidthScale", 1.0f, "HorizontalAlignment", new EnumValue(0), "VerticalAlignment", new EnumValue(0)});
-        ensureChatConfig(tcs, "ChatInputBarConfiguration", new Object[]{"Enabled", true, "BackgroundColor3", new Color3(0.0980f, 0.1059f, 0.1137f), "BackgroundTransparency", 0.2f, "TextColor3", new Color3(1.0f, 1.0f, 1.0f), "PlaceholderColor3", new Color3(0.698f, 0.698f, 0.698f), "TextSize", 14.0f, "TextStrokeColor3", new Color3(0.0f, 0.0f, 0.0f), "TextStrokeTransparency", 0.5f, "AutocompleteEnabled", true});
-        ensureChatConfig(tcs, "BubbleChatConfiguration", new Object[]{"Enabled", true, "BackgroundColor3", new Color3(0.9804f, 0.9804f, 0.9804f), "BackgroundTransparency", 0.1f, "TextColor3", new Color3(0.2235f, 0.2314f, 0.2392f), "TextSize", 16.0f, "MaxDistance", 100.0f, "BubbleDuration", 15.0f, "BubblesSpacing", 6.0f, "VerticalStudsOffset", 0.0f});
-        ensureChatConfig(tcs, "ChannelTabsConfiguration", new Object[]{"Enabled", false, "BackgroundColor3", new Color3(0.0980f, 0.1059f, 0.1137f), "BackgroundTransparency", 0.0f, "TextColor3", new Color3(0.6863f, 0.6863f, 0.6863f), "SelectedTabTextColor3", new Color3(1.0f, 1.0f, 1.0f), "TextSize", 18.0f});
+        ensureChatConfigs(tcs);
         for (String n : CollectionsKt.listOf(new String[]{"RBXGeneral", "RBXSystem"})) {
             if (Instance.findFirstChild$default(folder, n, false, 2, null) == null) {
                 Instance instanceCreate = InstanceFactory.INSTANCE.create("TextChannel");
@@ -832,6 +840,13 @@ public final class PlaySession implements TreeListener {
                 instanceCreate.attachRaw(folder);
             }
         }
+    }
+
+    public static void ensureChatConfigs(Instance tcs) {
+        ensureChatConfig(tcs, "ChatWindowConfiguration", new Object[]{"Enabled", true, "BackgroundColor3", new Color3(0.0980f, 0.1059f, 0.1137f), "BackgroundTransparency", 0.3f, "TextColor3", new Color3(1.0f, 1.0f, 1.0f), "TextSize", 14.0f, "TextStrokeColor3", new Color3(0.0f, 0.0f, 0.0f), "TextStrokeTransparency", 0.5f, "HeightScale", 1.0f, "WidthScale", 1.0f, "HorizontalAlignment", new EnumValue(0), "VerticalAlignment", new EnumValue(0)});
+        ensureChatConfig(tcs, "ChatInputBarConfiguration", new Object[]{"Enabled", true, "BackgroundColor3", new Color3(0.0980f, 0.1059f, 0.1137f), "BackgroundTransparency", 0.2f, "TextColor3", new Color3(1.0f, 1.0f, 1.0f), "PlaceholderColor3", new Color3(0.698f, 0.698f, 0.698f), "TextSize", 14.0f, "TextStrokeColor3", new Color3(0.0f, 0.0f, 0.0f), "TextStrokeTransparency", 0.5f, "AutocompleteEnabled", true});
+        ensureChatConfig(tcs, "BubbleChatConfiguration", new Object[]{"Enabled", true, "BackgroundColor3", new Color3(0.9804f, 0.9804f, 0.9804f), "BackgroundTransparency", 0.1f, "TextColor3", new Color3(0.2235f, 0.2314f, 0.2392f), "TextSize", 16.0f, "MaxDistance", 100.0f, "BubbleDuration", 15.0f, "BubblesSpacing", 6.0f, "VerticalStudsOffset", 0.0f, "TailVisible", true, "AdorneeName", "Head", "MaxBubbles", 3.0f, "LocalPlayerStudsOffset", new Vector3(0.0f, 0.0f, 0.0f), "FontFace", new FontValue("rbxasset://fonts/families/BuilderSans.json", 500, 0, ""), "TextStrokeTransparency", 1.0f});
+        ensureChatConfig(tcs, "ChannelTabsConfiguration", new Object[]{"Enabled", false, "BackgroundColor3", new Color3(0.0980f, 0.1059f, 0.1137f), "BackgroundTransparency", 0.0f, "TextColor3", new Color3(0.6863f, 0.6863f, 0.6863f), "SelectedTabTextColor3", new Color3(1.0f, 1.0f, 1.0f), "TextSize", 18.0f});
     }
 
     private static void ensureChatConfig(Instance tcs, String cls, Object[] defaults) {
@@ -2412,6 +2427,67 @@ public final class PlaySession implements TreeListener {
 
     /* JADX WARN: Code duplicated, block: B:19:0x004c  */
 
+    private Boolean customSounds;
+
+    private final boolean customCharSounds() {
+        if (this.customSounds != null) return this.customSounds.booleanValue();
+        try {
+            Instance sp = this.dm.findService("StarterPlayer");
+            Instance sps = sp == null ? null : Instance.findFirstChild$default(sp, "StarterPlayerScripts", false, 2, null);
+            this.customSounds = Boolean.valueOf(sps != null && Instance.findFirstChild$default(sps, "RbxCharacterSounds", false, 2, null) != null);
+            return this.customSounds.booleanValue();
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    private final void playDefaultCharSound(String name, String file, float volume) {
+        try {
+            Instance hrp = this.hrp;
+            if (hrp == null || customCharSounds()) {
+                return;
+            }
+            Instance snd = Instance.findFirstChild$default(hrp, name, false, 2, null);
+            if (snd == null) {
+                snd = com.goydevv.studrblx.model.InstanceFactory.INSTANCE.create("Sound");
+                snd.setName(name);
+                snd.set("SoundId", "rbxasset://sounds/" + file, false);
+                snd.set("Volume", Double.valueOf(volume), false);
+                snd.set("RollOffMaxDistance", Double.valueOf(150.0d), false);
+                snd.setArchivable(false);
+                Instance.setParent$default(snd, hrp, 0, 2, null);
+            }
+            if (!"Sound".equals(snd.getClassName())) return;
+            Object id = snd.get("SoundId");
+            String sid = id == null ? "" : id.toString();
+            if (sid.startsWith("rbxasset://sounds/")) {
+                Object vo = snd.get("Volume");
+                float v = vo instanceof Number ? ((Number) vo).floatValue() : volume;
+                Object so = snd.get("PlaybackSpeed");
+                float r = so instanceof Number ? ((Number) so).floatValue() : 1.0f;
+                com.goydevv.studrblx.audio.CharacterSounds.play(sid.substring("rbxasset://sounds/".length()), v, r);
+                return;
+            }
+            Object seqObj = snd.getAttributes().get("__playSeq");
+            int seq = (seqObj instanceof Integer) ? ((Integer) seqObj).intValue() + 1 : 1;
+            snd.getAttributes().put("__playSeq", Integer.valueOf(seq));
+            snd.set("Playing", Boolean.TRUE, false);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private final void updateRunSound() {
+        try {
+            if (this.hrp == null || this.dead || customCharSounds()) {
+                com.goydevv.studrblx.audio.CharacterSounds.running(false, 0.0f, 0.0f);
+                return;
+            }
+            float hs = (float) Math.sqrt((this.vel.getX() * this.vel.getX()) + (this.vel.getZ() * this.vel.getZ()));
+            com.goydevv.studrblx.audio.CharacterSounds.running(this.grounded && !this.climbing && hs > 0.5f, hs, 0.65f);
+        } catch (Throwable ignored) {
+        }
+    }
+
     private final void playCharSound(String name, String soundId, float volume) {
         try {
             Instance hrp = this.hrp;
@@ -3777,7 +3853,7 @@ public final class PlaySession implements TreeListener {
             this.jumpAnimTime = 0.3f;
             if (this.animator != null) {
                 this.animator.triggerJump();
-                playCharSound("Jumping", "rbxassetid://9114222045", 0.55f);
+                playDefaultCharSound("Jumping", com.goydevv.studrblx.audio.CharacterSounds.JUMP, 0.65f);
             }
             this.jumpRequested = this.jumpHeld;
             setState("Jumping", 3);
@@ -3820,7 +3896,7 @@ public final class PlaySession implements TreeListener {
                 this.jumpAnimTime = 0.3f;
                 if (this.animator != null) {
                     this.animator.triggerJump();
-                playCharSound("Jumping", "rbxassetid://9114222045", 0.55f);
+                playDefaultCharSound("Jumping", com.goydevv.studrblx.audio.CharacterSounds.JUMP, 0.65f);
                 }
                 this.emote = null;
                 setState("Jumping", 3);
@@ -3867,6 +3943,7 @@ public final class PlaySession implements TreeListener {
             this.grounded = false;
         }
         if (!z4 && this.grounded) {
+            playDefaultCharSound("Landing", com.goydevv.studrblx.audio.CharacterSounds.LAND, 0.65f);
             setState("Landed", 7);
             setState("Running", 8);
         } else if (z4 && !this.grounded && !this.climbing && this.vel.getY() <= 0.0f) {
@@ -3877,6 +3954,7 @@ public final class PlaySession implements TreeListener {
             luaRuntime5.fire(instance, "FreeFalling", TRUE4);
         }
         trySit(dt);
+        updateRunSound();
         Object obj4 = this.dm.getWorkspace().get("FallenPartsDestroyHeight");
         Number number4 = obj4 instanceof Number ? (Number) obj4 : null;
         if (this.pos.getY() < (number4 != null ? number4.floatValue() : -500.0f)) {
@@ -6699,6 +6777,15 @@ public final class PlaySession implements TreeListener {
         Instance camInst2;
         boolean z;
         Object obj = this.dm.getWorkspace().get("CurrentCamera");
+        if (!(obj instanceof Instance)) {
+            for (Instance wc : this.dm.getWorkspace().getChildren()) {
+                if ("Camera".equals(wc.getClassName())) {
+                    obj = wc;
+                    this.dm.getWorkspace().set("CurrentCamera", wc, false);
+                    break;
+                }
+            }
+        }
         Instance camInst3 = obj instanceof Instance ? (Instance) obj : null;
         FlyCamera cam = this.studio.getCamera();
         Object obj2 = camInst3 != null ? camInst3.get("CameraType") : null;
@@ -7377,6 +7464,10 @@ public final class PlaySession implements TreeListener {
         this.bubbles.add(new Bubble(part, StringsKt.take(text, ItemTouchHelper.Callback.DEFAULT_DRAG_ANIMATION_DURATION), 0.0f, 4, null));
     }
 
+    public final Bubble lastBubble() {
+        return this.bubbles.isEmpty() ? null : this.bubbles.get(this.bubbles.size() - 1);
+    }
+
     private final void stepBubbles(float dt) {
         if (this.bubbles.isEmpty()) {
             return;
@@ -7576,6 +7667,10 @@ public final class PlaySession implements TreeListener {
     public final Vector3 moveDirection(Instance h) {
         Intrinsics.checkNotNullParameter(h, "h");
         return h == this.humanoid ? this.lastDir : Vector3.INSTANCE.getZERO();
+    }
+
+    public final Instance seatOf(Instance h) {
+        return h == this.humanoid ? this.seated : null;
     }
 
     public final boolean isGrounded(Instance h) {

@@ -73,13 +73,45 @@ public final class TextChat {
         return src;
     }
 
+    private static int rgb(Object c, int def) {
+        if (!(c instanceof com.goydevv.studrblx.model.Color3)) return def;
+        com.goydevv.studrblx.model.Color3 k = (com.goydevv.studrblx.model.Color3) c;
+        int r = Math.max(0, Math.min(255, Math.round(k.getR() * 255.0f)));
+        int g = Math.max(0, Math.min(255, Math.round(k.getG() * 255.0f)));
+        int bl = Math.max(0, Math.min(255, Math.round(k.getB() * 255.0f)));
+        return (r << 16) | (g << 8) | bl;
+    }
+
+    static void styleBubble(PlaySession.Bubble b, Instance src) {
+        if (src == null) return;
+        b.bgColor = rgb(src.get("BackgroundColor3"), b.bgColor);
+        b.textColor = rgb(src.get("TextColor3"), b.textColor);
+        Object t = src.get("BackgroundTransparency");
+        if (t instanceof Number) b.bgTransparency = Math.max(0.0f, Math.min(1.0f, ((Number) t).floatValue()));
+        Object ts = src.get("TextSize");
+        if (ts instanceof Number && ((Number) ts).floatValue() > 0) b.textSize = Math.min(100.0f, ((Number) ts).floatValue());
+        Object tv = src.get("TailVisible");
+        if (tv instanceof Boolean) b.tail = (Boolean) tv;
+        Object ff = src.get("FontFace");
+        if (ff instanceof com.goydevv.studrblx.model.FontValue) {
+            com.goydevv.studrblx.model.FontValue f = (com.goydevv.studrblx.model.FontValue) ff;
+            b.fontFamily = f.getFamily();
+            b.fontWeight = f.getWeight();
+            b.italic = f.getStyle() == 1;
+        }
+    }
+
     private static LuaValue callback(LuaRuntime rt, Instance owner, String key, LuaValue arg) {
+        return callback(rt, owner, key, arg, LuaValue.NIL);
+    }
+
+    private static LuaValue callback(LuaRuntime rt, Instance owner, String key, LuaValue arg, LuaValue arg2) {
         if (owner == null) return LuaValue.NIL;
         HashMap<String, LuaValue> cbs = rt.getCallbacks().get(owner);
         LuaValue fn = cbs == null ? null : cbs.get(key);
         if (fn == null || !fn.isfunction()) return LuaValue.NIL;
         try {
-            return fn.call(arg);
+            return arg2.isnil() ? fn.call(arg) : fn.call(arg, arg2);
         } catch (LuaError e) {
             com.goydevv.studrblx.core.OutputLog.INSTANCE.error(e.getMessage() == null ? "TextChatService callback error" : e.getMessage());
             return LuaValue.NIL;
@@ -153,9 +185,15 @@ public final class TextChat {
             if (head != null && flag(config(dm, "BubbleChatConfiguration"), "Enabled", true)) {
                 LuaTable bubbleMsg = new LuaTable();
                 bubbleMsg.set("Text", msg.get("Text"));
-                LuaValue bp = callback(rt, tcs, "OnBubbleAdded", msg);
+                LuaValue bp = callback(rt, tcs, "OnBubbleAdded", msg, rt.wrap(head));
                 applyProps(bubbleMsg, bp, new String[]{"Text"});
                 ps.bubble(head, com.goydevv.studrblx.ui.RichText.INSTANCE.parse(bubbleMsg.get("Text").optjstring("")).toString());
+                PlaySession.Bubble b = ps.lastBubble();
+                if (b != null) {
+                    styleBubble(b, config(dm, "BubbleChatConfiguration"));
+                    Object o = bp.isuserdata() ? bp.touserdata() : null;
+                    if (o instanceof Instance) styleBubble(b, (Instance) o);
+                }
             }
         }
         return msg;

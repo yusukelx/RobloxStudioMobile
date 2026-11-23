@@ -361,18 +361,13 @@ public final class Autocomplete {
     }
 
     private final List<String> classChain(String cls) {
-        ArrayList out = new ArrayList();
+        ArrayList<String> out = new ArrayList<>();
         String c = cls;
         int guard = 0;
-        while (c != null) {
-            int guard2 = guard + 1;
-            if (guard < 15) {
-                out.add(c);
-                if (!Intrinsics.areEqual(c, "Instance")) {
-                    c = ClassDb.INSTANCE.superclass(c);
-                    guard = guard2;
-                }
-            }
+        while (c != null && guard++ < 32 && !out.contains(c)) {
+            out.add(c);
+            if (c.equals("Instance")) break;
+            c = ClassDb.INSTANCE.superclass(c);
         }
         if (!out.contains("Instance")) {
             out.add("Instance");

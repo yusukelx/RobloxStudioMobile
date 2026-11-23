@@ -642,114 +642,77 @@ public final class PlayHud extends FrameLayout {
             }
         }
 
-        /* JADX WARN: Multi-variable type inference failed */
-        /* JADX WARN: Type inference failed for: r13v10 */
-        /* JADX WARN: Type inference failed for: r13v3 */
-        /* JADX WARN: Type inference failed for: r13v4, types: [boolean, int] */
-        /* JADX WARN: Type inference failed for: r26v0 */
-        /* JADX WARN: Type inference failed for: r26v1 */
-        /* JADX WARN: Type inference failed for: r26v2 */
-        /* JADX WARN: Type inference failed for: r26v3 */
-        /* JADX WARN: Type inference failed for: r26v4 */
-        /* JADX WARN: Type inference failed for: r26v5 */
-        /* JADX WARN: Type inference failed for: r26v6 */
-        /* JADX WARN: Type inference failed for: r26v7 */
-        /* JADX WARN: Type inference failed for: r3v10, types: [android.text.StaticLayout$Builder] */
+        private TextPaint btp;
+        private final Path tailPath = new Path();
+        private final RectF bubbleRect = new RectF();
+
         private final void drawBubbles(Canvas c, PlaySession p) {
-            ArrayList arrayList;
             if (p.getBubbles().isEmpty()) {
                 return;
             }
-            int iDp = this.this$0.dp(220.0f);
-            ArrayList<PlaySession.Bubble> bubbles = p.getBubbles();
-            LinkedHashMap linkedHashMap = new LinkedHashMap();
-            for (Object obj : bubbles) {
-                Instance part = ((PlaySession.Bubble) obj).getPart();
-                Object obj2 = linkedHashMap.get(part);
-                if (obj2 == null) {
-                    arrayList = new ArrayList();
-                    linkedHashMap.put(part, arrayList);
-                } else {
-                    arrayList = (ArrayList) obj2;
-                }
-                ((List) arrayList).add(obj);
+            if (this.btp == null) {
+                this.btp = new TextPaint(1);
             }
-            Iterator it = linkedHashMap.entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry entry = (Map.Entry) it.next();
-                Instance instance = (Instance) entry.getKey();
-                List list = (List) entry.getValue();
-                float f = 2.0f;
-                float f2 = 0.0f;
-                Vector3 vector3Plus = PartData.INSTANCE.cframe(instance).getPosition().plus(new Vector3(0.0f, (PartData.INSTANCE.size(instance).getY() / 2.0f) + 1.6f, 0.0f));
-                float[] fArrProject = this.this$0.studio.getView().project(vector3Plus);
-                if (fArrProject != null) {
-                    int i = 1065353216;
-                    if (fArrProject[2] <= 1.0f) {
-                        float fDistTo = this.this$0.studio.getView().distTo(vector3Plus);
-                        if (fDistTo <= 100.0f) {
-                            float fDp = fArrProject[1];
-                            int r13 = 0;
-                            int i2 = 0;
-                            for (Object _bObj : CollectionsKt.asReversed(list)) {
-                                PlaySession.Bubble bubble = (PlaySession.Bubble) _bObj;
-                                int i3 = i2;
-                                i2++;
-                                float f3 = f;
-                                float fCoerceIn = RangesKt.coerceIn(bubble.getAge() > 11.0f ? 12.0f - bubble.getAge() : i, f2, (float) i) * (i3 == 0 ? i : 1061997773);
-                                int i4 = i;
-                                this.tp.setColor((((int) (fCoerceIn * 255.0f)) << 24) | 3750717);
-                                Iterator it2 = it;
-                                StaticLayout staticLayoutBuild = StaticLayout.Builder.obtain(bubble.getText(), r13, bubble.getText().length(), this.tp, iDp).setAlignment(Layout.Alignment.ALIGN_CENTER).setIncludePad(r13 != 0).build();
-                                Intrinsics.checkNotNullExpressionValue(staticLayoutBuild, "build(...)");
-                                float fMax = 0.0f;
-                                int i5 = 0;
-                                int r26 = r13;
-                                int lineCount = staticLayoutBuild.getLineCount();
-                                while (i5 < lineCount) {
-                                    fMax = Math.max(fMax, staticLayoutBuild.getLineWidth(i5));
-                                    i5++;
-                                }
-                                List list2 = list;
-                                int iDp2 = this.this$0.dp(10.0f);
-                                int iDp3 = this.this$0.dp(6.0f);
-                                float f4 = (iDp2 * 2) + fMax;
-                                LinkedHashMap linkedHashMap2 = linkedHashMap;
-                                Instance instance2 = instance;
-                                Vector3 vector3 = vector3Plus;
-                                float[] fArr = fArrProject;
-                                float f5 = fDistTo;
-                                RectF rectF = new RectF(fArrProject[r26] - (f4 / f3), (fDp - (staticLayoutBuild.getHeight() + (iDp3 * f3))) - this.this$0.dp(10.0f), fArrProject[r26] + (f4 / f3), fDp - this.this$0.dp(10.0f));
-                                this.fill.setColor((((int) ((0.92f * fCoerceIn) * 255.0f)) << 24) | ViewCompat.MEASURED_SIZE_MASK);
-                                c.drawRoundRect(rectF, this.this$0.dp(12.0f), this.this$0.dp(12.0f), this.fill);
-                                if (i3 == 0) {
-                                    Path path = new Path();
-                                    PlayHud playHud = this.this$0;
-                                    path.moveTo(fArr[r26] - playHud.dp(7.0f), rectF.bottom - i4);
-                                    path.lineTo(fArr[r26], rectF.bottom + playHud.dp(8.0f));
-                                    path.lineTo(fArr[r26] + playHud.dp(7.0f), rectF.bottom - i4);
-                                    path.close();
-                                    c.drawPath(path, this.fill);
-                                }
-                                c.save();
-                                c.translate(fArr[r26] - (iDp / f3), rectF.top + iDp3);
-                                staticLayoutBuild.draw(c);
-                                c.restore();
-                                fDp = rectF.top - this.this$0.dp(f3);
-                                f = f3;
-                                i = i4;
-                                it = it2;
-                                r13 = r26;
-                                list = list2;
-                                fDistTo = f5;
-                                instance = instance2;
-                                linkedHashMap = linkedHashMap2;
-                                vector3Plus = vector3;
-                                fArrProject = fArr;
-                                f2 = 0.0f;
-                            }
+            float d = this.this$0.d;
+            int maxW = this.this$0.dp(220.0f);
+            LinkedHashMap<Instance, ArrayList<PlaySession.Bubble>> byPart = new LinkedHashMap<>();
+            for (PlaySession.Bubble b : p.getBubbles()) {
+                ArrayList<PlaySession.Bubble> l = byPart.get(b.getPart());
+                if (l == null) {
+                    l = new ArrayList<>();
+                    byPart.put(b.getPart(), l);
+                }
+                l.add(b);
+            }
+            for (Map.Entry<Instance, ArrayList<PlaySession.Bubble>> e : byPart.entrySet()) {
+                Instance part = e.getKey();
+                Vector3 anchor = PartData.INSTANCE.cframe(part).getPosition().plus(new Vector3(0.0f, (PartData.INSTANCE.size(part).getY() / 2.0f) + 1.6f, 0.0f));
+                float[] proj = this.this$0.studio.getView().project(anchor);
+                if (proj == null || proj[2] > 1.0f) continue;
+                if (this.this$0.studio.getView().distTo(anchor) > 100.0f) continue;
+                float bottom = proj[1];
+                List<PlaySession.Bubble> list = CollectionsKt.asReversed(e.getValue());
+                for (int idx = 0; idx < list.size(); idx++) {
+                    PlaySession.Bubble b = list.get(idx);
+                    float fade = b.getAge() > 11.0f ? 12.0f - b.getAge() : 1.0f;
+                    fade = Math.max(0.0f, Math.min(1.0f, fade)) * (idx == 0 ? 1.0f : 0.8f);
+                    if (fade <= 0.0f || b.getText().isEmpty()) continue;
+                    this.btp.setTextSize(b.textSize * d);
+                    try {
+                        this.btp.setTypeface(Fonts.INSTANCE.forFamily(b.fontFamily, b.fontWeight, b.italic).getTypeface());
+                    } catch (Throwable ignored) {
+                        this.btp.setTypeface(this.this$0.regular);
+                    }
+                    this.btp.setColor((((int) (fade * 255.0f)) << 24) | (b.textColor & 0xFFFFFF));
+                    StaticLayout layout = StaticLayout.Builder.obtain(b.getText(), 0, b.getText().length(), this.btp, maxW).setAlignment(Layout.Alignment.ALIGN_CENTER).setIncludePad(false).build();
+                    float lineW = 0.0f;
+                    for (int li = 0; li < layout.getLineCount(); li++) {
+                        lineW = Math.max(lineW, layout.getLineWidth(li));
+                    }
+                    int padX = this.this$0.dp(10.0f);
+                    int padY = this.this$0.dp(6.0f);
+                    float w = lineW + padX * 2;
+                    float gap = idx == 0 ? this.this$0.dp(10.0f) : this.this$0.dp(4.0f);
+                    this.bubbleRect.set(proj[0] - w / 2.0f, bottom - gap - layout.getHeight() - padY * 2, proj[0] + w / 2.0f, bottom - gap);
+                    float bgA = (1.0f - b.bgTransparency) * fade;
+                    if (bgA > 0.0f) {
+                        this.fill.setColor((((int) (bgA * 255.0f)) << 24) | (b.bgColor & 0xFFFFFF));
+                        float r = this.this$0.dp(12.0f);
+                        c.drawRoundRect(this.bubbleRect, r, r, this.fill);
+                        if (idx == 0 && b.tail) {
+                            this.tailPath.reset();
+                            this.tailPath.moveTo(proj[0] - this.this$0.dp(7.0f), this.bubbleRect.bottom - 1.0f);
+                            this.tailPath.lineTo(proj[0], this.bubbleRect.bottom + this.this$0.dp(8.0f));
+                            this.tailPath.lineTo(proj[0] + this.this$0.dp(7.0f), this.bubbleRect.bottom - 1.0f);
+                            this.tailPath.close();
+                            c.drawPath(this.tailPath, this.fill);
                         }
                     }
+                    c.save();
+                    c.translate(proj[0] - maxW / 2.0f, this.bubbleRect.top + padY);
+                    layout.draw(c);
+                    c.restore();
+                    bottom = this.bubbleRect.top;
                 }
             }
         }

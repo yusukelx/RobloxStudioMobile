@@ -341,6 +341,7 @@ public final class ApiExtras {
                     if (old != null) rt.disconnect(old);
                     return LuaValue.NONE;
                 }
+                if ("IsStudio".equals(name)) return LuaValue.TRUE;
                 if ("IsEdit".equals(name)) return LuaValue.valueOf(rt.getPlay() == null);
                 return null;
             }
@@ -786,7 +787,7 @@ public final class ApiExtras {
         return null;
     }
 
-    private static Vector2 measure(String text, float size, float maxW) {
+    static Vector2 measure(String text, float size, float maxW) {
         try {
             android.graphics.Paint paint = new android.graphics.Paint();
             paint.setTextSize(size);

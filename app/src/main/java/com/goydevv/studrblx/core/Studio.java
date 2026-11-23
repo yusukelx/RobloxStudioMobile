@@ -416,6 +416,7 @@ public final class Studio {
 
     public final void setCloud(CloudPlace cloudPlace) {
         this.cloud = cloudPlace;
+        com.goydevv.studrblx.lua.SpecialProps.prefetch(cloudPlace);
     }
 
     public final HashMap<String, HashMap<String, String>> getDataStores() {
@@ -1176,6 +1177,7 @@ public final class Studio {
         Intrinsics.checkNotNullParameter(dm, "dm");
         Intrinsics.checkNotNullParameter(name, "name");
         this.cloud = cloud;
+        com.goydevv.studrblx.lua.SpecialProps.prefetch(cloud);
         if (isPlaying()) {
             stopPlay();
         }

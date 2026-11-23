@@ -122,6 +122,10 @@ public final class LuaRuntime {
         this.studio = studio;
         this.dm = dm;
         this.isPlay = isPlay;
+        try {
+            com.goydevv.studrblx.engine.PlaySession.ensureChatConfigs(dm.getService("TextChatService"));
+        } catch (Throwable ignored) {
+        }
         this.globals = LuauHost.javaGlobals();
         this.instanceMeta = new LuaTable();
         this.api = new InstanceApi(this);

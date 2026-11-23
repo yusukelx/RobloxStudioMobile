@@ -1043,6 +1043,19 @@ public final class AudioEngine {
         $v.setMp(null);
     }
 
+    public final double[] soundState(Instance s) {
+        Voice v;
+        try {
+            synchronized (voices) {
+                v = voices.get(s);
+            }
+        } catch (Throwable t) {
+            return null;
+        }
+        if (v == null) return null;
+        return new double[]{v.getPosition(), v.getLength(), (v.getPrepared() && !v.getFailed()) ? 1.0d : 0.0d, (v.getWantPlay() && !v.getEnded()) ? 1.0d : 0.0d};
+    }
+
     public final void stopAll() {
         for (Voice v : voices.values()) {
             Intrinsics.checkNotNull(v);

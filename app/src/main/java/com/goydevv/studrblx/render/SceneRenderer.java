@@ -1361,7 +1361,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
     private final void setupShadowMap() {
         int[] max = new int[1];
         GLES20.glGetIntegerv(3379, max, 0);
-        this.shadowSize = 768;
+        this.shadowSize = 512;
         int[] ids = new int[1];
         GLES20.glGenTextures(1, ids, 0);
         this.shadowTex = ids[0];

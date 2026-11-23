@@ -954,6 +954,7 @@ public final class MainActivity extends AppCompatActivity implements MainActions
         if (level < 40) return;
         ImageLoader.INSTANCE.trimMemory(level);
         AssetFetcher.INSTANCE.trimMemory(level);
+        RobloxTextures.trimMemory(level);
     }
 
     @Override
@@ -961,6 +962,7 @@ public final class MainActivity extends AppCompatActivity implements MainActions
         super.onLowMemory();
         ImageLoader.INSTANCE.trimMemory(80);
         AssetFetcher.INSTANCE.trimMemory(80);
+        RobloxTextures.trimMemory(80);
     }
 
     static final Unit webAsker$lambda$33(final MainActivity this$0, final String host, final String who, final Function1 answer) {

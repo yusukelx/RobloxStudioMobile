@@ -166,6 +166,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
     private final float[] lastLightVP;
     private Object lastModel;
     private long lastNs;
+    private long lastRenderNs;
     private long lastShadowChange;
     private int lastShadowMeshEpoch;
     private final Map<Integer, Region> leftLimbRegions;
@@ -406,7 +407,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         this.exposure = 1.0f;
         this.shadowsOn = true;
         this.dayFactor = 1.0f;
-        this.shadowSize = 768;
+        this.shadowSize = 512;
         this.lightVP = new float[16];
         this.lightView = new float[16];
         this.lightProj = new float[16];
@@ -1356,6 +1357,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         GLES20.glEnable(2884);
         GLES20.glCullFace(1029);
         this.lastNs = System.nanoTime();
+        this.lastRenderNs = 0L;
     }
 
     private final void setupShadowMap() {
@@ -1532,6 +1534,8 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
     public void onDrawFrame(GL10 gl) {
         try {
             long now = System.nanoTime();
+            if (this.lastRenderNs != 0L && now - this.lastRenderNs < 16666667L) return;
+            this.lastRenderNs = now;
             float dt = RangesKt.coerceIn((now - this.lastNs) / 1.0E9f, 0.0f, 0.1f);
             this.lastNs = now;
             this.time += dt;

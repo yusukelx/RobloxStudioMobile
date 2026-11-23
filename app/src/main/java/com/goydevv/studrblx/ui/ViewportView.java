@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.opengl.GLSurfaceView;
 import android.view.MotionEvent;
@@ -840,15 +841,20 @@ public final class ViewportView extends FrameLayout {
             String str;
             Canvas canvas2 = canvas;
             drawThumbstick(canvas);
-            float jr = this.d * (Math.min(getWidth(), getHeight()) / this.d < 500.0f ? 35.0f : 60.0f);
-            float jx = (getWidth() - (this.d * 24.0f)) - jr;
-            float jy = (getHeight() - (this.d * 24.0f)) - jr;
-            android.graphics.Bitmap jumpTex = RobloxTextures.get(this.jumpDown ? "ui/Input/JumpButtonPressed@2x.png" : "ui/Input/JumpButtonRegular@2x.png");
+            boolean smallScreen = Math.min(getWidth(), getHeight()) / this.d <= 500.0f;
+            float jumpSize = this.d * (smallScreen ? 70.0f : 120.0f);
+            float jr = jumpSize * 0.5f;
+            float jumpLeft = getWidth() - (jumpSize * 1.5f - this.d * 10.0f);
+            float jumpTop = getHeight() - (smallScreen ? jumpSize + this.d * 20.0f : jumpSize * 1.75f);
+            float jx = jumpLeft + jr;
+            float jy = jumpTop + jr;
+            android.graphics.Bitmap jumpTex = RobloxTextures.get("ui/Input/TouchControlsSheetV2.png");
             if (jumpTex != null) {
                 this.paint.setStyle(Paint.Style.FILL);
                 this.paint.setColor(0xFFFFFFFF);
                 this.paint.setFilterBitmap(true);
-                canvas2.drawBitmap(jumpTex, null, new RectF(jx - jr, jy - jr, jx + jr, jy + jr), this.paint);
+                Rect source = this.jumpDown ? new Rect(146, 146, 290, 290) : new Rect(1, 146, 145, 290);
+                canvas2.drawBitmap(jumpTex, source, new RectF(jx - jr, jy - jr, jx + jr, jy + jr), this.paint);
             } else {
                 this.paint.setStyle(Paint.Style.FILL);
                 this.paint.setColor(this.jumpDown ? 0x88FFFFFF : 0x48000000);

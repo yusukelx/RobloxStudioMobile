@@ -53,7 +53,7 @@ public final class ImageLoader {
 
     /* JADX WARN: Type inference failed for: r1v0, types: [com.goydevv.studrblx.net.ImageLoader$mem$1] */
     static {
-        final int iMin = (int) Math.min(41943040L, Runtime.getRuntime().maxMemory() / 10);
+        final int iMin = (int) Math.min(16777216L, Runtime.getRuntime().maxMemory() / 20);
         mem = new LruCache<String, Bitmap>(iMin) { // from class: com.goydevv.studrblx.net.ImageLoader$mem$1
             /* JADX INFO: Access modifiers changed from: protected */
             @Override // android.util.LruCache
@@ -65,7 +65,7 @@ public final class ImageLoader {
         };
         pending = ConcurrentHashMap.newKeySet();
         failed = new ConcurrentHashMap<>();
-        pool = Executors.newFixedThreadPool(4);
+        pool = Executors.newFixedThreadPool(2);
         idQueue = ConcurrentHashMap.newKeySet();
         listeners = new CopyOnWriteArrayList<>();
         idRx = CollectionsKt.listOf(new Regex[]{new Regex("rbxassetid://(\\d+)", RegexOption.IGNORE_CASE), new Regex("[?&]id=(\\d+)", RegexOption.IGNORE_CASE), new Regex("^\\s*(\\d+)\\s*$"), new Regex("rbxthumb://.*id=(\\d+)", RegexOption.IGNORE_CASE)});
@@ -185,6 +185,15 @@ public final class ImageLoader {
     public final Bitmap peekKey(String key) {
         Intrinsics.checkNotNullParameter(key, "key");
         return mem.get(key);
+    }
+
+    public final void trimMemory(int level) {
+        mem.trimToSize(level >= 80 ? 0 : mem.maxSize() / 2);
+        if (level >= 80) {
+            idMemo.clear();
+            keyMemo.clear();
+            failed.clear();
+        }
     }
 
     private final File diskFile(String key) {

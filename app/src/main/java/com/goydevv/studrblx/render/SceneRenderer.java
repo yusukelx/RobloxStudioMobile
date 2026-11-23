@@ -1356,7 +1356,6 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         GLES20.glEnable(2884);
         GLES20.glCullFace(1029);
         this.lastNs = System.nanoTime();
-        this.lastRenderNs = 0L;
     }
 
     private final void setupShadowMap() {

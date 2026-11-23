@@ -166,7 +166,6 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
     private final float[] lastLightVP;
     private Object lastModel;
     private long lastNs;
-    private long lastRenderNs;
     private long lastShadowChange;
     private int lastShadowMeshEpoch;
     private final Map<Integer, Region> leftLimbRegions;

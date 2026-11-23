@@ -426,6 +426,11 @@ public final class LuaRuntime {
         this.tweens.clear();
         this.timers.clear();
         this.moduleLoading.clear();
+        this.moduleCache.clear();
+        this.callbacks.clear();
+        this.wrappers.clear();
+        this.mainQueue.clear();
+        this.extraEnvForModules = Collections.emptyMap();
         this.luau.close();
     }
 

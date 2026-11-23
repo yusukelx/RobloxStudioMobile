@@ -181,6 +181,7 @@ public final class ViewportView extends FrameLayout {
 
     public final void onPause() {
         this.gl.onPause();
+        this.renderer.trimMemory();
     }
 
     /* JADX INFO: compiled from: ViewportView.kt */

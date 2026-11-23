@@ -99,6 +99,12 @@ public final class PlaySession implements TreeListener {
     private final ArrayList<ChatLine> chatLines;
     private volatile int chatVersion;
     private boolean climbing;
+    private float bodyPitch;
+    private float bodyRoll;
+    private float prevRenderFacing;
+    private Vector3 groundNormal = new Vector3(0.0f, 1.0f, 0.0f);
+    private Vector3 wallBumpNormal = new Vector3(0.0f, 0.0f, 0.0f);
+    private float wallBumpDecay;
     private boolean controlsEnabled;
     private boolean coreBackpack;
     private boolean coreChat;
@@ -3241,7 +3247,40 @@ public final class PlaySession implements TreeListener {
         animate(dt);
         Instance seat = this.seated;
         if (seat == null) {
-            scf = CFrame.INSTANCE.at(this.pos).times(CFrame.INSTANCE.ry(this.renderFacing));
+            float fwdX = (float) (-Math.sin(this.renderFacing));
+            float fwdZ = (float) (-Math.cos(this.renderFacing));
+            float rgtX = (float) Math.cos(this.renderFacing);
+            float rgtZ = (float) (-Math.sin(this.renderFacing));
+            float tPitch = 0.0f;
+            float tRoll = 0.0f;
+            if (this.climbing) {
+                tPitch = 0.08f;
+            } else {
+                float fwdSpd = (this.vel.getX() * fwdX) + (this.vel.getZ() * fwdZ);
+                float sideSpd = (this.vel.getX() * rgtX) + (this.vel.getZ() * rgtZ);
+                tPitch += RangesKt.coerceIn(-fwdSpd * 0.0055f, -0.11f, 0.08f);
+                float yawDelta = wrapAngle(this.renderFacing - this.prevRenderFacing);
+                float turnRate = dt > 1.0E-4f ? RangesKt.coerceIn(yawDelta / dt, -8.0f, 8.0f) : 0.0f;
+                tRoll += RangesKt.coerceIn((sideSpd * 0.004f) - (turnRate * 0.018f), -0.13f, 0.13f);
+                if (this.grounded && this.groundNormal != null) {
+                    float gnFwd = (this.groundNormal.getX() * fwdX) + (this.groundNormal.getZ() * fwdZ);
+                    float gnRgt = (this.groundNormal.getX() * rgtX) + (this.groundNormal.getZ() * rgtZ);
+                    tPitch += RangesKt.coerceIn(gnFwd * 0.28f, -0.18f, 0.18f);
+                    tRoll += RangesKt.coerceIn(-gnRgt * 0.28f, -0.18f, 0.18f);
+                }
+                if (this.wallBumpDecay > 0.001f) {
+                    float wbFwd = (this.wallBumpNormal.getX() * fwdX) + (this.wallBumpNormal.getZ() * fwdZ);
+                    float wbRgt = (this.wallBumpNormal.getX() * rgtX) + (this.wallBumpNormal.getZ() * rgtZ);
+                    tPitch += RangesKt.coerceIn(wbFwd * 0.16f * this.wallBumpDecay, -0.15f, 0.15f);
+                    tRoll += RangesKt.coerceIn(-wbRgt * 0.16f * this.wallBumpDecay, -0.15f, 0.15f);
+                    this.wallBumpDecay = Math.max(0.0f, this.wallBumpDecay - (dt * 6.5f));
+                }
+            }
+            this.prevRenderFacing = this.renderFacing;
+            float tiltBlend = RangesKt.coerceIn(1.0f - ((float) Math.exp((-12.0f) * dt)), 0.0f, 1.0f);
+            this.bodyPitch += (tPitch - this.bodyPitch) * tiltBlend;
+            this.bodyRoll += (tRoll - this.bodyRoll) * tiltBlend;
+            scf = CFrame.INSTANCE.at(this.pos).times(CFrame.INSTANCE.ry(this.renderFacing)).times(CFrame.INSTANCE.rx(this.bodyPitch)).times(CFrame.INSTANCE.rz(this.bodyRoll));
         } else {
             CFrame scf2 = PartData.INSTANCE.cframe(seat);
             Vector3 ss = PartData.INSTANCE.size(seat);
@@ -3584,8 +3623,35 @@ public final class PlaySession implements TreeListener {
         } else {
             z2 = false;
         }
-        if (z2 || alreadyClimbing) {
-            return true;
+        if (z2) {
+            boolean trussUpper = false;
+            for (int ti = 1; ti < hits.size(); ti++) {
+                RayHit th = hits.get(ti);
+                if (th != null && th.getPart() != null && Intrinsics.areEqual(th.getPart().getClassName(), "TrussPart")) {
+                    trussUpper = true;
+                    break;
+                }
+            }
+            return trussUpper || !alreadyClimbing;
+        }
+        if (alreadyClimbing) {
+            boolean hasThinRung = false;
+            boolean hasGap = false;
+            boolean sawHit = false;
+            boolean sawMissAfterHit = false;
+            for (int ri = 1; ri < hits.size(); ri++) {
+                RayHit rh = hits.get(ri);
+                if (rh != null && rh.getPart() != null) {
+                    if (sawMissAfterHit) hasGap = true;
+                    sawHit = true;
+                    if (PartData.INSTANCE.size(rh.getPart()).getY() <= 1.35f) {
+                        hasThinRung = true;
+                    }
+                } else if (sawHit) {
+                    sawMissAfterHit = true;
+                }
+            }
+            return hasThinRung || hasGap;
         }
         int firstHit = 0;
         Iterator<RayHit> it3 = hits.iterator();
@@ -3942,7 +4008,7 @@ public final class PlaySession implements TreeListener {
             }
         }
         float magnitude2 = this.vel.getMagnitude() * dt;
-        int iCoerceIn = RangesKt.coerceIn((int) Math.ceil(magnitude2 / 0.6f), 1, 12);
+        int iCoerceIn = RangesKt.coerceIn((int) Math.ceil(magnitude2 / 0.45f), 1, 14);
         float f5 = dt / iCoerceIn;
         float impactVelocity = this.vel.getY();
         boolean z4 = this.grounded;
@@ -3998,7 +4064,7 @@ public final class PlaySession implements TreeListener {
         Pair<Vector3, Float> pairContact;
         boolean z = false;
         int i2 = 0;
-        while (i2 < 3) {
+        while (i2 < 4) {
             Pair<Vector3, Vector3> pairCharBox = charBox();
             Vector3 vector3Component1 = pairCharBox.component1();
             Vector3 vector3Component2 = pairCharBox.component2();
@@ -4031,6 +4097,7 @@ public final class PlaySession implements TreeListener {
                                 this.vel = new Vector3(this.vel.getX(), 0.0f, this.vel.getZ());
                             }
                             this.grounded = true;
+                            this.groundNormal = vector3Div;
                             if (this.humanoid != null) {
                                 Instance.set$default(this.humanoid, "FloorMaterial", new EnumValue(PartData.INSTANCE.material(next)), false, 4, null);
                             }
@@ -4045,11 +4112,38 @@ public final class PlaySession implements TreeListener {
                                 float y = fFloatValue - (vector3Component1.getY() - vector3Component2.getY());
                                 if (y <= 0.0f || y > 2.1f || this.vel.getY() > 1.0f || this.climbing) {
                                     this.pos = this.pos.plus(new Vector3(vector3Component3.getX(), 0.0f, vector3Component3.getZ()));
+                                    float hLen = (float) Math.hypot(vector3Div.getX(), vector3Div.getZ());
+                                    if (hLen > 0.01f) {
+                                        float nx = vector3Div.getX() / hLen;
+                                        float nz = vector3Div.getZ() / hLen;
+                                        float vn = (this.vel.getX() * nx) + (this.vel.getZ() * nz);
+                                        if (vn < 0.0f) {
+                                            this.vel = new Vector3(this.vel.getX() - (nx * vn), this.vel.getY(), this.vel.getZ() - (nz * vn));
+                                        }
+                                        this.wallBumpNormal = new Vector3(nx, 0.0f, nz);
+                                        this.wallBumpDecay = 1.0f;
+                                    }
                                     if (this.grounded && y > 2.1f && y <= 4.8f && !this.climbing && this.humanoid != null && !Intrinsics.areEqual(this.humanoid.get("AutoJumpEnabled"), Boolean.FALSE)) {
                                         this.jumpRequested = true;
                                     }
                                 } else {
-                                    this.pos = new Vector3(this.pos.getX(), this.pos.getY() + y + 0.01f, this.pos.getZ());
+                                    Vector3 stepC = new Vector3(vector3Component1.getX(), vector3Component1.getY() + y + 0.02f, vector3Component1.getZ());
+                                    boolean blockedAbove = false;
+                                    ConvexShape stepShape = Geometry.INSTANCE.aabbShape(stepC, vector3Component2);
+                                    for (Instance ov : query(stepC.minus(vector3Component2), stepC.plus(vector3Component2), true)) {
+                                        if (ov != next && !isCharacterPart(ov) && !Intrinsics.areEqual(ov.get("CanCollide"), Boolean.FALSE)) {
+                                            Pair<Vector3, Float> oc = Geometry.INSTANCE.contact(stepShape, stepC.minus(vector3Component2), stepC.plus(vector3Component2), ov);
+                                            if (oc != null && oc.getFirst().getMagnitude() > 0.08f) {
+                                                blockedAbove = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if (!blockedAbove) {
+                                        this.pos = new Vector3(this.pos.getX(), this.pos.getY() + y + 0.01f, this.pos.getZ());
+                                    } else {
+                                        this.pos = this.pos.plus(new Vector3(vector3Component3.getX(), 0.0f, vector3Component3.getZ()));
+                                    }
                                 }
                             }
                         }

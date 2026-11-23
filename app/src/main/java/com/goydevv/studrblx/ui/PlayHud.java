@@ -1444,7 +1444,6 @@ public final class PlayHud extends FrameLayout {
 
     static final Unit settingsPage$lambda$73(PlayHud this$0, float it) {
         Settings.INSTANCE.setGraphicsQuality(RangesKt.coerceIn((int) it, 1, 10));
-        this$0.studio.setShadowsEnabled(Settings.INSTANCE.getGraphicsQuality() >= 4);
         return Unit.INSTANCE;
     }
 

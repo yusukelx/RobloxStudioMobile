@@ -1322,6 +1322,11 @@ public final class InstanceApi {
             Intrinsics.checkNotNullExpressionValue(luaStringValueOf3, "valueOf(...)");
             return luaStringValueOf3;
         }
+        if (inst.isA("TextChatService") && (Intrinsics.areEqual(str, "OnIncomingMessage") || Intrinsics.areEqual(str, "OnBubbleAdded") || Intrinsics.areEqual(str, "OnChatWindowAdded"))) {
+            HashMap<String, LuaValue> callbacks = this.rt.getCallbacks().get(inst);
+            LuaValue callback = callbacks == null ? null : callbacks.get(str);
+            if (callback != null) return callback;
+        }
         if (hasK(inst, str)) {
             Object v = getK(inst, str);
             if (v == null) {

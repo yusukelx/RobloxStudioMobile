@@ -118,14 +118,13 @@ public final class TextChat {
         }
     }
 
-    private static void applyProps(LuaTable msg, LuaValue props, String[] keys) {
+    private static void applyProps(LuaRuntime rt, LuaTable msg, LuaValue props, String[] keys) {
         if (!props.isuserdata()) return;
         Object o = props.touserdata();
         if (!(o instanceof Instance)) return;
         Instance p = (Instance) o;
         for (String k : keys) {
-            Object v = p.get(k);
-            if (v instanceof String) msg.set(k, (String) v);
+            if (p.getProps().containsKey(k)) msg.set(k, rt.toLua(p.get(k), p, k));
         }
     }
 
@@ -166,14 +165,14 @@ public final class TextChat {
         msg.set("TextSource", player == null ? LuaValue.NIL : textSource(rt, player));
         msg.set("TextChannel", channel == null ? LuaValue.NIL : rt.wrap(channel));
         String[] keys = {"PrefixText", "Text", "Translation"};
-        applyProps(msg, callback(rt, tcs, "OnIncomingMessage", msg), keys);
-        applyProps(msg, callback(rt, channel, "OnIncomingMessage", msg), keys);
+        applyProps(rt, msg, callback(rt, tcs, "OnIncomingMessage", msg), keys);
+        applyProps(rt, msg, callback(rt, channel, "OnIncomingMessage", msg), keys);
         if (channel != null) rt.fire(channel, "MessageReceived", msg);
         rt.fire(tcs, "MessageReceived", msg);
         LuaTable shown = new LuaTable();
         shown.set("PrefixText", msg.get("PrefixText"));
         shown.set("Text", msg.get("Text"));
-        applyProps(shown, callback(rt, tcs, "OnChatWindowAdded", msg), new String[]{"PrefixText", "Text"});
+        applyProps(rt, shown, callback(rt, tcs, "OnChatWindowAdded", msg), new String[]{"PrefixText", "Text"});
         String prefix = shown.get("PrefixText").optjstring("");
         String body = shown.get("Text").optjstring("");
         if (player == null) {
@@ -186,7 +185,7 @@ public final class TextChat {
                 LuaTable bubbleMsg = new LuaTable();
                 bubbleMsg.set("Text", msg.get("Text"));
                 LuaValue bp = callback(rt, tcs, "OnBubbleAdded", msg, rt.wrap(head));
-                applyProps(bubbleMsg, bp, new String[]{"Text"});
+                applyProps(rt, bubbleMsg, bp, new String[]{"Text"});
                 ps.bubble(head, com.goydevv.studrblx.ui.RichText.INSTANCE.parse(bubbleMsg.get("Text").optjstring("")).toString());
                 PlaySession.Bubble b = ps.lastBubble();
                 if (b != null) {

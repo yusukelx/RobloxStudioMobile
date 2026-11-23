@@ -23,6 +23,7 @@ import android.text.TextUtils;
 import android.view.View;
 import android.widget.EditText;
 import androidx.core.view.ViewCompat;
+import androidx.emoji2.text.EmojiCompat;
 import com.goydevv.studrblx.core.PluginWidget;
 import com.goydevv.studrblx.core.Settings;
 import com.goydevv.studrblx.core.Studio;

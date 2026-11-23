@@ -427,14 +427,6 @@ public final class StaticBatches {
     /* JADX WARN: Code duplicated, block: B:95:0x023c  */
     public final void update(List<? extends Instance> parts, int listVersion, int frame, Vector3 cam, Frustum fr, float detail, Vector3 shadowAt, float shadowR, long budgetNs, long maxBytes) {
         String str;
-        String str2;
-        String str3;
-        Chunk c;
-        boolean need = false;
-        Chunk c2;
-        float dx;
-        float dz;
-        boolean z;
         Intrinsics.checkNotNullParameter(parts, "parts");
         Intrinsics.checkNotNullParameter(cam, "cam");
         Frustum fr2 = fr;
@@ -511,79 +503,26 @@ public final class StaticBatches {
                 }
                 float d = c4.distTo(cam);
                 c4.setDist(d);
-                if (d <= tierRange(c4.getMaxTier(), detail)) {
-                    c = c4;
-                    str3 = str5;
-                    str2 = str4;
-                    need = fr2.box(c4.getX0(), c4.getY0(), c.getZ0(), c.getX1(), c.getY1(), c.getZ1());
-                    if (!need && shadowAt != null) {
-                        dx = Math.max(Math.max(c.getX0() - shadowAt.getX(), 0.0f), shadowAt.getX() - c.getX1());
-                        dz = Math.max(Math.max(c.getZ0() - shadowAt.getZ(), 0.0f), shadowAt.getZ() - c.getZ1());
-                        if ((dx * dx) + (dz * dz) < shR2) {
-                            z = true;
-                        } else {
-                            z = false;
-                        }
-                        need = z;
-                    }
+                boolean inRange = d <= tierRange(c4.getMaxTier(), detail);
+                boolean need = inRange && fr.box(c4.getX0(), c4.getY0(), c4.getZ0(), c4.getX1(), c4.getY1(), c4.getZ1());
+                if (!need && shadowAt != null) {
+                    float dx = Math.max(Math.max(c4.getX0() - shadowAt.getX(), 0.0f), shadowAt.getX() - c4.getX1());
+                    float dz = Math.max(Math.max(c4.getZ0() - shadowAt.getZ(), 0.0f), shadowAt.getZ() - c4.getZ1());
+                    need = (dx * dx) + (dz * dz) < shR2;
+                }
+                if (need) {
+                    c4.setLastInRange(frame);
+                } else if (c4.getBuilt() && (!inRange || frame - c4.getLastInRange() > 900)) {
+                    free(c4);
+                    c4.setDirty(true);
+                }
+                if (!c4.getDirty() && c4.getBuilt()) {
                     if (need) {
-                        c2 = c;
-                        c2.setLastInRange(frame);
-                    } else {
-                        c2 = c;
-                        if (c2.getBuilt() && frame - c2.getLastInRange() > 900) {
-                            free(c2);
-                            c2.setDirty(true);
-                        }
+                        this.visible.add(c4);
                     }
-                    if (c2.getDirty() && c2.getBuilt()) {
-                        if (need) {
-                            this.visible.add(c2);
-                        }
-                        fr2 = fr;
-                        str4 = str2;
-                        str5 = str3;
-                    } else {
-                        if (need) {
-                            toBuild.add(c2);
-                        }
-                        fr2 = fr;
-                        str4 = str2;
-                        str5 = str3;
-                    }
-                } else {
-                    str2 = str4;
-                    str3 = str5;
-                    c = c4;
+                } else if (need) {
+                    toBuild.add(c4);
                 }
-                if (!need) {
-                    dx = Math.max(Math.max(c.getX0() - shadowAt.getX(), 0.0f), shadowAt.getX() - c.getX1());
-                    dz = Math.max(Math.max(c.getZ0() - shadowAt.getZ(), 0.0f), shadowAt.getZ() - c.getZ1());
-                    if ((dx * dx) + (dz * dz) < shR2) {
-                        z = true;
-                    } else {
-                        z = false;
-                    }
-                    need = z;
-                }
-                if (need) {
-                    c2 = c;
-                    c2.setLastInRange(frame);
-                } else {
-                    c2 = c;
-                    if (c2.getBuilt()) {
-                        free(c2);
-                        c2.setDirty(true);
-                    }
-                }
-                if (c2.getDirty()) {
-                }
-                if (need) {
-                    toBuild.add(c2);
-                }
-                fr2 = fr;
-                str4 = str2;
-                str5 = str3;
             } else {
                 it2.remove();
             }

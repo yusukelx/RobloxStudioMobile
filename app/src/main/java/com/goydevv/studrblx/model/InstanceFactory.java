@@ -38,6 +38,13 @@ public final class InstanceFactory {
             i.set("MaxHealth", Float.valueOf(100.0f), false);
             i.set("WalkSpeed", Float.valueOf(16.0f), false);
             i.set("JumpPower", Float.valueOf(50.0f), false);
+            i.set("JumpHeight", Float.valueOf(7.2f), false);
+            i.set("UseJumpPower", Boolean.TRUE, false);
+            i.set("MaxSlopeAngle", Float.valueOf(89.0f), false);
+            i.set("AutoRotate", Boolean.TRUE, false);
+            i.set("AutoJumpEnabled", Boolean.TRUE, false);
+            i.set("PlatformStand", Boolean.FALSE, false);
+            i.set("Sit", Boolean.FALSE, false);
             i.set("HipHeight", Float.valueOf(0.0f), false);
             i.set("DisplayName", "", false);
         } else if (ClassDb.INSTANCE.isA(cls, "GuiObject")) {
@@ -73,6 +80,24 @@ public final class InstanceFactory {
             i.set("Volume", Float.valueOf(0.5f), false);
             i.set("Looped", false, false);
             i.set("Playing", false, false);
+            i.set("IsPlaying", false, false);
+            i.set("IsPaused", false, false);
+            i.set("IsLoaded", false, false);
+            i.set("TimeLength", Double.valueOf(0.0d), false);
+            i.set("TimePosition", Double.valueOf(0.0d), false);
+            i.set("PlaybackSpeed", Float.valueOf(1.0f), false);
+            i.set("PlaybackLoudness", Float.valueOf(0.0f), false);
+            i.set("RollOffMinDistance", Float.valueOf(10.0f), false);
+            i.set("RollOffMaxDistance", Float.valueOf(10000.0f), false);
+            i.set("RollOffMode", new EnumValue(0), false);
+            i.set("PlayOnRemove", false, false);
+            i.set("SoundGroup", null, false);
+        } else if (Intrinsics.areEqual(cls, "SoundService")) {
+            i.set("AmbientReverb", new EnumValue(0), false);
+            i.set("DistanceFactor", Float.valueOf(3.33f), false);
+            i.set("DopplerScale", Float.valueOf(1.0f), false);
+            i.set("RolloffScale", Float.valueOf(1.0f), false);
+            i.set("RespectFilteringEnabled", true, false);
         } else if (Intrinsics.areEqual(cls, "UICorner")) {
             i.set("CornerRadius", new UDim(0.0f, 8), false);
         } else if (Intrinsics.areEqual(cls, "UIStroke")) {

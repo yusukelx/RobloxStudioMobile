@@ -804,7 +804,7 @@ public final class RobloxServices {
             }
             case "GuiService": {
                 if ("GetGuiInset".equals(name)) {
-                    return LuaValue.varargsOf(new LuaValue[]{LuaTypes.INSTANCE.wrap(new com.goydevv.studrblx.model.Vector2(0.0f, 36.0f)), LuaTypes.INSTANCE.wrap(new com.goydevv.studrblx.model.Vector2(0.0f, 0.0f))});
+                    return LuaValue.varargsOf(new LuaValue[]{LuaTypes.INSTANCE.wrap(new com.goydevv.studrblx.model.Vector2(0.0f, 58.0f)), LuaTypes.INSTANCE.wrap(new com.goydevv.studrblx.model.Vector2(0.0f, 0.0f))});
                 }
                 if ("IsTenFootInterface".equals(name)) {
                     return LuaValue.FALSE;
@@ -947,17 +947,248 @@ public final class RobloxServices {
                     Object o = a.arg(2).isuserdata() ? a.arg(2).touserdata() : null;
                     if (o instanceof Instance) {
                         Instance snd = (Instance) o;
-                        Object sq = snd.getAttributes().get("__playSeq");
-                        int nsq = (sq instanceof Integer) ? ((Integer) sq).intValue() + 1 : 1;
-                        snd.getAttributes().put("__playSeq", Integer.valueOf(nsq));
-                        snd.set("Playing", Boolean.TRUE, true);
+                        Instance copy = new Instance("Sound");
+                        copy.getProps().putAll(snd.getProps());
+                        copy.getPropTypes().putAll(snd.getPropTypes());
+                        copy.set("Looped", Boolean.FALSE, false);
+                        copy.set("TimePosition", Double.valueOf(0.0d), false);
+                        copy.set("IsPaused", Boolean.FALSE, false);
+                        copy.set("IsPlaying", Boolean.TRUE, false);
+                        copy.set("Playing", Boolean.TRUE, false);
+                        copy.getAttributes().put("__oneShot", Boolean.TRUE);
+                        copy.getAttributes().put("__playSeq", Integer.valueOf(1));
+                        Instance p = snd.getParent();
+                        if (p != null) {
+                            if (p.isA("BasePart")) {
+                                copy.getAttributes().put("__lastEmitterPos", com.goydevv.studrblx.model.PartData.INSTANCE.cframe(p).getPosition());
+                            } else if ("Attachment".equals(p.getClassName())) {
+                                Instance bp = p.getParent();
+                                if (bp != null && bp.isA("BasePart")) {
+                                    Object cfObj = p.get("CFrame");
+                                    Vector3 localPos = (cfObj instanceof com.goydevv.studrblx.model.CFrame) ? ((com.goydevv.studrblx.model.CFrame) cfObj).getPosition() : Vector3.INSTANCE.getZERO();
+                                    copy.getAttributes().put("__lastEmitterPos", com.goydevv.studrblx.model.PartData.INSTANCE.cframe(bp).times(localPos));
+                                }
+                            }
+                        }
+                        com.goydevv.studrblx.audio.AudioEngine.INSTANCE.enqueueTransientSound(copy);
                     }
+                    return LuaValue.NIL;
+                }
+                if ("SetListener".equals(name)) {
+                    LuaValue ltArg = a.arg(2);
+                    int lt = -1;
+                    if (ltArg.isuserdata() && ltArg.touserdata() instanceof EnumItemV) {
+                        EnumItemV ev = (EnumItemV) ltArg.touserdata();
+                        if ("ListenerType".equals(ev.getType())) {
+                            lt = ev.getValue();
+                        }
+                    } else if (ltArg.isnumber()) {
+                        lt = ltArg.toint();
+                    } else if (ltArg.isstring()) {
+                        java.util.LinkedHashMap<String, Integer> lm = com.goydevv.studrblx.model.Enums.INSTANCE.getTypes().get("ListenerType");
+                        Integer lv = lm != null ? lm.get(ltArg.tojstring()) : null;
+                        if (lv != null) {
+                            lt = lv.intValue();
+                        }
+                    }
+                    if (lt < 0 || lt > 3) {
+                        throw new LuaError("SoundService:SetListener invalid ListenerType");
+                    }
+                    Object listenerVal = null;
+                    if (lt == 1) {
+                        Object u = a.arg(3).isuserdata() ? a.arg(3).touserdata() : null;
+                        if (u instanceof com.goydevv.studrblx.model.CFrame) {
+                            listenerVal = u;
+                        }
+                    } else if (lt == 2 || lt == 3) {
+                        Object u = a.arg(3).isuserdata() ? a.arg(3).touserdata() : null;
+                        if (u instanceof Instance) {
+                            listenerVal = u;
+                        }
+                    }
+                    svc.getAttributes().put("__listenerType", Integer.valueOf(lt));
+                    if (listenerVal != null) {
+                        svc.getAttributes().put("__listenerValue", listenerVal);
+                    } else {
+                        svc.getAttributes().remove("__listenerValue");
+                    }
+                    return LuaValue.NIL;
+                }
+                if ("GetListener".equals(name)) {
+                    Object ltObj = svc.getAttributes().get("__listenerType");
+                    int lt = (ltObj instanceof Integer) ? ((Integer) ltObj).intValue() : 0;
+                    if (lt < 0 || lt > 3) {
+                        lt = 0;
+                    }
+                    String itemName = com.goydevv.studrblx.model.Enums.INSTANCE.itemName("ListenerType", lt);
+                    LuaValue enumLua = itemName != null ? LuaTypes.INSTANCE.enumItem("ListenerType", itemName) : LuaValue.valueOf(lt);
+                    if (enumLua == null) {
+                        enumLua = LuaValue.valueOf(lt);
+                    }
+                    Object lv = svc.getAttributes().get("__listenerValue");
+                    LuaValue objLua = LuaValue.NIL;
+                    if (lv instanceof Instance) {
+                        objLua = rt.wrap((Instance) lv);
+                    } else if (lv instanceof com.goydevv.studrblx.model.CFrame) {
+                        objLua = LuaTypes.INSTANCE.wrap(lv);
+                    }
+                    return LuaValue.varargsOf(enumLua, objLua);
                 }
                 return LuaValue.NIL;
             case "UserInputService":
                 if ("IsKeyDown".equals(name)) return LuaValue.FALSE;
                 if ("GetMouseLocation".equals(name)) return LuaTypes.INSTANCE.wrap(new com.goydevv.studrblx.model.Vector2(0.0f, 0.0f));
+                if ("GetFocusedTextBox".equals(name)) {
+                    Instance focused = rt.getFocusedTextBox();
+                    return focused != null ? rt.wrap(focused) : LuaValue.NIL;
+                }
                 return LuaValue.NIL;
+            case "TextService": {
+                if ("GetTextSize".equals(name)) {
+                    String text = a.arg(2).optjstring("");
+                    float fontSize = (float) a.arg(3).optdouble(14.0d);
+                    if (fontSize <= 0.0f) fontSize = 14.0f;
+                    Object fsObj = a.arg(5).isuserdata() ? a.arg(5).touserdata() : null;
+                    float maxW = (fsObj instanceof com.goydevv.studrblx.model.Vector2)
+                            ? ((com.goydevv.studrblx.model.Vector2) fsObj).getX()
+                            : 100000.0f;
+                    if (text.isEmpty()) {
+                        return LuaTypes.INSTANCE.wrap(new com.goydevv.studrblx.model.Vector2(0.0f, 0.0f));
+                    }
+                    try {
+                        android.text.TextPaint tp = new android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+                        tp.setTextSize(fontSize);
+                        int wrapW = (maxW > 0.0f && maxW < 100000.0f) ? Math.max(1, (int) Math.ceil(maxW)) : 100000;
+                        android.text.StaticLayout sl;
+                        if (android.os.Build.VERSION.SDK_INT >= 23) {
+                            sl = android.text.StaticLayout.Builder.obtain(text, 0, text.length(), tp, wrapW)
+                                    .setAlignment(android.text.Layout.Alignment.ALIGN_NORMAL)
+                                    .setIncludePad(false)
+                                    .build();
+                        } else {
+                            sl = new android.text.StaticLayout(text, tp, wrapW, android.text.Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                        }
+                        float measuredW = 0.0f;
+                        int lc = sl.getLineCount();
+                        for (int li = 0; li < lc; li++) {
+                            float lw = sl.getLineWidth(li);
+                            if (lw > measuredW) measuredW = lw;
+                        }
+                        float measuredH = sl.getHeight();
+                        if (measuredW > 0.0f || measuredH > 0.0f) {
+                            return LuaTypes.INSTANCE.wrap(new com.goydevv.studrblx.model.Vector2((float) Math.ceil(measuredW), (float) Math.ceil(measuredH)));
+                        }
+                    } catch (Throwable ignored) {
+                    }
+                    float charW = fontSize * 0.55f;
+                    float lineH = fontSize * 1.2f;
+                    float limitW = (maxW > 0.0f && maxW < 100000.0f) ? maxW : Float.MAX_VALUE;
+                    String[] paras = text.split("\n", -1);
+                    int totalLines = 0;
+                    float maxLineW = 0.0f;
+                    for (String para : paras) {
+                        if (para.isEmpty()) {
+                            totalLines++;
+                            continue;
+                        }
+                        String[] words = para.split(" ", -1);
+                        float curW = 0.0f;
+                        for (int wi = 0; wi < words.length; wi++) {
+                            String wStr = words[wi];
+                            float wordW = wStr.length() * charW;
+                            float spaceW = curW > 0.0f ? charW : 0.0f;
+                            if (curW > 0.0f && curW + spaceW + wordW > limitW) {
+                                if (curW > maxLineW) maxLineW = curW;
+                                totalLines++;
+                                curW = wordW;
+                            } else {
+                                curW += spaceW + wordW;
+                            }
+                            while (curW > limitW && limitW > charW) {
+                                if (limitW > maxLineW) maxLineW = limitW;
+                                totalLines++;
+                                curW -= limitW;
+                            }
+                        }
+                        if (curW > maxLineW) maxLineW = curW;
+                        totalLines++;
+                    }
+                    if (totalLines < 1) totalLines = 1;
+                    return LuaTypes.INSTANCE.wrap(new com.goydevv.studrblx.model.Vector2((float) Math.ceil(maxLineW), (float) Math.ceil(totalLines * lineH)));
+                }
+                if ("FilterStringAsync".equals(name)) {
+                    final String srcText = a.arg(2).optjstring("");
+                    LuaTable res = new LuaTable();
+                    LuaValue getter = LuaTypesKt.fnv(new Function1() {
+                        @Override
+                        public final Object invoke(Object obj) {
+                            return LuaValue.valueOf(srcText);
+                        }
+                    });
+                    res.set("GetNonChatStringForBroadcastAsync", getter);
+                    res.set("GetNonChatStringForUserAsync", getter);
+                    res.set("GetChatForUserAsync", getter);
+                    return res;
+                }
+                return LuaValue.NIL;
+            }
+            case "InsertService": {
+                if ("LoadAsset".equals(name)) {
+                    try {
+                        long assetId;
+                        LuaValue idArg = a.arg(2);
+                        if (idArg.isnumber()) {
+                            assetId = idArg.checklong();
+                        } else {
+                            Long parsed = com.goydevv.studrblx.net.AssetFetcher.INSTANCE.idOf(idArg.tojstring());
+                            if (parsed == null) {
+                                throw new LuaError("InsertService:LoadAsset invalid assetId");
+                            }
+                            assetId = parsed.longValue();
+                        }
+                        byte[] bytes = com.goydevv.studrblx.net.AssetFetcher.INSTANCE.load(assetId);
+                        com.goydevv.studrblx.format.RbxDocument doc = com.goydevv.studrblx.format.RbxFile.INSTANCE.read(bytes);
+                        Instance model = com.goydevv.studrblx.model.InstanceFactory.INSTANCE.create("Model");
+                        model.setName("Model");
+                        for (Instance root : doc.getRoots()) {
+                            Instance.setParent$default(root, model, 0, 2, null);
+                        }
+                        return rt.wrap(model);
+                    } catch (LuaError e) {
+                        throw e;
+                    } catch (Exception e) {
+                        throw new LuaError("InsertService:LoadAsset failed: " + e.getMessage());
+                    }
+                }
+                return LuaValue.NIL;
+            }
+            case "DataModel": {
+                if ("GetObjects".equals(name)) {
+                    try {
+                        String url = a.arg(2).checkjstring();
+                        Long assetId = com.goydevv.studrblx.net.AssetFetcher.INSTANCE.idOf(url);
+                        if (assetId == null) {
+                            throw new LuaError("DataModel:GetObjects invalid asset URL: " + url);
+                        }
+                        byte[] bytes = com.goydevv.studrblx.net.AssetFetcher.INSTANCE.load(assetId.longValue());
+                        com.goydevv.studrblx.format.RbxDocument doc = com.goydevv.studrblx.format.RbxFile.INSTANCE.read(bytes);
+                        LuaTable tbl = new LuaTable();
+                        int idx = 1;
+                        for (Instance root : doc.getRoots()) {
+                            tbl.set(idx++, rt.wrap(root));
+                        }
+                        return tbl;
+                    } catch (LuaError e) {
+                        throw e;
+                    } catch (Exception e) {
+                        throw new LuaError("DataModel:GetObjects failed: " + e.getMessage());
+                    }
+                }
+                if ("IsLoaded".equals(name)) return LuaValue.TRUE;
+                if ("GetJobsInfo".equals(name)) return new LuaTable();
+                if ("BindToClose".equals(name) || "SetPlaceId".equals(name)) return LuaValue.NONE;
+                return LuaValue.NIL;
+            }
             default:
                 return LuaValue.NIL;
         }
@@ -1118,8 +1349,19 @@ public final class RobloxServices {
 
     static final Varargs tweenValue$lambda$37(Tween $tw, LuaRuntime $rt, Varargs it) {
         Intrinsics.checkNotNullParameter(it, "it");
+        int prevState = $tw.getState();
         $tw.setState(5);
         $rt.getTweens().remove($tw);
+        if (prevState == 1 || prevState == 2 || prevState == 3) {
+            $rt.fire($tw, "Completed", LuaTypes.INSTANCE.wrap(new EnumItemV("PlaybackState", "Cancelled", 5)));
+            LuaValue cb = $tw.getGuiCallback();
+            if (cb != null && cb.isfunction()) {
+                try {
+                    cb.call(LuaTypes.INSTANCE.wrap(new EnumItemV("TweenStatus", "Canceled", 0)));
+                } catch (Exception ignored) {
+                }
+            }
+        }
         LuaValue NONE = LuaValue.NONE;
         Intrinsics.checkNotNullExpressionValue(NONE, "NONE");
         return NONE;

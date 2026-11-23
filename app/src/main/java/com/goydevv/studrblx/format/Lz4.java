@@ -14,6 +14,9 @@ public final class Lz4 {
         int s;
         int s2;
         Intrinsics.checkNotNullParameter(src, "src");
+        if (off < 0 || len < 0 || dstLen < 0 || off + len > src.length) {
+            throw new RbxFormatException("Invalid LZ4 chunk bounds");
+        }
         byte[] dst = new byte[dstLen];
         int token = off;
         int end = off + len;
@@ -24,6 +27,9 @@ public final class Lz4 {
             int lit = token2 >>> 4;
             if (lit == 15) {
                 while (true) {
+                    if (b >= end) {
+                        throw new RbxFormatException("Truncated LZ4 literal length");
+                    }
                     s2 = b + 1;
                     int b2 = src[b] & 255;
                     lit += b2;
@@ -34,17 +40,29 @@ public final class Lz4 {
                 }
                 b = s2;
             }
+            if (lit < 0 || b + lit > end || d + lit > dstLen) {
+                throw new RbxFormatException("Corrupt LZ4 literal copy");
+            }
             System.arraycopy(src, b, dst, d, lit);
             int s3 = b + lit;
             d += lit;
             if (s3 >= end) {
                 break;
             }
+            if (s3 + 2 > end) {
+                throw new RbxFormatException("Truncated LZ4 match offset");
+            }
             int offset = (src[s3] & 255) | ((src[s3 + 1] & 255) << 8);
+            if (offset == 0) {
+                throw new RbxFormatException("Invalid LZ4 match offset");
+            }
             int b3 = s3 + 2;
             int ml = token2 & 15;
             if (ml == 15) {
                 while (true) {
+                    if (b3 >= end) {
+                        throw new RbxFormatException("Truncated LZ4 match length");
+                    }
                     s = b3 + 1;
                     int b4 = src[b3] & 255;
                     ml += b4;
@@ -57,7 +75,7 @@ public final class Lz4 {
             }
             int ml2 = ml + 4;
             int m = d - offset;
-            if (m < 0) {
+            if (m < 0 || d + ml2 > dstLen) {
                 throw new RbxFormatException("Corrupt LZ4 data");
             }
             int i = 0;

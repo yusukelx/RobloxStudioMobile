@@ -30,6 +30,9 @@ public final class RbxBinaryKt {
     /* JADX INFO: Access modifiers changed from: private */
     public static final CFrame rotationFromId(int id) {
         int v = id - 1;
+        if (v < 0 || v >= 36) {
+            return CFrame.INSTANCE.getIDENTITY();
+        }
         Vector3 r = NORMALS[v / 6];
         Vector3 u = NORMALS[v % 6];
         return CFrame.INSTANCE.fromColumns(Vector3.INSTANCE.getZERO(), r, u, r.cross(u));

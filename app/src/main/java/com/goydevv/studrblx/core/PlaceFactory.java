@@ -28,6 +28,9 @@ public final class PlaceFactory {
     public enum Template {
         BASEPLATE("Baseplate", "A large grey baseplate and a spawn"),
         CLASSIC("Classic Baseplate", "The classic studded baseplate"),
+        FLAT_TERRAIN("Flat Terrain", "Open grass terrain ready for sculpting"),
+        OBBY("Obby", "Obstacle course with stepping stones and finish"),
+        PLATFORMER("Platformer", "Floating islands with jump pads"),
         EMPTY("Empty Place", "Just a spawn location, no ground");
 
         private final String subtitle;
@@ -59,6 +62,35 @@ public final class PlaceFactory {
         return placeFactory.newPlace(template);
     }
 
+    private final Instance addPart(Instance ws, String name, Vector3 size, float x, float y, float z, Color3 color, int materialEnum, boolean locked) {
+        Instance part = InstanceFactory.INSTANCE.create("Part");
+        part.setName(name);
+        part.set("Anchored", true, false);
+        if (locked) {
+            part.set("Locked", true, false);
+        }
+        part.set("size", size, false);
+        part.set("CFrame", new CFrame(x, y, z, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 4088, null), false);
+        part.set("Color3uint8", color, false);
+        if (materialEnum >= 0) {
+            part.set("Material", new EnumValue(materialEnum), false);
+        }
+        part.attachRaw(ws);
+        return part;
+    }
+
+    private final void addSpawn(Instance ws, float x, float y, float z) {
+        Instance spawn = InstanceFactory.INSTANCE.create("SpawnLocation");
+        spawn.set("CFrame", new CFrame(x, y, z, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 4088, null), false);
+        spawn.set("Color3uint8", Color3.INSTANCE.fromRGB(163, 162, 165), false);
+        Instance spawnDecal = InstanceFactory.INSTANCE.create("Decal");
+        spawnDecal.setName("Decal");
+        spawnDecal.set("Texture", "rbxasset://textures/SpawnLocation.png", false);
+        spawnDecal.set("Face", new EnumValue(1), false);
+        spawnDecal.attachRaw(spawn);
+        spawn.attachRaw(ws);
+    }
+
     public final DataModel newPlace(Template template) {
         Intrinsics.checkNotNullParameter(template, "template");
         DataModel dm = new DataModel();
@@ -66,47 +98,86 @@ public final class PlaceFactory {
         for (String s : required) {
             service(dm, s);
         }
-        Instance instanceFindService = dm.findService("Workspace");
-        Intrinsics.checkNotNull(instanceFindService);
-        Instance instanceCreate = InstanceFactory.INSTANCE.create("Camera");
-        instanceCreate.set("CFrame", CFrame.Companion.lookAt$default(CFrame.INSTANCE, new Vector3(0.0f, 20.0f, 40.0f), Vector3.INSTANCE.getZERO(), null, 4, null), false);
-        instanceCreate.attachRaw(instanceFindService);
-        instanceFindService.set("CurrentCamera", instanceCreate, false);
-        ensureTerrain(instanceFindService);
-        if (template != Template.EMPTY) {
-            Instance instanceCreate2 = InstanceFactory.INSTANCE.create("Part");
-            instanceCreate2.setName("Baseplate");
-            instanceCreate2.set("Anchored", true, false);
-            instanceCreate2.set("Locked", true, false);
-            if (template == Template.CLASSIC) {
-                instanceCreate2.set("size", new Vector3(512.0f, 20.0f, 512.0f), false);
-                instanceCreate2.set("CFrame", new CFrame(0.0f, -10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 4088, null), false);
-                instanceCreate2.set("Color3uint8", Color3.INSTANCE.fromRGB(99, 95, 98), false);
-                instanceCreate2.set("TopSurface", new EnumValue(3), false);
-            } else {
-                instanceCreate2.set("size", new Vector3(2048.0f, 16.0f, 2048.0f), false);
-                instanceCreate2.set("CFrame", new CFrame(0.0f, -8.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 4088, null), false);
-                instanceCreate2.set("Color3uint8", Color3.INSTANCE.fromRGB(91, 93, 105), false);
-                Instance instanceCreate3 = InstanceFactory.INSTANCE.create("Texture");
-                instanceCreate3.setName("Texture");
-                instanceCreate3.set("Texture", "rbxassetid://6372755229", false);
-                instanceCreate3.set("Face", new EnumValue(1), false);
-                instanceCreate3.set("StudsPerTileU", Float.valueOf(8.0f), false);
-                instanceCreate3.set("StudsPerTileV", Float.valueOf(8.0f), false);
-                instanceCreate3.set("Transparency", Float.valueOf(0.8f), false);
-                instanceCreate3.attachRaw(instanceCreate2);
-            }
-            instanceCreate2.attachRaw(instanceFindService);
+        Instance lighting = dm.findService("Lighting");
+        Intrinsics.checkNotNull(lighting);
+        if (template == Template.CLASSIC) {
+            lighting.set("EnvironmentDiffuseScale", Float.valueOf(0.0f), false);
+            lighting.set("EnvironmentSpecularScale", Float.valueOf(0.0f), false);
+            lighting.set("GlobalShadows", true, false);
+            lighting.set("ShadowSoftness", Float.valueOf(0.2f), false);
+            lighting.set("Technology", new EnumValue(3), false);
+        } else {
+            lighting.set("EnvironmentDiffuseScale", Float.valueOf(1.0f), false);
+            lighting.set("EnvironmentSpecularScale", Float.valueOf(1.0f), false);
+            lighting.set("GlobalShadows", true, false);
+            lighting.set("ShadowSoftness", Float.valueOf(0.2f), false);
+            lighting.set("Technology", new EnumValue(3), false);
         }
-        Instance instanceCreate4 = InstanceFactory.INSTANCE.create("SpawnLocation");
-        instanceCreate4.set("CFrame", new CFrame(0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 4088, null), false);
-        instanceCreate4.set("Color3uint8", Color3.INSTANCE.fromRGB(163, 162, 165), false);
-        Instance spawnDecal = InstanceFactory.INSTANCE.create("Decal");
-        spawnDecal.setName("Decal");
-        spawnDecal.set("Texture", "rbxasset://textures/SpawnLocation.png", false);
-        spawnDecal.set("Face", new EnumValue(1), false);
-        spawnDecal.attachRaw(instanceCreate4);
-        instanceCreate4.attachRaw(instanceFindService);
+        Instance ws = dm.findService("Workspace");
+        Intrinsics.checkNotNull(ws);
+        Instance cam = InstanceFactory.INSTANCE.create("Camera");
+        cam.set("CFrame", CFrame.Companion.lookAt$default(CFrame.INSTANCE, new Vector3(0.0f, 20.0f, 40.0f), Vector3.INSTANCE.getZERO(), null, 4, null), false);
+        cam.attachRaw(ws);
+        ws.set("CurrentCamera", cam, false);
+        ensureTerrain(ws);
+        if (template == Template.BASEPLATE) {
+            Instance baseplate = addPart(ws, "Baseplate", new Vector3(2048.0f, 16.0f, 2048.0f), 0.0f, -8.0f, 0.0f, Color3.INSTANCE.fromRGB(91, 93, 105), -1, true);
+            Instance tex = InstanceFactory.INSTANCE.create("Texture");
+            tex.setName("Texture");
+            tex.set("Texture", "rbxassetid://6372755229", false);
+            tex.set("Face", new EnumValue(1), false);
+            tex.set("StudsPerTileU", Float.valueOf(8.0f), false);
+            tex.set("StudsPerTileV", Float.valueOf(8.0f), false);
+            tex.set("Transparency", Float.valueOf(0.8f), false);
+            tex.attachRaw(baseplate);
+            addSpawn(ws, 0.0f, 0.5f, 0.0f);
+        } else if (template == Template.CLASSIC) {
+            Instance baseplate = addPart(ws, "Baseplate", new Vector3(512.0f, 20.0f, 512.0f), 0.0f, -10.0f, 0.0f, Color3.INSTANCE.fromRGB(99, 95, 98), -1, true);
+            baseplate.set("TopSurface", new EnumValue(3), false);
+            addSpawn(ws, 0.0f, 0.5f, 0.0f);
+        } else if (template == Template.FLAT_TERRAIN) {
+            addPart(ws, "TerrainBase", new Vector3(2048.0f, 16.0f, 2048.0f), 0.0f, -8.0f, 0.0f, Color3.INSTANCE.fromRGB(91, 154, 76), 1280, true);
+            addSpawn(ws, 0.0f, 0.5f, 0.0f);
+        } else if (template == Template.OBBY) {
+            addPart(ws, "StartPlatform", new Vector3(20.0f, 2.0f, 20.0f), 0.0f, -1.0f, 0.0f, Color3.INSTANCE.fromRGB(91, 93, 105), 256, false);
+            addSpawn(ws, 0.0f, 0.5f, 0.0f);
+            Color3[] stageColors = new Color3[]{
+                Color3.INSTANCE.fromRGB(231, 76, 60),
+                Color3.INSTANCE.fromRGB(230, 126, 34),
+                Color3.INSTANCE.fromRGB(241, 196, 15),
+                Color3.INSTANCE.fromRGB(46, 204, 113),
+                Color3.INSTANCE.fromRGB(52, 152, 219),
+                Color3.INSTANCE.fromRGB(155, 89, 182)
+            };
+            for (int i = 0; i < 6; i++) {
+                float sx = (i % 2 == 0) ? -4.0f : 4.0f;
+                float sy = 1.0f + (i * 2.0f);
+                float sz = -18.0f - (i * 14.0f);
+                addPart(ws, "Stage" + (i + 1), new Vector3(8.0f, 2.0f, 8.0f), sx, sy, sz, stageColors[i], 256, false);
+            }
+            addPart(ws, "FinishPlatform", new Vector3(20.0f, 2.0f, 20.0f), 0.0f, 13.0f, -104.0f, Color3.INSTANCE.fromRGB(245, 205, 48), 288, false);
+        } else if (template == Template.PLATFORMER) {
+            addPart(ws, "StartIsland", new Vector3(24.0f, 4.0f, 24.0f), 0.0f, -2.0f, 0.0f, Color3.INSTANCE.fromRGB(91, 154, 76), 1280, false);
+            addSpawn(ws, 0.0f, 0.5f, 0.0f);
+            addPart(ws, "JumpPad1", new Vector3(5.0f, 0.6f, 5.0f), 0.0f, 0.3f, -8.0f, Color3.INSTANCE.fromRGB(0, 212, 255), 288, false);
+            float[][] islands = new float[][]{
+                {18.0f, 6.0f, -24.0f},
+                {-14.0f, 14.0f, -46.0f},
+                {16.0f, 22.0f, -68.0f},
+                {0.0f, 30.0f, -92.0f}
+            };
+            for (int i = 0; i < islands.length; i++) {
+                float ix = islands[i][0];
+                float iy = islands[i][1];
+                float iz = islands[i][2];
+                addPart(ws, "Island" + (i + 1), new Vector3(16.0f, 4.0f, 16.0f), ix, iy, iz, Color3.INSTANCE.fromRGB(91, 154, 76), 1280, false);
+                if (i < islands.length - 1) {
+                    addPart(ws, "JumpPad" + (i + 2), new Vector3(5.0f, 0.6f, 5.0f), ix, iy + 2.3f, iz - 4.0f, Color3.INSTANCE.fromRGB(0, 212, 255), 288, false);
+                }
+            }
+        } else {
+            addSpawn(ws, 0.0f, 0.5f, 0.0f);
+        }
         Instance sp = dm.findService("StarterPlayer");
         Intrinsics.checkNotNull(sp);
         InstanceFactory.INSTANCE.create("StarterPlayerScripts").attachRaw(sp);
@@ -149,7 +220,29 @@ public final class PlaceFactory {
             ws.set("CurrentCamera", cam, false);
         }
         ensureTerrain(ws);
+        ensureSoundServiceDefaults(dm.findService("SoundService"));
         return dm;
+    }
+
+    private final void ensureSoundServiceDefaults(Instance ss) {
+        if (ss == null) {
+            return;
+        }
+        if (!ss.getProps().containsKey("AmbientReverb")) {
+            ss.set("AmbientReverb", new EnumValue(0), false);
+        }
+        if (!ss.getProps().containsKey("DistanceFactor")) {
+            ss.set("DistanceFactor", Float.valueOf(3.33f), false);
+        }
+        if (!ss.getProps().containsKey("DopplerScale")) {
+            ss.set("DopplerScale", Float.valueOf(1.0f), false);
+        }
+        if (!ss.getProps().containsKey("RolloffScale")) {
+            ss.set("RolloffScale", Float.valueOf(1.0f), false);
+        }
+        if (!ss.getProps().containsKey("RespectFilteringEnabled")) {
+            ss.set("RespectFilteringEnabled", true, false);
+        }
     }
 
     private final void ensureTerrain(Instance ws) {

@@ -15,8 +15,27 @@ public final class PartData {
     public final CFrame cframe(Instance p) {
         Intrinsics.checkNotNullParameter(p, "p");
         Object obj = p.get("CFrame");
-        CFrame cFrame = obj instanceof CFrame ? (CFrame) obj : null;
-        return cFrame == null ? CFrame.INSTANCE.getIDENTITY() : cFrame;
+        if (obj instanceof CFrame) {
+            return (CFrame) obj;
+        }
+        Object posObj = p.get("Position");
+        Vector3 pos = posObj instanceof Vector3 ? (Vector3) posObj : null;
+        Object rotObj = p.get("Orientation");
+        if (!(rotObj instanceof Vector3)) {
+            rotObj = p.get("Rotation");
+        }
+        Vector3 rotDeg = rotObj instanceof Vector3 ? (Vector3) rotObj : null;
+        if (pos != null || rotDeg != null) {
+            Vector3 pVec = pos != null ? pos : Vector3.INSTANCE.getZERO();
+            if (rotDeg != null) {
+                float rx = (float) Math.toRadians(rotDeg.getX());
+                float ry = (float) Math.toRadians(rotDeg.getY());
+                float rz = (float) Math.toRadians(rotDeg.getZ());
+                return CFrame.INSTANCE.fromOrientation(rx, ry, rz).withPosition(pVec);
+            }
+            return CFrame.INSTANCE.at(pVec);
+        }
+        return CFrame.INSTANCE.getIDENTITY();
     }
 
     public final Vector3 size(Instance p) {

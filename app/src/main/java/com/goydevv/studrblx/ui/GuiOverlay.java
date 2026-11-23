@@ -83,6 +83,7 @@ import org.luaj.vm2.LuaValue;
 /* JADX INFO: compiled from: GuiOverlay.kt */
 /* JADX INFO: loaded from: classes5.dex */
 public final class GuiOverlay extends View {
+    private static final Regex WS_REGEX = new Regex("\\s+");
     public static final int BUTTON = 0;
     public static final int CORE_MENU = 3;
     public static final int SINK = 2;
@@ -726,7 +727,7 @@ public final class GuiOverlay extends View {
             textPaint.setTypeface(k.getTf());
             textPaint.setFakeBoldText(k.getBold());
             CharSequence charSequenceContent = content(k.getText(), k.getRich());
-            Iterable iterableSplit = new Regex("\\s+").split(charSequenceContent.toString(), 0);
+            Iterable iterableSplit = WS_REGEX.split(charSequenceContent.toString(), 0);
             Collection arrayList = new ArrayList();
             for (Object obj : iterableSplit) {
                 if (((String) obj).length() > 0) {
@@ -2949,6 +2950,13 @@ public final class GuiOverlay extends View {
             }
         }
         if (kids.isEmpty()) {
+            if (listLayout != null) {
+                setContentSize(listLayout, 0.0f, 0.0f);
+            }
+            if (gridLayout != null) {
+                setContentSize(gridLayout, 0.0f, 0.0f);
+                gridLayout.getAttributes().put("__absCellCount", new Vector2(0.0f, 0.0f));
+            }
             return java.util.Collections.emptyList();
         }
         final Instance activeLayout = listLayout != null ? listLayout : (gridLayout != null ? gridLayout : (pageLayout != null ? pageLayout : tableLayout));
@@ -3073,6 +3081,22 @@ public final class GuiOverlay extends View {
                 }
                 out.add(new Node(c, new RectF(x, y, x + cw, y + chh), childScale, area, true));
             }
+            if (!out.isEmpty()) {
+                float minX = Float.MAX_VALUE;
+                float minY = Float.MAX_VALUE;
+                float maxX = -Float.MAX_VALUE;
+                float maxY = -Float.MAX_VALUE;
+                for (Node nd : out) {
+                    RectF nr = nd.getRect();
+                    if (nr.left < minX) minX = nr.left;
+                    if (nr.top < minY) minY = nr.top;
+                    if (nr.right > maxX) maxX = nr.right;
+                    if (nr.bottom > maxY) maxY = nr.bottom;
+                }
+                setContentSize(listLayout, Math.max(0.0f, maxX - minX), Math.max(0.0f, maxY - minY));
+            } else {
+                setContentSize(listLayout, 0.0f, 0.0f);
+            }
             return out;
         }
 
@@ -3083,14 +3107,52 @@ public final class GuiOverlay extends View {
             float chh = Math.max(1.0f, (cs.getYs() * ah) + (cs.getYo() * this.d * childScale));
             float px = (cp.getXs() * aw) + (cp.getXo() * this.d * childScale);
             float py = (cp.getYs() * ah) + (cp.getYo() * this.d * childScale);
-            int cols = Math.max(1, (int) Math.floor((aw + px) / Math.max(cw + px, 1.0f)));
-            for (int i = 0; i < kids.size(); i++) {
-                int col = i % cols;
-                int row = i / cols;
-                float x = area.left + (col * (cw + px));
-                float y = area.top + (row * (chh + py));
+            boolean horiz = enumOf(gridLayout, "FillDirection", 0) == 0;
+            int maxCells = (int) num(gridLayout, "FillDirectionMaxCells", 0.0f);
+            int hAlign = enumOf(gridLayout, "HorizontalAlignment", 1);
+            int vAlign = enumOf(gridLayout, "VerticalAlignment", 1);
+            int startCorner = enumOf(gridLayout, "StartCorner", 0);
+            int nKids = kids.size();
+            int cols;
+            int rows;
+            if (horiz) {
+                int fitCols = Math.max(1, (int) Math.floor((aw + px) / Math.max(cw + px, 1.0f)));
+                if (maxCells > 0) fitCols = Math.min(fitCols, maxCells);
+                cols = Math.max(1, fitCols);
+                rows = (nKids + cols - 1) / cols;
+            } else {
+                int fitRows = Math.max(1, (int) Math.floor((ah + py) / Math.max(chh + py, 1.0f)));
+                if (maxCells > 0) fitRows = Math.min(fitRows, maxCells);
+                rows = Math.max(1, fitRows);
+                cols = (nKids + rows - 1) / rows;
+            }
+            int usedCols = horiz ? Math.min(nKids, cols) : cols;
+            int usedRows = horiz ? rows : Math.min(nKids, rows);
+            float contentW = usedCols > 0 ? (usedCols * cw) + (Math.max(0, usedCols - 1) * px) : 0.0f;
+            float contentH = usedRows > 0 ? (usedRows * chh) + (Math.max(0, usedRows - 1) * py) : 0.0f;
+            float originX;
+            if (hAlign == 0) originX = area.left + ((aw - contentW) * 0.5f);
+            else if (hAlign == 2) originX = area.right - contentW;
+            else originX = area.left;
+            float originY;
+            if (vAlign == 0) originY = area.top + ((ah - contentH) * 0.5f);
+            else if (vAlign == 2) originY = area.bottom - contentH;
+            else originY = area.top;
+            boolean flipX = (startCorner == 1 || startCorner == 3);
+            boolean flipY = (startCorner == 2 || startCorner == 3);
+            for (int i = 0; i < nKids; i++) {
+                int col = horiz ? (i % cols) : (i / rows);
+                int row = horiz ? (i / cols) : (i % rows);
+                if (flipX) col = (usedCols - 1) - col;
+                if (flipY) row = (usedRows - 1) - row;
+                float x = originX + (col * (cw + px));
+                float y = originY + (row * (chh + py));
                 out.add(new Node(kids.get(i), new RectF(x, y, x + cw, y + chh), childScale, area, true));
             }
+            setContentSize(gridLayout, contentW, contentH);
+            float au = this.absUnit > 0.0f ? this.absUnit : (this.d > 0.0f ? this.d : 1.0f);
+            gridLayout.getAttributes().put("__absCellSize", new Vector2(cw / au, chh / au));
+            gridLayout.getAttributes().put("__absCellCount", new Vector2((float) usedCols, (float) usedRows));
             return out;
         }
 
@@ -3164,6 +3226,15 @@ public final class GuiOverlay extends View {
             return;
         }
         float rot = num(c, "Rotation", 0.0f);
+        float parentAbsRot = 0.0f;
+        Instance parInst = c.getParent();
+        if (parInst != null) {
+            Object prObj = parInst.getAttributes().get("__absRotation");
+            if (prObj instanceof Number) {
+                parentAbsRot = ((Number) prObj).floatValue();
+            }
+        }
+        c.getAttributes().put("__absRotation", Float.valueOf(parentAbsRot + rot));
         float groupT = Intrinsics.areEqual(c.getClassName(), "CanvasGroup") ? num(c, "GroupTransparency", 0.0f) : 0.0f;
         if (groupT >= 0.999f) {
             return;
@@ -3197,12 +3268,14 @@ public final class GuiOverlay extends View {
         }
         if (!rectF.isEmpty()) {
             this.newPicks.add(TuplesKt.to(c, new RectF(r)));
-            if (Intrinsics.areEqual(c.getClassName(), "TextBox")) {
-                this.newHits.add(new Hit(c, rectF, this.rt, 1));
-            } else if (c.isA("GuiButton")) {
-                this.newHits.add(new Hit(c, rectF, this.rt, 0));
-            } else if (Intrinsics.areEqual(c.get("Active"), (Object) true)) {
-                this.newHits.add(new Hit(c, rectF, this.rt, 2));
+            if (isInteractable(c)) {
+                if (Intrinsics.areEqual(c.getClassName(), "TextBox")) {
+                    this.newHits.add(new Hit(c, rectF, this.rt, 1));
+                } else if (c.isA("GuiButton")) {
+                    this.newHits.add(new Hit(c, rectF, this.rt, 0));
+                } else if (Intrinsics.areEqual(c.get("Active"), (Object) true)) {
+                    this.newHits.add(new Hit(c, rectF, this.rt, 2));
+                }
             }
         }
         if (Intrinsics.areEqual(c.getClassName(), "ScrollingFrame")) {
@@ -3236,23 +3309,20 @@ public final class GuiOverlay extends View {
     /* JADX WARN: Code duplicated, block: B:73:0x01fb  */
     /* JADX WARN: Code duplicated, block: B:77:0x0212 A[LOOP:2: B:75:0x020c->B:77:0x0212, LOOP_END] */
     /* JADX WARN: Code duplicated, block: B:80:0x0238  */
+    private final boolean isInteractable(Instance c) {
+        Instance cur = c;
+        while (cur != null) {
+            if (cur.isA("GuiObject") && Boolean.FALSE.equals(cur.get("Interactable"))) {
+                return false;
+            }
+            cur = cur.getParent();
+        }
+        return true;
+    }
+
     private final void drawScrolling(Canvas canvas, Instance c, RectF r, float scale, RectF clip) {
-        List<Node> list;
-        float f;
-        List<Node> listLayoutChildren = null;
-        float maxY;
-        RectF vis;
-        Vector2 pos0;
-        RectF vis2;
-        Shader shader;
-        float bottom;
-        Iterator it;
-        float fMax;
-        float right;
-        boolean changed;
         float unit = this.d * scale;
         Object uDim2 = c.get("CanvasSize");
-        float f2 = 2.0f;
         if (uDim2 == null) {
             uDim2 = new UDim2(0.0f, 0, 2.0f, 0);
         }
@@ -3263,171 +3333,74 @@ public final class GuiOverlay extends View {
         ch.element = Math.max((cs.getYs() * r.height()) + (cs.getYo() * unit), r.height());
         int auto = enumOf(c, "AutomaticCanvasSize", 0);
         Object obj = c.get("CanvasPosition");
-        Vector2 pos1 = obj instanceof Vector2 ? (Vector2) obj : null;
-        if (pos1 == null) {
-            pos1 = new Vector2(0.0f, 0.0f);
-        }
+        Vector2 pos1 = obj instanceof Vector2 ? (Vector2) obj : new Vector2(0.0f, 0.0f);
         RectF area = drawScrolling$canvasRect(r, pos1, unit, cw, ch);
-        List<Node> listLayoutChildren2 = layoutChildren(c, padded(c, area, scale), scale);
-        if (auto != 0 && !listLayoutChildren2.isEmpty()) {
-            Iterator it2 = listLayoutChildren2.iterator();
-            if (!it2.hasNext()) {
-                throw new NoSuchElementException();
+        List<Node> nodes = layoutChildren(c, padded(c, area, scale), scale);
+        if (auto != 0 && !nodes.isEmpty()) {
+            float maxBottom = nodes.get(0).getRect().bottom;
+            float maxRight = nodes.get(0).getRect().right;
+            for (int i = 1; i < nodes.size(); i++) {
+                RectF nr = nodes.get(i).getRect();
+                if (nr.bottom > maxBottom) maxBottom = nr.bottom;
+                if (nr.right > maxRight) maxRight = nr.right;
             }
-            float fMax2 = ((Node) it2.next()).getRect().bottom;
-            while (it2.hasNext()) {
-                fMax2 = Math.max(fMax2, ((Node) it2.next()).getRect().bottom);
+            float bottom = maxBottom - area.top;
+            float right = maxRight - area.left;
+            Instance padInst = child(c, "UIPadding");
+            if (padInst != null) {
+                Object pbObj = padInst.get("PaddingBottom");
+                if (pbObj instanceof UDim) {
+                    UDim pb = (UDim) pbObj;
+                    bottom += (pb.getScale() * area.height()) + (pb.getOffset() * unit);
+                }
+                Object prObj = padInst.get("PaddingRight");
+                if (prObj instanceof UDim) {
+                    UDim pr = (UDim) prObj;
+                    right += (pr.getScale() * area.width()) + (pr.getOffset() * unit);
+                }
             }
-            f = f2;
-            float f3 = fMax2 - area.top;
-            Instance instanceChild = child(c, "UIPadding");
-            if (instanceChild != null) {
-                Object obj2 = instanceChild.get("PaddingBottom");
-                list = listLayoutChildren2;
-                UDim uDim = obj2 instanceof UDim ? (UDim) obj2 : null;
-                Float fValueOf = uDim != null ? Float.valueOf(uDim.getOffset() * unit) : null;
-                float fFloatValue = fValueOf != null ? fValueOf.floatValue() : 0.0f;
-                bottom = f3 + fFloatValue;
-                it = list.iterator();
-                if (it.hasNext()) {
-                    throw new NoSuchElementException();
-                }
-                fMax = ((Node) it.next()).getRect().right;
-                while (it.hasNext()) {
-                    fMax = Math.max(fMax, ((Node) it.next()).getRect().right);
-                }
-                right = fMax - area.left;
-                changed = false;
-                if ((auto != 2 || auto == 3) && bottom > ch.element) {
-                    ch.element = bottom;
-                    changed = true;
-                }
-                if ((auto != 1 || auto == 3) && right > cw.element) {
-                    cw.element = right;
-                    changed = true;
-                }
-                if (changed) {
-                    listLayoutChildren = layoutChildren(c, padded(c, drawScrolling$canvasRect(r, pos1, unit, cw, ch), scale), scale);
-                }
-                float maxX = Math.max(0.0f, cw.element - r.width());
-                maxY = Math.max(0.0f, ch.element - r.height());
-                vis = new RectF(r);
-                if (!vis.intersect(clip)) {
-                    vis.setEmpty();
-                }
-                if (!vis.isEmpty() || Intrinsics.areEqual(c.get("ScrollingEnabled"), (Object) false)) {
-                    pos0 = pos1;
-                    vis2 = vis;
-                    shader = null;
-                } else if (maxX > 0.0f || maxY > 0.0f) {
-                    pos0 = pos1;
-                    shader = null;
-                    vis2 = vis;
-                    this.newScrolls.add(new Scroll(c, vis, maxX / unit, maxY / unit, unit));
-                } else {
-                    pos0 = pos1;
-                    vis2 = vis;
-                    shader = null;
-                }
-                canvas.save();
-                canvas.clipRect(r);
-                for (Node n : listLayoutChildren) {
-                    drawNode(canvas, n, vis2);
-                }
-                canvas.restore();
-                float th = num(c, "ScrollBarThickness", 12.0f) * unit * 0.5f;
-                float bt = num(c, "ScrollBarImageTransparency", 0.0f);
-                if (maxY > 0.0f || th <= 0.0f || bt >= 1.0f) {
-                }
-                float barH = r.height() * (r.height() / ch.element);
-                float y = r.top + ((r.height() - barH) * RangesKt.coerceIn((pos0.getY() * unit) / maxY, 0.0f, 1.0f));
-                this.fill.setShader(shader);
-                this.fill.setColor(alpha(colorOf(c.get("ScrollBarImageColor3"), ViewCompat.MEASURED_STATE_MASK), (0.7f * bt) + 0.3f));
-                canvas.drawRoundRect((r.right - th) - (this.d * f), y, r.right - (this.d * f), y + barH, th / f, th / f, this.fill);
-                return;
-            }
-            list = listLayoutChildren2;
-            bottom = f3;
-            it = list.iterator();
-            if (it.hasNext()) {
-                throw new NoSuchElementException();
-            }
-            fMax = ((Node) it.next()).getRect().right;
-            while (it.hasNext()) {
-                fMax = Math.max(fMax, ((Node) it.next()).getRect().right);
-            }
-            right = fMax - area.left;
-            changed = false;
-            if (auto != 2) {
-                ch.element = bottom;
-                changed = true;
-            } else {
+            boolean changed = false;
+            if ((auto == 2 || auto == 3) && bottom > ch.element) {
                 ch.element = bottom;
                 changed = true;
             }
-            if (auto != 1) {
-                cw.element = right;
-                changed = true;
-            } else {
+            if ((auto == 1 || auto == 3) && right > cw.element) {
                 cw.element = right;
                 changed = true;
             }
             if (changed) {
-                listLayoutChildren = layoutChildren(c, padded(c, drawScrolling$canvasRect(r, pos1, unit, cw, ch), scale), scale);
-            }
-            float maxX2 = Math.max(0.0f, cw.element - r.width());
-            maxY = Math.max(0.0f, ch.element - r.height());
-            vis = new RectF(r);
-            if (!vis.intersect(clip)) {
-                vis.setEmpty();
-            }
-            if (vis.isEmpty()) {
-                pos0 = pos1;
-                vis2 = vis;
-                shader = null;
-            } else {
-                pos0 = pos1;
-                vis2 = vis;
-                shader = null;
-            }
-            canvas.save();
-            canvas.clipRect(r);
-            for (Node n : listLayoutChildren) {
-                drawNode(canvas, n, vis2);
-            }
-            canvas.restore();
-            float th2 = num(c, "ScrollBarThickness", 12.0f) * unit * 0.5f;
-            float bt2 = num(c, "ScrollBarImageTransparency", 0.0f);
-            if (maxY > 0.0f) {
+                nodes = layoutChildren(c, padded(c, drawScrolling$canvasRect(r, pos1, unit, cw, ch), scale), scale);
             }
         }
-        list = listLayoutChildren2;
-        f = 2.0f;
-        listLayoutChildren = list;
-        float maxX3 = Math.max(0.0f, cw.element - r.width());
-        maxY = Math.max(0.0f, ch.element - r.height());
-        vis = new RectF(r);
+        if (this.absUnit <= 0.0f) {
+            useGameUnits();
+        }
+        float au = this.absUnit;
+        c.getAttributes().put("__absCanvasSize", new Vector2(cw.element / au, ch.element / au));
+        c.getAttributes().put("__absWindowSize", new Vector2(r.width() / au, r.height() / au));
+        float maxX = Math.max(0.0f, cw.element - r.width());
+        float maxY = Math.max(0.0f, ch.element - r.height());
+        RectF vis = new RectF(r);
         if (!vis.intersect(clip)) {
             vis.setEmpty();
         }
-        if (vis.isEmpty()) {
-            pos0 = pos1;
-            vis2 = vis;
-            shader = null;
-        } else {
-            pos0 = pos1;
-            vis2 = vis;
-            shader = null;
+        if (!vis.isEmpty() && !Intrinsics.areEqual(c.get("ScrollingEnabled"), (Object) false) && (maxX > 0.0f || maxY > 0.0f)) {
+            this.newScrolls.add(new Scroll(c, vis, maxX / unit, maxY / unit, unit));
         }
         canvas.save();
         canvas.clipRect(r);
-        for (Node n : listLayoutChildren) {
-            drawNode(canvas, n, vis2);
+        for (Node n : nodes) {
+            drawNode(canvas, n, vis);
         }
         canvas.restore();
-        float th3 = num(c, "ScrollBarThickness", 12.0f) * unit * 0.5f;
-        float bt3 = num(c, "ScrollBarImageTransparency", 0.0f);
-        if (maxY > 0.0f) {
+        float th = num(c, "ScrollBarThickness", 12.0f) * unit * 0.5f;
+        float bt = num(c, "ScrollBarImageTransparency", 0.0f);
+        if (maxY > 0.0f && th > 0.0f && bt < 1.0f) {
+            float barH = r.height() * (r.height() / ch.element);
+            float y = r.top + ((r.height() - barH) * RangesKt.coerceIn((pos1.getY() * unit) / maxY, 0.0f, 1.0f));
+            this.fill.setShader(null);
+            this.fill.setColor(alpha(colorOf(c.get("ScrollBarImageColor3"), ViewCompat.MEASURED_STATE_MASK), (0.7f * bt) + 0.3f));
+            canvas.drawRoundRect((r.right - th) - (this.d * 2.0f), y, r.right - (this.d * 2.0f), y + barH, th / 2.0f, th / 2.0f, this.fill);
         }
     }
 
@@ -3838,10 +3811,9 @@ public final class GuiOverlay extends View {
         Object obj;
         float fWidth;
         String text = textOf(c);
-        if (text == null) {
-            return;
-        }
-        if (text.length() == 0) {
+        if (text == null || text.length() == 0) {
+            c.getAttributes().put("__textBounds", new Vector2(0.0f, 0.0f));
+            c.getAttributes().put("__textFits", Boolean.TRUE);
             return;
         }
         float tt = num(c, "TextTransparency", 0.0f);
@@ -3936,6 +3908,16 @@ public final class GuiOverlay extends View {
         }
         int wrapW2 = wrapW;
         StaticLayout sl = layoutFor(new TKey(text2, rich, face.getTypeface(), face.getFakeBold(), size, wrapW, align, minS, truncate));
+        float auText = this.absUnit > 0.0f ? this.absUnit : (this.d > 0.0f ? this.d : 1.0f);
+        float maxLineW = 0.0f;
+        int slLines = sl.getLineCount();
+        for (int li = 0; li < slLines; li++) {
+            float lw = sl.getLineWidth(li);
+            if (lw > maxLineW) maxLineW = lw;
+        }
+        float slH = sl.getHeight();
+        c.getAttributes().put("__textBounds", new Vector2(maxLineW / auText, slH / auText));
+        c.getAttributes().put("__textFits", Boolean.valueOf((maxLineW <= r.width() + 0.5f) && (slH <= r.height() + 0.5f)));
         if (wrapW2 > r.width()) {
             float f2 = r.left;
             switch (xAlign) {
@@ -4580,7 +4562,7 @@ public final class GuiOverlay extends View {
                                 f2 = y;
                                 try {
                                     luaValueArr2[0] = touchInput$default(guiOverlay, f, f2, 2, false, false, 24, null);
-                                    LuaInteger luaIntegerValueOf = LuaValue.valueOf(1);
+                                    LuaInteger luaIntegerValueOf = LuaValue.valueOf(0);
                                     Intrinsics.checkNotNullExpressionValue(luaIntegerValueOf, "valueOf(...)");
                                     luaValueArr2[1] = luaIntegerValueOf;
                                     r.fire(inst3, "Activated", luaValueArr2);
@@ -4738,10 +4720,11 @@ public final class GuiOverlay extends View {
 
     /* JADX WARN: Code duplicated, block: B:36:0x007a  */
     private final void editTextBox(Hit h) {
-        String str;
+        String str = null;
         String str2;
         String str3;
         String str4;
+        boolean multiLine;
         final Instance inst = h.getInst();
         final LuaRuntime r = h.getRt();
         if (r == null) {
@@ -4751,28 +4734,35 @@ public final class GuiOverlay extends View {
         Context context = getContext();
         Intrinsics.checkNotNullExpressionValue(context, "getContext(...)");
         synchronized (this.studio.getLock()) {
-            Object obj = inst.get("Text");
-            str = null;
-            str2 = obj instanceof String ? (String) obj : null;
-            if (str2 == null) {
+            if (Boolean.FALSE.equals(inst.get("TextEditable"))) {
+                return;
+            }
+            boolean clearOnFocus = !Boolean.FALSE.equals(inst.get("ClearTextOnFocus"));
+            multiLine = Boolean.TRUE.equals(inst.get("MultiLine"));
+            if (clearOnFocus) {
                 str2 = "";
+                Instance.set$default(inst, "Text", "", false, 4, null);
+            } else {
+                Object obj = inst.get("Text");
+                str2 = obj instanceof String ? (String) obj : "";
             }
         }
         final EditText e = Ui.input$default(ui, context, str2, null, false, false, 28, null);
+        e.setSingleLine(!multiLine);
+        if (multiLine) {
+            e.setMinLines(3);
+            e.setMaxLines(8);
+        }
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), android.R.style.Theme_Material_Dialog_Alert);
         synchronized (this.studio.getLock()) {
             Object obj2 = inst.get("PlaceholderText");
             str3 = obj2 instanceof String ? (String) obj2 : null;
         }
         if (str3 != null) {
-            String str5 = str3;
-            if (!(str5.length() == 0)) {
-                str = str5;
+            if (!(str3.length() == 0)) {
+                str = str3;
             }
-            str4 = str;
-            if (str4 == null) {
-                str4 = "Enter text";
-            }
+            str4 = str != null ? str : "Enter text";
         } else {
             str4 = "Enter text";
         }
@@ -4792,8 +4782,14 @@ public final class GuiOverlay extends View {
             public final void onClick(DialogInterface dialogInterface, int i) {
                 GuiOverlay.editTextBox$lambda$109(GuiOverlay.this, r, inst, dialogInterface, i);
             }
+        }).setOnCancelListener(new DialogInterface.OnCancelListener() {
+            @Override
+            public final void onCancel(DialogInterface dialogInterface) {
+                GuiOverlay.editTextBox$lambda$109(GuiOverlay.this, r, inst, dialogInterface, 0);
+            }
         }).show();
         synchronized (this.studio.getLock()) {
+            r.setFocusedTextBox(inst);
             r.fire(inst, "Focused", new LuaValue[0]);
             Unit unit = Unit.INSTANCE;
         }
@@ -4801,33 +4797,28 @@ public final class GuiOverlay extends View {
 
     static final void editTextBox$lambda$107(GuiOverlay this$0, Instance $inst, EditText $e, LuaRuntime $r, DialogInterface dialogInterface, int i) {
         try {
-        Throwable th;
-        synchronized (this$0.studio.getLock()) {
-            try {
-                try {
-                    Instance.set$default($inst, "Text", $e.getText().toString(), false, 4, null);
-                    LuaBoolean TRUE = LuaValue.TRUE;
-                    Intrinsics.checkNotNullExpressionValue(TRUE, "TRUE");
-                    LuaValue NIL = LuaValue.NIL;
-                    Intrinsics.checkNotNullExpressionValue(NIL, "NIL");
-                    $r.fire($inst, "FocusLost", TRUE, NIL);
-                    Unit unit = Unit.INSTANCE;
-                } catch (Throwable th2) {
-                    th = th2;
-                    throw th;
+            synchronized (this$0.studio.getLock()) {
+                Instance.set$default($inst, "Text", $e.getText().toString(), false, 4, null);
+                if ($r.getFocusedTextBox() == $inst) {
+                    $r.setFocusedTextBox(null);
                 }
-            } catch (Throwable th3) {
-                th = th3;
+                LuaBoolean TRUE = LuaValue.TRUE;
+                Intrinsics.checkNotNullExpressionValue(TRUE, "TRUE");
+                LuaValue NIL = LuaValue.NIL;
+                Intrinsics.checkNotNullExpressionValue(NIL, "NIL");
+                $r.fire($inst, "FocusLost", TRUE, NIL);
+                Unit unit = Unit.INSTANCE;
             }
-        }
-    }
-        catch (Throwable _ktEx) {
+        } catch (Throwable _ktEx) {
             throw com.goydevv.studrblx.util.KtCompat.sneakyThrow(_ktEx);
         }
     }
 
     static final void editTextBox$lambda$109(GuiOverlay this$0, LuaRuntime $r, Instance $inst, DialogInterface dialogInterface, int i) {
         synchronized (this$0.studio.getLock()) {
+            if ($r.getFocusedTextBox() == $inst) {
+                $r.setFocusedTextBox(null);
+            }
             LuaBoolean FALSE = LuaValue.FALSE;
             Intrinsics.checkNotNullExpressionValue(FALSE, "FALSE");
             LuaValue NIL = LuaValue.NIL;

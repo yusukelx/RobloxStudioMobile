@@ -4215,6 +4215,16 @@ public final class LuaTypes {
         if ((a instanceof UDim) && (b instanceof UDim)) {
             return new UDim(((UDim) a).getScale() + ((((UDim) b).getScale() - ((UDim) a).getScale()) * t), (int) (((UDim) a).getOffset() + ((((UDim) b).getOffset() - ((UDim) a).getOffset()) * t)));
         }
+        if ((a instanceof Rect) && (b instanceof Rect)) {
+            Rect ra = (Rect) a;
+            Rect rb = (Rect) b;
+            return new Rect(
+                ra.getMinX() + ((rb.getMinX() - ra.getMinX()) * t),
+                ra.getMinY() + ((rb.getMinY() - ra.getMinY()) * t),
+                ra.getMaxX() + ((rb.getMaxX() - ra.getMaxX()) * t),
+                ra.getMaxY() + ((rb.getMaxY() - ra.getMaxY()) * t)
+            );
+        }
         if ((a instanceof Number) && (b instanceof Number)) {
             return Double.valueOf(((Number) a).doubleValue() + ((((Number) b).doubleValue() - ((Number) a).doubleValue()) * ((double) t)));
         }

@@ -135,6 +135,28 @@ public final class AssetFetcher {
         return file != null && file.isFile();
     }
 
+    public final File cachedFile(long id) {
+        File f = file(id);
+        return (f != null && f.isFile()) ? f : null;
+    }
+
+    public final void prefetch(final long id) {
+        File f = file(id);
+        if (f != null && f.isFile()) {
+            return;
+        }
+        Long failTime = failed.get(Long.valueOf(id));
+        if ((failTime != null && System.currentTimeMillis() - failTime.longValue() < 90000) || !pending.add(Long.valueOf(id))) {
+            return;
+        }
+        pool.execute(new Runnable() {
+            @Override
+            public final void run() {
+                AssetFetcher.request$lambda$5(id);
+            }
+        });
+    }
+
     public final String cacheFile(long id) {
         File file = file(id);
         if (file == null) {
@@ -292,10 +314,11 @@ public final class AssetFetcher {
                 RbxDocument doc = RbxFile.INSTANCE.read(bytes);
                 for (Instance r : doc.getRoots()) {
                     for (Instance i : (List<Instance>) CollectionsKt.plus((Collection) CollectionsKt.listOf(r), (Iterable) Instance.descendants$default(r, null, 1, null))) {
-                        for (String k : CollectionsKt.listOf(new String[]{"ShirtTemplate", "PantsTemplate", "Graphic", "Texture", "TextureId", "Image", "ColorMap"})) {
+                        for (String k : CollectionsKt.listOf(new String[]{"ShirtTemplate", "PantsTemplate", "Graphic", "Texture", "TextureId", "TextureID", "TextureContent", "Image", "ColorMap", "ColorMapContent"})) {
                             ImageLoader imageLoader = ImageLoader.INSTANCE;
                             Object obj = i.get(k);
-                            Long lAssetId = imageLoader.assetId(obj != null ? obj.toString() : null);
+                            String rawVal = obj instanceof com.goydevv.studrblx.model.ContentValue ? ((com.goydevv.studrblx.model.ContentValue) obj).getUri() : (obj != null ? obj.toString() : null);
+                            Long lAssetId = imageLoader.assetId(rawVal);
                             if (lAssetId != null) {
                                 long inner = lAssetId.longValue();
                                 if (inner != id) {

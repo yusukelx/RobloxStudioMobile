@@ -15,6 +15,7 @@ import kotlin.collections.CollectionsKt;
 import kotlin.collections.SetsKt;
 import kotlin.jvm.functions.Function0;
 import kotlin.jvm.functions.Function1;
+import kotlin.jvm.functions.Function2;
 import kotlin.jvm.internal.Intrinsics;
 import kotlin.ranges.RangesKt;
 import kotlin.text.Charsets;
@@ -36,6 +37,18 @@ import org.luaj.vm2.Varargs;
 /* JADX INFO: loaded from: classes4.dex */
 public final class RobloxGlobals {
     public static final RobloxGlobals INSTANCE = new RobloxGlobals();
+    private static final java.util.Set<LuaTable> FROZEN_TABLES = java.util.Collections.synchronizedSet(
+            java.util.Collections.newSetFromMap(new java.util.WeakHashMap<LuaTable, Boolean>()));
+
+    public static boolean isFrozenTable(LuaValue v) {
+        return (v instanceof LuaTable) && FROZEN_TABLES.contains((LuaTable) v);
+    }
+
+    public static void checkNotFrozen(LuaValue v) {
+        if (isFrozenTable(v)) {
+            throw new LuaError("attempt to modify a readonly table");
+        }
+    }
 
     private RobloxGlobals() {
     }
@@ -373,6 +386,81 @@ public final class RobloxGlobals {
                 return RobloxGlobals.install$lambda$72((LuaValue) obj);
             }
         }));
+        LuaValue tblUnpack = LuaTypesKt.fnv(new Function1() {
+            @Override
+            public final Object invoke(Object obj) {
+                Varargs a = (Varargs) obj;
+                LuaTable t = a.arg(1).checktable();
+                int i = a.arg(2).optint(1);
+                int j = a.arg(3).isnil() ? t.length() : a.arg(3).checkint();
+                if (i > j) {
+                    return LuaValue.NONE;
+                }
+                int count = (j - i) + 1;
+                LuaValue[] out = new LuaValue[count];
+                for (int idx = 0; idx < count; idx++) {
+                    out[idx] = t.get(i + idx);
+                }
+                return LuaValue.varargsOf(out);
+            }
+        });
+        table.set("unpack", tblUnpack);
+        g.set("unpack", tblUnpack);
+        final LuaValue origInsert = table.get("insert");
+        if (origInsert.isfunction()) {
+            table.set("insert", LuaTypesKt.fnv(new Function1() {
+                @Override
+                public final Object invoke(Object obj) {
+                    Varargs a = (Varargs) obj;
+                    checkNotFrozen(a.arg(1));
+                    return origInsert.invoke(a);
+                }
+            }));
+        }
+        final LuaValue origRemove = table.get("remove");
+        if (origRemove.isfunction()) {
+            table.set("remove", LuaTypesKt.fnv(new Function1() {
+                @Override
+                public final Object invoke(Object obj) {
+                    Varargs a = (Varargs) obj;
+                    checkNotFrozen(a.arg(1));
+                    return origRemove.invoke(a);
+                }
+            }));
+        }
+        final LuaValue origSort = table.get("sort");
+        if (origSort.isfunction()) {
+            table.set("sort", LuaTypesKt.fnv(new Function1() {
+                @Override
+                public final Object invoke(Object obj) {
+                    Varargs a = (Varargs) obj;
+                    checkNotFrozen(a.arg(1));
+                    return origSort.invoke(a);
+                }
+            }));
+        }
+        final LuaValue origRawset = g.get("rawset");
+        if (origRawset.isfunction()) {
+            g.set("rawset", LuaTypesKt.fnv(new Function1() {
+                @Override
+                public final Object invoke(Object obj) {
+                    Varargs a = (Varargs) obj;
+                    checkNotFrozen(a.arg(1));
+                    return origRawset.invoke(a);
+                }
+            }));
+        }
+        final LuaValue origSetmetatable = g.get("setmetatable");
+        if (origSetmetatable.isfunction()) {
+            g.set("setmetatable", LuaTypesKt.fnv(new Function1() {
+                @Override
+                public final Object invoke(Object obj) {
+                    Varargs a = (Varargs) obj;
+                    checkNotFrozen(a.arg(1));
+                    return origSetmetatable.invoke(a);
+                }
+            }));
+        }
         LuaTable utf8 = new LuaTable();
         utf8.set("char", LuaTypesKt.fnv(new Function1() { // from class: com.goydevv.studrblx.lua.RobloxGlobals$$ExternalSyntheticLambda47
             @Override // kotlin.jvm.functions.Function1
@@ -421,6 +509,92 @@ public final class RobloxGlobals {
                 int target = pos + (n > 0 ? n - 1 : n);
                 if (target < 1 || target > s.length() + 1) return LuaValue.NIL;
                 return LuaValue.valueOf(target);
+            }
+        }));
+        utf8.set("codes", LuaTypesKt.fnv(new Function1() {
+            @Override
+            public final Object invoke(Object obj) {
+                Varargs a = (Varargs) obj;
+                LuaString ls = a.arg(1).checkstring();
+                byte[] raw = new byte[ls.m_length];
+                System.arraycopy(ls.m_bytes, ls.m_offset, raw, 0, ls.m_length);
+                String decoded = new String(raw, Charsets.UTF_8);
+                final ArrayList<int[]> entries = new ArrayList<>();
+                int byteOff = 1;
+                int ci = 0;
+                while (ci < decoded.length()) {
+                    int cp = decoded.codePointAt(ci);
+                    entries.add(new int[]{byteOff, cp});
+                    byteOff += (cp <= 0x7F) ? 1 : (cp <= 0x7FF) ? 2 : (cp <= 0xFFFF) ? 3 : 4;
+                    ci += Character.charCount(cp);
+                }
+                final int[] cursor = new int[]{0};
+                LuaValue iter = LuaTypesKt.fnv(new Function1() {
+                    @Override
+                    public final Object invoke(Object iterObj) {
+                        if (cursor[0] >= entries.size()) {
+                            return LuaValue.NIL;
+                        }
+                        int[] pair = entries.get(cursor[0]++);
+                        return LuaValue.varargsOf(LuaValue.valueOf(pair[0]), LuaValue.valueOf(pair[1]));
+                    }
+                });
+                return LuaValue.varargsOf(iter, ls, LuaValue.valueOf(0));
+            }
+        }));
+        utf8.set("graphemes", LuaTypesKt.fnv(new Function1() {
+            @Override
+            public final Object invoke(Object obj) {
+                Varargs a = (Varargs) obj;
+                LuaString ls = a.arg(1).checkstring();
+                int byteLen = ls.m_length;
+                int iPos = a.arg(2).optint(1);
+                int jPos = a.arg(3).optint(byteLen);
+                if (iPos < 0) iPos = byteLen + iPos + 1;
+                if (jPos < 0) jPos = byteLen + jPos + 1;
+                if (iPos < 1) iPos = 1;
+                if (jPos > byteLen) jPos = byteLen;
+                String full = new String(ls.m_bytes, ls.m_offset, ls.m_length, Charsets.UTF_8);
+                int[] charToByte = new int[full.length() + 1];
+                int bOff = 1;
+                int ci = 0;
+                while (ci < full.length()) {
+                    int cp = full.codePointAt(ci);
+                    int cc = Character.charCount(cp);
+                    int bl = (cp <= 0x7F) ? 1 : (cp <= 0x7FF) ? 2 : (cp <= 0xFFFF) ? 3 : 4;
+                    charToByte[ci] = bOff;
+                    if (cc == 2 && ci + 1 < full.length()) {
+                        charToByte[ci + 1] = bOff;
+                    }
+                    bOff += bl;
+                    ci += cc;
+                }
+                charToByte[full.length()] = bOff;
+                final ArrayList<int[]> spans = new ArrayList<>();
+                if (iPos <= jPos && !full.isEmpty()) {
+                    java.text.BreakIterator bi = java.text.BreakIterator.getCharacterInstance(java.util.Locale.ROOT);
+                    bi.setText(full);
+                    int start = bi.first();
+                    for (int end = bi.next(); end != java.text.BreakIterator.DONE; start = end, end = bi.next()) {
+                        int firstB = charToByte[start];
+                        int lastB = charToByte[end] - 1;
+                        if (lastB >= iPos && firstB <= jPos) {
+                            spans.add(new int[]{Math.max(firstB, iPos), Math.min(lastB, jPos)});
+                        }
+                    }
+                }
+                final int[] cursor = new int[]{0};
+                LuaValue iter = LuaTypesKt.fnv(new Function1() {
+                    @Override
+                    public final Object invoke(Object iterObj) {
+                        if (cursor[0] >= spans.size()) {
+                            return LuaValue.NIL;
+                        }
+                        int[] span = spans.get(cursor[0]++);
+                        return LuaValue.varargsOf(LuaValue.valueOf(span[0]), LuaValue.valueOf(span[1]));
+                    }
+                });
+                return LuaValue.varargsOf(iter, ls, LuaValue.NIL);
             }
         }));
         g.set("utf8", utf8);
@@ -742,10 +916,116 @@ public final class RobloxGlobals {
                 return r;
             }
         }));
+        t.set("FormatUniversalTime", LuaTypesKt.fnv(new Function1() {
+            @Override
+            public final Object invoke(Object obj) {
+                Varargs a = (Varargs) obj;
+                String fmt = a.arg(2).optjstring("YYYY-MM-DD HH:mm:ss");
+                String loc = a.arg(3).optjstring("en-us");
+                return LuaValue.valueOf(formatDateTime(ms, fmt, loc, java.util.TimeZone.getTimeZone("UTC")));
+            }
+        }));
+        t.set("FormatLocalTime", LuaTypesKt.fnv(new Function1() {
+            @Override
+            public final Object invoke(Object obj) {
+                Varargs a = (Varargs) obj;
+                String fmt = a.arg(2).optjstring("YYYY-MM-DD HH:mm:ss");
+                String loc = a.arg(3).optjstring("en-us");
+                return LuaValue.valueOf(formatDateTime(ms, fmt, loc, java.util.TimeZone.getDefault()));
+            }
+        }));
         LuaTable dtMt = new LuaTable();
         dtMt.set("__type", "DateTime");
+        dtMt.set(LuaValue.EQ, LuaTypesKt.fn2(new Function2() {
+            @Override
+            public final Object invoke(Object o1, Object o2) {
+                LuaValue a = (LuaValue) o1;
+                LuaValue b = (LuaValue) o2;
+                if (!a.istable() || !b.istable()) {
+                    return LuaValue.FALSE;
+                }
+                LuaValue ma = a.get("UnixTimestampMillis");
+                LuaValue mb = b.get("UnixTimestampMillis");
+                if (!ma.isnumber() || !mb.isnumber()) {
+                    return LuaValue.FALSE;
+                }
+                return LuaValue.valueOf(ma.tolong() == mb.tolong());
+            }
+        }));
+        dtMt.set(LuaValue.TOSTRING, LuaTypesKt.fn1(new Function1() {
+            @Override
+            public final Object invoke(Object obj) {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US);
+                sdf.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+                return LuaValue.valueOf(sdf.format(new java.util.Date(ms)));
+            }
+        }));
         t.setmetatable(dtMt);
         return t;
+    }
+
+    private static String formatDateTime(long ms, String format, String localeStr, java.util.TimeZone tz) {
+        java.util.Locale locale;
+        try {
+            locale = (localeStr != null && !localeStr.isEmpty())
+                    ? java.util.Locale.forLanguageTag(localeStr.replace('_', '-'))
+                    : java.util.Locale.US;
+            if (locale == null || locale.getLanguage().isEmpty()) {
+                locale = java.util.Locale.US;
+            }
+        } catch (Exception e) {
+            locale = java.util.Locale.US;
+        }
+        String f = format != null ? format : "YYYY-MM-DD HH:mm:ss";
+        if ("LTS".equals(f)) f = "h:mm:ss A";
+        else if ("LT".equals(f)) f = "h:mm A";
+        else if ("LLLL".equals(f)) f = "dddd, MMMM D, YYYY h:mm A";
+        else if ("LLL".equals(f)) f = "MMMM D, YYYY h:mm A";
+        else if ("LL".equals(f)) f = "MMMM D, YYYY";
+        else if ("L".equals(f)) f = "MM/DD/YYYY";
+        else if ("llll".equals(f)) f = "ddd, MMM D, YYYY h:mm A";
+        else if ("lll".equals(f)) f = "MMM D, YYYY h:mm A";
+        else if ("ll".equals(f)) f = "MMM D, YYYY";
+        else if ("l".equals(f)) f = "M/D/YYYY";
+        StringBuilder pat = new StringBuilder();
+        int idx = 0;
+        int len = f.length();
+        while (idx < len) {
+            if (f.startsWith("YYYY", idx)) { pat.append("yyyy"); idx += 4; }
+            else if (f.startsWith("YY", idx)) { pat.append("yy"); idx += 2; }
+            else if (f.startsWith("MMMM", idx)) { pat.append("MMMM"); idx += 4; }
+            else if (f.startsWith("MMM", idx)) { pat.append("MMM"); idx += 3; }
+            else if (f.startsWith("MM", idx)) { pat.append("MM"); idx += 2; }
+            else if (f.startsWith("M", idx)) { pat.append("M"); idx += 1; }
+            else if (f.startsWith("DD", idx)) { pat.append("dd"); idx += 2; }
+            else if (f.startsWith("D", idx)) { pat.append("d"); idx += 1; }
+            else if (f.startsWith("dddd", idx)) { pat.append("EEEE"); idx += 4; }
+            else if (f.startsWith("ddd", idx)) { pat.append("EEE"); idx += 3; }
+            else if (f.startsWith("HH", idx)) { pat.append("HH"); idx += 2; }
+            else if (f.startsWith("H", idx)) { pat.append("H"); idx += 1; }
+            else if (f.startsWith("hh", idx)) { pat.append("hh"); idx += 2; }
+            else if (f.startsWith("h", idx)) { pat.append("h"); idx += 1; }
+            else if (f.startsWith("mm", idx)) { pat.append("mm"); idx += 2; }
+            else if (f.startsWith("m", idx)) { pat.append("m"); idx += 1; }
+            else if (f.startsWith("SSS", idx)) { pat.append("SSS"); idx += 3; }
+            else if (f.startsWith("ss", idx)) { pat.append("ss"); idx += 2; }
+            else if (f.startsWith("s", idx)) { pat.append("s"); idx += 1; }
+            else if (f.startsWith("A", idx) || f.startsWith("a", idx)) { pat.append("a"); idx += 1; }
+            else {
+                char ch = f.charAt(idx);
+                if (ch == '\'') {
+                    pat.append("''");
+                } else if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) {
+                    pat.append('\'').append(ch).append('\'');
+                } else {
+                    pat.append(ch);
+                }
+                idx++;
+            }
+        }
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(pat.toString(), locale);
+        sdf.setTimeZone(tz);
+        return sdf.format(new java.util.Date(ms));
     }
 
 
@@ -1114,6 +1394,70 @@ public final class RobloxGlobals {
                 return makeDateTime(((LuaValue) obj).checklong());
             }
         }));
+        dt.set("fromIsoDate", LuaTypesKt.fn1(new Function1() {
+            @Override
+            public final Object invoke(Object obj) {
+                String iso = ((LuaValue) obj).checkjstring().trim();
+                String[] patterns = new String[]{
+                    "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+                    "yyyy-MM-dd'T'HH:mm:ssXXX",
+                    "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                    "yyyy-MM-dd'T'HH:mm:ss'Z'",
+                    "yyyy-MM-dd'T'HH:mm:ss",
+                    "yyyy-MM-dd HH:mm:ss",
+                    "yyyy-MM-dd"
+                };
+                for (String pat : patterns) {
+                    try {
+                        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(pat, java.util.Locale.US);
+                        sdf.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+                        sdf.setLenient(false);
+                        java.util.Date d = sdf.parse(iso);
+                        if (d != null) {
+                            return makeDateTime(d.getTime());
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
+                return LuaValue.NIL;
+            }
+        }));
+        dt.set("fromUniversalTime", LuaTypesKt.fnv(new Function1() {
+            @Override
+            public final Object invoke(Object obj) {
+                Varargs a = (Varargs) obj;
+                int year = a.arg(1).optint(1970);
+                int month = a.arg(2).optint(1);
+                int day = a.arg(3).optint(1);
+                int hour = a.arg(4).optint(0);
+                int minute = a.arg(5).optint(0);
+                int second = a.arg(6).optint(0);
+                int ms = a.arg(7).optint(0);
+                java.util.Calendar cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC"));
+                cal.clear();
+                cal.set(year, month - 1, day, hour, minute, second);
+                cal.set(java.util.Calendar.MILLISECOND, ms);
+                return makeDateTime(cal.getTimeInMillis());
+            }
+        }));
+        dt.set("fromLocalTime", LuaTypesKt.fnv(new Function1() {
+            @Override
+            public final Object invoke(Object obj) {
+                Varargs a = (Varargs) obj;
+                int year = a.arg(1).optint(1970);
+                int month = a.arg(2).optint(1);
+                int day = a.arg(3).optint(1);
+                int hour = a.arg(4).optint(0);
+                int minute = a.arg(5).optint(0);
+                int second = a.arg(6).optint(0);
+                int ms = a.arg(7).optint(0);
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.clear();
+                cal.set(year, month - 1, day, hour, minute, second);
+                cal.set(java.util.Calendar.MILLISECOND, ms);
+                return makeDateTime(cal.getTimeInMillis());
+            }
+        }));
         g.set("DateTime", dt);
     }
 
@@ -1200,7 +1544,28 @@ public final class RobloxGlobals {
         Instance inst = obj instanceof Instance ? (Instance) obj : null;
         if (inst == null) {
             if (m.isnumber()) {
-                throw new LuaError("require(assetId) is not supported offline");
+                OutputLog.INSTANCE.warn("require(" + m.tolong() + "): external asset modules are stubbed offline");
+                LuaTable stub = new LuaTable();
+                LuaTable smt = new LuaTable();
+                smt.set(LuaValue.CALL, LuaTypesKt.fnv(new Function1() {
+                    @Override
+                    public final Object invoke(Object a) {
+                        return LuaValue.NIL;
+                    }
+                }));
+                smt.set(LuaValue.INDEX, LuaTypesKt.fn2(new Function2() {
+                    @Override
+                    public final Object invoke(Object t, Object k) {
+                        return LuaTypesKt.fnv(new Function1() {
+                            @Override
+                            public final Object invoke(Object a) {
+                                return LuaValue.NIL;
+                            }
+                        });
+                    }
+                }));
+                stub.setmetatable(smt);
+                return stub;
             }
             if (m.isstring()) {
                 LuaValue scriptValue = $rt.getLuau().callerEnvGet("script");
@@ -1545,26 +1910,19 @@ public final class RobloxGlobals {
         LuaTable t = a.arg(1).checktable();
         LuaValue v = a.arg(2);
         int init = a.arg(3).optint(1);
-        LuaValue NIL = LuaValue.NIL;
-        Intrinsics.checkNotNullExpressionValue(NIL, "NIL");
-        int i = init;
         int length = t.length();
-        if (i <= length) {
-            while (!t.get(i).eq_b(v)) {
-                if (i != length) {
-                    i++;
-                }
+        for (int i = Math.max(init, 1); i <= length; i++) {
+            if (t.get(i).eq_b(v)) {
+                return LuaValue.valueOf(i);
             }
-            LuaValue r = LuaValue.valueOf(i);
-            Intrinsics.checkNotNullExpressionValue(r, "valueOf(...)");
-            NIL = r;
         }
-        return NIL;
+        return LuaValue.NIL;
     }
 
     static final LuaValue install$lambda$66(LuaValue a) {
         Intrinsics.checkNotNullParameter(a, "a");
         LuaTable t = a.checktable();
+        checkNotFrozen(t);
         ArrayList keys = new ArrayList();
         LuaValue k = LuaValue.NIL;
         while (true) {
@@ -1606,14 +1964,39 @@ public final class RobloxGlobals {
 
     static final LuaValue install$lambda$68(LuaValue it) {
         Intrinsics.checkNotNullParameter(it, "it");
-        return it;
+        LuaTable t = it.checktable();
+        if (FROZEN_TABLES.contains(t)) {
+            return t;
+        }
+        LuaTable newMt = new LuaTable();
+        LuaValue oldMt = t.getmetatable();
+        if (oldMt != null && oldMt.istable()) {
+            LuaTable omt = (LuaTable) oldMt;
+            LuaValue k = LuaValue.NIL;
+            while (true) {
+                Varargs n = omt.next(k);
+                k = n.arg1();
+                if (k.isnil()) {
+                    break;
+                }
+                newMt.set(k, n.arg(2));
+            }
+        }
+        newMt.set(LuaValue.NEWINDEX, LuaTypesKt.fnv(new Function1() {
+            @Override
+            public final Object invoke(Object obj) {
+                throw new LuaError("attempt to modify a readonly table");
+            }
+        }));
+        t.setmetatable(newMt);
+        FROZEN_TABLES.add(t);
+        return t;
     }
 
     static final LuaValue install$lambda$69(LuaValue it) {
         Intrinsics.checkNotNullParameter(it, "it");
-        LuaBoolean FALSE = LuaValue.FALSE;
-        Intrinsics.checkNotNullExpressionValue(FALSE, "FALSE");
-        return FALSE;
+        it.checktable();
+        return LuaValue.valueOf(isFrozenTable(it));
     }
 
     static final LuaValue install$lambda$70(LuaValue a) {
@@ -1645,6 +2028,7 @@ public final class RobloxGlobals {
         } else {
             dst = src;
         }
+        checkNotFrozen(dst);
         if (tpos <= f) {
             int i = f;
             if (i <= e) {

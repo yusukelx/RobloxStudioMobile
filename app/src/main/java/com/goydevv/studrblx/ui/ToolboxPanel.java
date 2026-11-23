@@ -1256,6 +1256,16 @@ public final class ToolboxPanel extends LinearLayout {
     public final void insertDownloaded(RobloxApi.Item item, byte[] bytes, RbxDocument doc) {
         Studio.insertDocument$default(this.studio, doc, null, 2, null);
         OutputLog.INSTANCE.info("Inserted " + item.getName() + " (" + item.getId() + ") from Roblox");
+        List<String> warns = doc.getWarnings();
+        if (warns != null && !warns.isEmpty()) {
+            int limit = Math.min(20, warns.size());
+            for (int wi = 0; wi < limit; wi++) {
+                OutputLog.INSTANCE.warn(warns.get(wi));
+            }
+            if (warns.size() > 20) {
+                OutputLog.INSTANCE.warn("…and " + (warns.size() - 20) + " more warnings");
+            }
+        }
         try {
             new File(getLibraryDir(), "recent").mkdirs();
             File rf = new File(new File(getLibraryDir(), "recent"), safeName(item.getName()) + ".rbxm");

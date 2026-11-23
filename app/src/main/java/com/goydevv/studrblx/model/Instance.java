@@ -18,6 +18,7 @@ public class Instance {
     /* JADX INFO: renamed from: Companion, reason: from kotlin metadata */
     public static final Companion INSTANCE = new Companion(null);
     public static volatile long changeCount;
+    public static volatile kotlin.jvm.functions.Function2<? super Instance, ? super Instance, kotlin.Unit> onRemovedToNil;
     private float absH;
     private float absW;
     private float absX;
@@ -292,10 +293,16 @@ public class Instance {
                 old.version++;
             }
             old.children.remove(this);
+            DataModel dmRoot = old.root();
             this.parent = null;
-            DataModel dataModelRoot = old.root();
-            if (dataModelRoot != null) {
-                dataModelRoot.fireChildRemoved(old, this);
+            if (dmRoot != null) {
+                dmRoot.fireChildRemoved(old, this);
+            }
+            if (newParent == null && dmRoot != null) {
+                kotlin.jvm.functions.Function2<? super Instance, ? super Instance, kotlin.Unit> cb = onRemovedToNil;
+                if (cb != null) {
+                    cb.invoke(old, this);
+                }
             }
         }
         if (newParent != null) {

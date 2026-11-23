@@ -78,13 +78,15 @@ public final class RobloxCloud {
     /* JADX INFO: compiled from: RobloxCloud.kt */
     public static final class Game {
         private final long groupId;
+        private final boolean isArchived;
         private final String name;
         private final String owner;
+        private final String privacyType;
         private final long rootPlaceId;
         private final long universeId;
         private final String updated;
 
-        public Game(long universeId, String name, long rootPlaceId, String updated, String owner, long groupId) {
+        public Game(long universeId, String name, long rootPlaceId, String updated, String owner, long groupId, String privacyType, boolean isArchived) {
             Intrinsics.checkNotNullParameter(name, "name");
             Intrinsics.checkNotNullParameter(updated, "updated");
             Intrinsics.checkNotNullParameter(owner, "owner");
@@ -94,6 +96,12 @@ public final class RobloxCloud {
             this.updated = updated;
             this.owner = owner;
             this.groupId = groupId;
+            this.privacyType = privacyType != null ? privacyType : "";
+            this.isArchived = isArchived;
+        }
+
+        public Game(long universeId, String name, long rootPlaceId, String updated, String owner, long groupId) {
+            this(universeId, name, rootPlaceId, updated, owner, groupId, "", false);
         }
 
         public /* synthetic */ Game(long j, String str, long j2, String str2, String str3, long j3, int i, DefaultConstructorMarker defaultConstructorMarker) {
@@ -112,6 +120,10 @@ public final class RobloxCloud {
             return this.owner;
         }
 
+        public final String getPrivacyType() {
+            return this.privacyType;
+        }
+
         public final long getRootPlaceId() {
             return this.rootPlaceId;
         }
@@ -122,6 +134,10 @@ public final class RobloxCloud {
 
         public final String getUpdated() {
             return this.updated;
+        }
+
+        public final boolean isArchived() {
+            return this.isArchived;
         }
     }
 
@@ -324,6 +340,10 @@ public final class RobloxCloud {
     }
 
     public final List<Game> searchUniverses(Context ctx, String creatorType, long targetId, String owner, long groupId, int pages) throws HttpException {
+        return searchUniverses(ctx, creatorType, targetId, owner, groupId, pages, false);
+    }
+
+    public final List<Game> searchUniverses(Context ctx, String creatorType, long targetId, String owner, long groupId, int pages, boolean isArchived) throws HttpException {
         LinkedHashMap out;
         long gid;
         Context ctx2 = ctx;
@@ -335,7 +355,7 @@ public final class RobloxCloud {
         LinkedHashMap out2 = new LinkedHashMap();
         int page = 0;
         while (page < pages) {
-            JSONObject j = json(ctx2, "https://apis.roblox.com/universes/v1/search?isTemplates=false&isArchived=false&creatorTargetId=" + targetId + "&searchKey=&sortOrder=Desc&search=&creatorType=" + creatorType2 + "&pageSize=50&sortParam=LastUpdated&surface=StudioStartPage&PageIndex=" + page);
+            JSONObject j = json(ctx2, "https://apis.roblox.com/universes/v1/search?isTemplates=false&isArchived=" + isArchived + "&creatorTargetId=" + targetId + "&searchKey=&sortOrder=Desc&search=&creatorType=" + creatorType2 + "&pageSize=50&sortParam=LastUpdated&surface=StudioStartPage&PageIndex=" + page);
             JSONArray arr = j.optJSONArray("data");
             if (arr == null && (arr = j.optJSONArray("Data")) == null) {
                 arr = new JSONArray();
@@ -344,12 +364,10 @@ public final class RobloxCloud {
             int length = arr.length();
             while (i < length) {
                 JSONObject o = arr.optJSONObject(i);
-                if (o == null) {
-                } else {
+                if (o != null) {
                     long id = m316long(o, "id", "Id", "universeId");
-                    if (id == 0 || o.optBoolean("isArchived")) {
-                    } else if (o.optBoolean("IsArchived")) {
-                    } else {
+                    boolean archived = o.optBoolean("isArchived") || o.optBoolean("IsArchived");
+                    if (id != 0 && (isArchived || !archived)) {
                         if (groupId != 0) {
                             gid = groupId;
                         } else {
@@ -364,7 +382,8 @@ public final class RobloxCloud {
                         if (str4.length() == 0) {
                             str4 = owner;
                         }
-                        linkedHashMap.put(lValueOf, new Game(id, str2, jM316long, str3, str4, gid));
+                        String privacy = str(o, "privacyType", "PrivacyType");
+                        linkedHashMap.put(lValueOf, new Game(id, str2, jM316long, str3, str4, gid, privacy, archived || isArchived));
                     }
                 }
                 i++;
@@ -427,37 +446,42 @@ public final class RobloxCloud {
     }
 
     private final void parseUniverses(JSONArray arr, String owner, long groupId, LinkedHashMap<Long, Game> out) {
-        try {
-        int length = arr.length();
-        for (int i = 0; i < length; i++) {
-            JSONObject o = arr.getJSONObject(i);
-            long id = o.optLong("id");
-            long jLongValue = 0;
-            if (id != 0 && !o.optBoolean("isArchived")) {
-                Long lValueOf = Long.valueOf(o.optLong("rootPlaceId"));
-                if (!(lValueOf.longValue() != 0)) {
-                    lValueOf = null;
-                }
-                if (lValueOf != null) {
-                    jLongValue = lValueOf.longValue();
-                } else {
-                    JSONObject jSONObjectOptJSONObject = o.optJSONObject("rootPlace");
-                    Long lValueOf2 = jSONObjectOptJSONObject != null ? Long.valueOf(jSONObjectOptJSONObject.optLong("id")) : null;
-                    if (lValueOf2 != null) {
-                        jLongValue = lValueOf2.longValue();
-                    }
-                }
-                long root = jLongValue;
-                Long lValueOf3 = Long.valueOf(id);
-                String strOptString = o.optString("name");
-                Intrinsics.checkNotNullExpressionValue(strOptString, "optString(...)");
-                String strOptString2 = o.optString("updated", o.optString("updatedAt"));
-                Intrinsics.checkNotNullExpressionValue(strOptString2, "optString(...)");
-                out.put(lValueOf3, new Game(id, strOptString, root, strOptString2, owner, groupId));
-            }
-        }
+        parseUniverses(arr, owner, groupId, out, false);
     }
-        catch (Throwable _ktEx) {
+
+    private final void parseUniverses(JSONArray arr, String owner, long groupId, LinkedHashMap<Long, Game> out, boolean includeArchived) {
+        try {
+            int length = arr.length();
+            for (int i = 0; i < length; i++) {
+                JSONObject o = arr.getJSONObject(i);
+                long id = o.optLong("id");
+                long jLongValue = 0;
+                boolean archived = o.optBoolean("isArchived") || o.optBoolean("IsArchived");
+                if (id != 0 && (includeArchived || !archived)) {
+                    Long lValueOf = Long.valueOf(o.optLong("rootPlaceId"));
+                    if (!(lValueOf.longValue() != 0)) {
+                        lValueOf = null;
+                    }
+                    if (lValueOf != null) {
+                        jLongValue = lValueOf.longValue();
+                    } else {
+                        JSONObject jSONObjectOptJSONObject = o.optJSONObject("rootPlace");
+                        Long lValueOf2 = jSONObjectOptJSONObject != null ? Long.valueOf(jSONObjectOptJSONObject.optLong("id")) : null;
+                        if (lValueOf2 != null) {
+                            jLongValue = lValueOf2.longValue();
+                        }
+                    }
+                    long root = jLongValue;
+                    Long lValueOf3 = Long.valueOf(id);
+                    String strOptString = o.optString("name");
+                    Intrinsics.checkNotNullExpressionValue(strOptString, "optString(...)");
+                    String strOptString2 = o.optString("updated", o.optString("updatedAt"));
+                    Intrinsics.checkNotNullExpressionValue(strOptString2, "optString(...)");
+                    String privacy = str(o, "privacyType", "PrivacyType");
+                    out.put(lValueOf3, new Game(id, strOptString, root, strOptString2, owner, groupId, privacy, archived));
+                }
+            }
+        } catch (Throwable _ktEx) {
             throw com.goydevv.studrblx.util.KtCompat.sneakyThrow(_ktEx);
         }
     }
@@ -520,7 +544,7 @@ public final class RobloxCloud {
                     linkedHashMap = linkedHashMap2;
                     parseUniverses(jSONArrayOptJSONArray2, user.getName(), 0L, linkedHashMap);
                     strNextCursor = nextCursor(j);
-                    if (strNextCursor != null) {
+                    if (strNextCursor == null) {
                         break;
                     }
                     cursor = strNextCursor;
@@ -542,7 +566,7 @@ public final class RobloxCloud {
                             try {
                                 parseUniverses(jSONArrayOptJSONArray2, user.getName(), 0L, linkedHashMap);
                                 strNextCursor = nextCursor(j2);
-                                if (strNextCursor != null) {
+                                if (strNextCursor == null) {
                                     break;
                                 }
                                 cursor = strNextCursor;
@@ -597,12 +621,62 @@ public final class RobloxCloud {
             }
             parseUniverses(jSONArrayOptJSONArray, user.getName(), 0L, linkedHashMap);
         }
-        if (!linkedHashMap.isEmpty() && err != null) {
+        if (linkedHashMap.isEmpty() && err != null) {
             throw err;
         }
         Collection<Game> collectionValues2 = linkedHashMap.values();
         Intrinsics.checkNotNullExpressionValue(collectionValues2, "<get-values>(...)");
         return CollectionsKt.toList(collectionValues2);
+    }
+
+    public final List<Game> archivedGames(Context ctx, User user) throws Exception {
+        Intrinsics.checkNotNullParameter(ctx, "ctx");
+        Intrinsics.checkNotNullParameter(user, "user");
+        LinkedHashMap<Long, Game> out = new LinkedHashMap<>();
+        Exception err = null;
+        try {
+            for (Game g : searchUniverses(ctx, "User", user.getId(), user.getName(), 0L, 10, true)) {
+                out.put(Long.valueOf(g.getUniverseId()), g);
+            }
+        } catch (AuthRequiredException e) {
+            throw e;
+        } catch (Exception e2) {
+            err = e2;
+        }
+        if (out.isEmpty()) {
+            String cursor = null;
+            int page = 0;
+            while (page < 10) {
+                try {
+                    String suffix = cursor == null ? "" : "&cursor=" + enc(cursor);
+                    JSONObject j = json(ctx, "https://develop.roblox.com/v1/user/universes?isArchived=true&limit=50&sortOrder=Desc" + suffix);
+                    JSONArray arr = j.optJSONArray("data");
+                    if (arr == null) {
+                        arr = new JSONArray();
+                    }
+                    parseUniverses(arr, user.getName(), 0L, out, true);
+                    String strNextCursor = nextCursor(j);
+                    if (strNextCursor == null) {
+                        break;
+                    }
+                    cursor = strNextCursor;
+                    page++;
+                } catch (AuthRequiredException e3) {
+                    throw e3;
+                } catch (Exception e4) {
+                    if (err == null) {
+                        err = e4;
+                    }
+                    break;
+                }
+            }
+        }
+        if (out.isEmpty() && err != null) {
+            throw err;
+        }
+        Collection<Game> values = out.values();
+        Intrinsics.checkNotNullExpressionValue(values, "<get-values>(...)");
+        return CollectionsKt.toList(values);
     }
 
     public final List<Group> groups(Context ctx, User user) throws JSONException, HttpException {

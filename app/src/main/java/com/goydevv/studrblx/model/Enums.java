@@ -178,6 +178,9 @@ public final class Enums {
         types$lambda$11$e(map, "CollisionFidelity", TuplesKt.to("Default", 0), TuplesKt.to("Hull", 1), TuplesKt.to("Box", 2), TuplesKt.to("PreciseConvexDecomposition", 3));
         types$lambda$11$e(map, "RenderFidelity", TuplesKt.to("Automatic", 0), TuplesKt.to("Precise", 1), TuplesKt.to("Performance", 2));
         types$lambda$11$e(map, "FluidFidelity", TuplesKt.to("Automatic", 0), TuplesKt.to("UseCollisionGeometry", 1), TuplesKt.to("UsePreciseGeometry", 2));
+        types$lambda$11$e(map, "RollOffMode", TuplesKt.to("Inverse", 0), TuplesKt.to("Linear", 1), TuplesKt.to("LinearSquare", 2), TuplesKt.to("InverseTapered", 3));
+        types$lambda$11$e(map, "ReverbType", TuplesKt.to("NoReverb", 0), TuplesKt.to("GenericReverb", 1), TuplesKt.to("PaddedCell", 2), TuplesKt.to("Room", 3), TuplesKt.to("Bathroom", 4), TuplesKt.to("LivingRoom", 5), TuplesKt.to("StoneRoom", 6), TuplesKt.to("Auditorium", 7), TuplesKt.to("ConcertHall", 8), TuplesKt.to("Cave", 9), TuplesKt.to("Arena", 10), TuplesKt.to("Hangar", 11), TuplesKt.to("CarpettedHallway", 12), TuplesKt.to("Hallway", 13), TuplesKt.to("StoneCorridor", 14), TuplesKt.to("Alley", 15), TuplesKt.to("Forest", 16), TuplesKt.to("City", 17), TuplesKt.to("Mountains", 18), TuplesKt.to("Quarry", 19), TuplesKt.to("Plain", 20), TuplesKt.to("ParkingLot", 21), TuplesKt.to("SewerPipe", 22), TuplesKt.to("UnderWater", 23));
+        types$lambda$11$e(map, "ListenerType", TuplesKt.to("Camera", 0), TuplesKt.to("CFrame", 1), TuplesKt.to("ObjectPosition", 2), TuplesKt.to("ObjectCFrame", 3));
         types = map;
     }
 
@@ -247,6 +250,8 @@ public final class Enums {
             case "Technology": return "Technology";
             case "MeshType": return "MeshType";
             case "Face": return "NormalId";
+            case "RollOffMode": return "RollOffMode";
+            case "AmbientReverb": return "ReverbType";
             default: return null;
         }
     }

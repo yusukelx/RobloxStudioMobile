@@ -1,6 +1,7 @@
 package com.goydevv.studrblx.format;
 
 import com.goydevv.studrblx.model.Axes;
+import com.goydevv.studrblx.model.BinaryString;
 import com.goydevv.studrblx.model.BrickColorV;
 import com.goydevv.studrblx.model.CFrame;
 import com.goydevv.studrblx.model.Color3;
@@ -34,6 +35,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import kotlin.Triple;
 import kotlin.collections.ArraysKt;
 import kotlin.collections.SetsKt;
@@ -44,6 +46,11 @@ import kotlin.text.StringsKt;
 /* JADX INFO: compiled from: RbxBinary.kt */
 /* JADX INFO: loaded from: classes5.dex */
 public final class RbxBinaryReader {
+    private static final Set<String> BINARY_PROPS = SetsKt.setOf(new String[]{
+            "AttributesSerialize", "PhysicsData", "PhysicalConfigData", "MeshData",
+            "MeshData2", "SmoothGrid", "MaterialColors", "ModelMeshData",
+            "ChildData", "PhysicsGrid"
+    });
     private final HashMap<Integer, ClassInfo> classes;
     private final byte[] data;
     private final HashMap<Integer, Instance> instances;
@@ -129,15 +136,18 @@ public final class RbxBinaryReader {
                 break;
             }
             strTrimEnd = StringsKt.trimEnd(new String(byteReader.bytes(4), Charsets.ISO_8859_1), (char) 0);
-            int iI32 = byteReader.i32();
-            int iI33 = byteReader.i32();
+            int compLen = byteReader.i32();
+            int uncompLen = byteReader.i32();
             byteReader.i32();
-            if (iI32 == 0) {
-                bArrDecompress = byteReader.bytes(iI33);
+            if (compLen < 0 || uncompLen < 0) {
+                throw new RbxFormatException("Negative chunk length in " + strTrimEnd);
+            }
+            if (compLen == 0) {
+                bArrDecompress = byteReader.bytes(uncompLen);
             } else {
                 int pos = byteReader.getPos();
-                byteReader.bytes(iI32);
-                bArrDecompress = decompress(this.data, pos, iI32, iI33);
+                byteReader.bytes(compLen);
+                bArrDecompress = decompress(this.data, pos, compLen, uncompLen);
             }
             arrayList.add(new Chunk(strTrimEnd, bArrDecompress));
         } while (!Intrinsics.areEqual(strTrimEnd, "END"));
@@ -197,7 +207,11 @@ public final class RbxBinaryReader {
             Instance instanceComponent1 = triple.component1();
             String strComponent2 = triple.component2();
             int iIntValue = triple.component3().intValue();
-            instanceComponent1.getProps().put(strComponent2, iIntValue < 0 ? null : this.instances.get(Integer.valueOf(iIntValue)));
+            Instance resolved = iIntValue < 0 ? null : this.instances.get(Integer.valueOf(iIntValue));
+            if (iIntValue >= 0 && resolved == null) {
+                this.warnings.add("Unresolved binary ref " + iIntValue + " for " + instanceComponent1.getClassName() + "." + strComponent2);
+            }
+            instanceComponent1.getProps().put(strComponent2, resolved);
         }
         ArrayList arrayList2 = new ArrayList();
         Iterator it6 = arrayList.iterator();
@@ -232,6 +246,9 @@ public final class RbxBinaryReader {
     }
 
     private final byte[] decompress(byte[] src, int off, int len, int out) throws RbxFormatException {
+        if (off < 0 || len < 0 || out < 0 || off + len > src.length) {
+            throw new RbxFormatException("Invalid compressed chunk bounds");
+        }
         boolean isZstd = len >= 4 && src[off] == 40 && src[off + 1] == -75 && src[off + 2] == 47 && src[off + 3] == -3;
         if (isZstd) {
             try {
@@ -270,14 +287,12 @@ public final class RbxBinaryReader {
         int format = r.u8();
         int n = r.i32();
         int[] refs = r.refArray(n);
-        boolean isService = format == 1;
-        if (isService) {
-            r.bytes(n);
-        }
+        byte[] markers = format == 1 ? r.bytes(n) : null;
         this.classes.put(Integer.valueOf(classId), new ClassInfo(cls, refs));
-        for (int ref : refs) {
+        for (int i = 0; i < refs.length; i++) {
+            int ref = refs[i];
             Instance inst = new Instance(cls);
-            inst.setService(isService);
+            inst.setService(markers != null && markers[i] != 0);
             inst.setLoadedRef(ref);
             this.instances.put(Integer.valueOf(ref), inst);
         }
@@ -380,9 +395,11 @@ public final class RbxBinaryReader {
         ContentValue contentValue;
         switch (type) {
             case 1:
+                boolean forceBinary = BINARY_PROPS.contains(name);
                 ArrayList arrayList = new ArrayList(n);
                 for (int i = 0; i < n; i++) {
-                    arrayList.add(RbxBinaryKt.bytesToStringValue(r.stringBytes()));
+                    byte[] raw = r.stringBytes();
+                    arrayList.add(forceBinary ? new BinaryString(raw) : RbxBinaryKt.bytesToStringValue(raw));
                 }
                 return arrayList;
             case 2:
@@ -677,7 +694,11 @@ public final class RbxBinaryReader {
                         case 2:
                             oi = oi2 + 1;
                             int i48 = oi2 >= 0 && oi2 < objs.length ? objs[oi2] : -1;
-                            contentValue = new ContentValue(2, "", i48 < 0 ? null : this.instances.get(Integer.valueOf(i48)));
+                            Instance refInst = i48 < 0 ? null : this.instances.get(Integer.valueOf(i48));
+                            if (i48 >= 0 && refInst == null) {
+                                this.warnings.add("Unresolved binary Content ref " + i48 + " for " + insts.get(i47).getClassName() + "." + name);
+                            }
+                            contentValue = new ContentValue(2, "", refInst);
                             break;
                         default:
                             oi = oi2;
@@ -694,10 +715,9 @@ public final class RbxBinaryReader {
 
     private static final int readValues$lambda$19$s16(ByteReader $r) {
         try {
-        int v = $r.u16();
-        return v >= 32768 ? v - 65536 : v;
-    }
-        catch (Throwable _ktEx) {
+            int v = $r.u16();
+            return v >= 32768 ? v - 65536 : v;
+        } catch (Throwable _ktEx) {
             throw com.goydevv.studrblx.util.KtCompat.sneakyThrow(_ktEx);
         }
     }

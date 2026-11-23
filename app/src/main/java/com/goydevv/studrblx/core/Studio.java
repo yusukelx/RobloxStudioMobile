@@ -807,10 +807,19 @@ public final class Studio {
                 }
             }
             PlaySession playSession2 = this.play;
-            if (playSession2 != null && (player2 = playSession2.getPlayer()) != null && (instanceFindFirstChild$default2 = Instance.findFirstChild$default(player2, "Backpack", false, 2, null)) != null && (iterableDescendants$default4 = Instance.descendants$default(instanceFindFirstChild$default2, null, 1, null)) != null) {
-                for (Instance instance3 : iterableDescendants$default4) {
-                    if (this.ADORNMENTS.contains(instance3.getClassName())) {
-                        this.adornCache.add(instance3);
+            if (playSession2 != null && (player2 = playSession2.getPlayer()) != null) {
+                for (Instance directChild : player2.getChildren()) {
+                    if (Intrinsics.areEqual(directChild.getClassName(), "Sound")) {
+                        this.soundsCache.add(directChild);
+                    }
+                }
+                if ((instanceFindFirstChild$default2 = Instance.findFirstChild$default(player2, "Backpack", false, 2, null)) != null && (iterableDescendants$default4 = Instance.descendants$default(instanceFindFirstChild$default2, null, 1, null)) != null) {
+                    for (Instance instance3 : iterableDescendants$default4) {
+                        if (this.ADORNMENTS.contains(instance3.getClassName())) {
+                            this.adornCache.add(instance3);
+                        } else if (Intrinsics.areEqual(instance3.getClassName(), "Sound")) {
+                            this.soundsCache.add(instance3);
+                        }
                     }
                 }
             }
@@ -1098,6 +1107,59 @@ public final class Studio {
                     return Studio.startPlay$lambda$28$lambda$26(playSession, (Instance) obj);
                 }
             });
+            audioEngine.setOnDidLoop(new kotlin.jvm.functions.Function2<Instance, Integer, Unit>() {
+                @Override
+                public Unit invoke(Instance snd, Integer count) {
+                    if (snd == null) return Unit.INSTANCE;
+                    LuaRuntime rt = playSession.getRt();
+                    Object obj = snd.get("SoundId");
+                    String sid = obj != null ? obj.toString() : "";
+                    int c = count != null ? count.intValue() : 1;
+                    rt.fire(snd, "DidLoop", new LuaValue[]{LuaValue.valueOf(sid), LuaValue.valueOf(c)});
+                    return Unit.INSTANCE;
+                }
+            });
+            Instance.onRemovedToNil = new kotlin.jvm.functions.Function2<Instance, Instance, Unit>() {
+                @Override
+                public Unit invoke(Instance oldParent, Instance removed) {
+                    if (removed == null || Studio.this.play != playSession) return Unit.INSTANCE;
+                    ArrayList<Instance> scan = new ArrayList<>();
+                    scan.add(removed);
+                    removed.descendants(scan);
+                    for (Instance cand : scan) {
+                        if (!"Sound".equals(cand.getClassName())) continue;
+                        if (!Boolean.TRUE.equals(cand.get("PlayOnRemove"))) continue;
+                        if (Boolean.TRUE.equals(cand.getAttributes().get("__playOnRemoveActive"))) continue;
+                        Instance copy = new Instance("Sound");
+                        copy.getProps().putAll(cand.getProps());
+                        copy.getPropTypes().putAll(cand.getPropTypes());
+                        copy.set("Looped", Boolean.FALSE, false);
+                        copy.set("TimePosition", Double.valueOf(0.0d), false);
+                        copy.set("IsPaused", Boolean.FALSE, false);
+                        copy.set("IsPlaying", Boolean.TRUE, false);
+                        copy.set("Playing", Boolean.TRUE, false);
+                        copy.getAttributes().put("__playOnRemoveActive", Boolean.TRUE);
+                        copy.getAttributes().put("__playSeq", Integer.valueOf(1));
+                        Instance srcParent = (cand == removed) ? oldParent : cand.getParent();
+                        if (srcParent == null) srcParent = oldParent;
+                        if (srcParent != null) {
+                            if (srcParent.isA("BasePart")) {
+                                copy.getAttributes().put("__lastEmitterPos", PartData.INSTANCE.cframe(srcParent).getPosition());
+                            } else if ("Attachment".equals(srcParent.getClassName())) {
+                                Instance bp = srcParent.getParent();
+                                if (bp == null && srcParent == removed) bp = oldParent;
+                                if (bp != null && bp.isA("BasePart")) {
+                                    Object cfObj = srcParent.get("CFrame");
+                                    Vector3 localPos = (cfObj instanceof CFrame) ? ((CFrame) cfObj).getPosition() : Vector3.INSTANCE.getZERO();
+                                    copy.getAttributes().put("__lastEmitterPos", PartData.INSTANCE.cframe(bp).times(localPos));
+                                }
+                            }
+                        }
+                        AudioEngine.INSTANCE.enqueueTransientSound(copy);
+                    }
+                    return Unit.INSTANCE;
+                }
+            };
             this.glJobs.add(new Function0() { // from class: com.goydevv.studrblx.core.Studio$$ExternalSyntheticLambda13
                 @Override // kotlin.jvm.functions.Function0
                 public final Object invoke() {
@@ -1166,6 +1228,10 @@ public final class Studio {
                 return;
             }
             playSession.stop();
+            AudioEngine.INSTANCE.setOnLoaded(null);
+            AudioEngine.INSTANCE.setOnEnded(null);
+            AudioEngine.INSTANCE.setOnDidLoop(null);
+            Instance.onRemovedToNil = null;
             AudioEngine.INSTANCE.stopAll();
             DataModel dataModel = this.playModel;
             if (dataModel != null && (listeners = dataModel.getListeners()) != null) {
@@ -1227,6 +1293,7 @@ public final class Studio {
             this.fileIsXml = isXml;
             this.dirty = false;
             resetCameraFromModel();
+            runImportReport(name != null ? name : "Place", dm);
             Unit unit = Unit.INSTANCE;
         }
         for (Listener listener : this.listeners) {
@@ -1248,6 +1315,89 @@ public final class Studio {
     public final void newPlace(PlaceFactory.Template template) {
         Intrinsics.checkNotNullParameter(template, "template");
         replaceEditModel$default(this, PlaceFactory.INSTANCE.newPlace(template), null, "Place1.rbxl", false, null, 16, null);
+    }
+
+    public final void runImportReport(String sourceName, Instance root) {
+        if (root == null) return;
+        runImportReport(sourceName, Collections.singletonList(root), Collections.<String>emptyList());
+    }
+
+    public final void runImportReport(String sourceName, List<? extends Instance> roots, List<String> warnings) {
+        if (roots == null || roots.isEmpty()) return;
+        int totalInst = 0, parts = 0, meshes = 0, textures = 0, scripts = 0, sounds = 0, joints = 0;
+        int assetsCached = 0, assetsQueued = 0, assetsFailed = 0;
+        int warnCount = warnings != null ? warnings.size() : 0;
+        int unresolvedRefs = 0;
+        if (warnings != null) {
+            for (String w : warnings) {
+                if (w != null && w.startsWith("Unresolved ")) {
+                    unresolvedRefs++;
+                }
+            }
+        }
+        StringBuilder failedList = new StringBuilder();
+        java.util.HashSet<Long> seenIds = new java.util.HashSet<>();
+        String[] assetKeys = {
+            "MeshId", "MeshID", "MeshContent",
+            "TextureID", "TextureId", "Texture", "TextureContent",
+            "SoundId", "Image", "AnimationId",
+            "ColorMap", "ColorMapContent", "NormalMap", "NormalMapContent",
+            "RoughnessMap", "RoughnessMapContent", "MetalnessMap", "MetalnessMapContent",
+            "AssetId", "Graphic", "ShirtTemplate", "PantsTemplate",
+            "SkyboxBk", "SkyboxDn", "SkyboxFt", "SkyboxLf", "SkyboxRt", "SkyboxUp"
+        };
+        ArrayList<Instance> allInsts = new ArrayList<>();
+        for (Instance root : roots) {
+            if (root == null) continue;
+            if (!(root instanceof DataModel) && !"DataModel".equals(root.getClassName())) {
+                allInsts.add(root);
+            }
+            allInsts.addAll(Instance.descendants$default(root, null, 1, null));
+        }
+        for (Instance inst : allInsts) {
+            totalInst++;
+            String cn = inst.getClassName();
+            if (inst.isA("BasePart") && !"Terrain".equals(cn)) parts++;
+            if ("MeshPart".equals(cn) || "SpecialMesh".equals(cn)) meshes++;
+            if ("Decal".equals(cn) || "Texture".equals(cn) || "SurfaceAppearance".equals(cn)
+                    || "Shirt".equals(cn) || "Pants".equals(cn) || "ShirtGraphic".equals(cn)
+                    || "Sky".equals(cn) || "ImageLabel".equals(cn) || "ImageButton".equals(cn)) {
+                textures++;
+            }
+            if (inst.isA("BaseScript")) scripts++;
+            if ("Sound".equals(cn)) sounds++;
+            if (inst.isA("JointInstance") || "WeldConstraint".equals(cn) || inst.isA("Constraint")) joints++;
+            for (String k : assetKeys) {
+                Object val = inst.get(k);
+                if (val == null) continue;
+                Long aid = com.goydevv.studrblx.net.AssetFetcher.INSTANCE.idOf(val);
+                if (aid != null && aid.longValue() > 0 && seenIds.add(aid)) {
+                    if (com.goydevv.studrblx.net.AssetFetcher.INSTANCE.isCached(aid.longValue())) {
+                        assetsCached++;
+                    } else {
+                        com.goydevv.studrblx.net.AssetFetcher.INSTANCE.request(aid.longValue());
+                        String err = com.goydevv.studrblx.net.AssetFetcher.INSTANCE.lastError(aid.longValue());
+                        if (err != null) {
+                            assetsFailed++;
+                            if (failedList.length() < 240) {
+                                if (failedList.length() > 0) failedList.append(", ");
+                                failedList.append(aid).append(" (").append(err).append(")");
+                            }
+                        } else {
+                            assetsQueued++;
+                        }
+                    }
+                }
+            }
+        }
+        OutputLog.INSTANCE.info("[Import Report: " + sourceName + "] Instances: " + totalInst
+            + " | Parts: " + parts + " | Meshes: " + meshes + " | Textures: " + textures
+            + " | Welds/Constraints: " + joints + " | Scripts: " + scripts + " | Sounds: " + sounds
+            + " | Warnings: " + warnCount + " | Unresolved Refs: " + unresolvedRefs
+            + " | Assets: " + assetsCached + " cached, " + assetsQueued + " fetching, " + assetsFailed + " failed");
+        if (assetsFailed > 0) {
+            OutputLog.INSTANCE.warn("[Import Report] Failed assets: " + failedList.toString());
+        }
     }
 
     private final void resetCameraFromModel() {
@@ -1458,6 +1608,27 @@ public final class Studio {
                     break;
                 }
                 Instance next = it.next();
+                if (parent == null && (next.getIsService() || ClassDb.INSTANCE.isServiceName(next.getClassName()))) {
+                    Instance targetSvc = getModel().getService(next.getClassName());
+                    boolean hasTerrain = false;
+                    for (Instance existing : targetSvc.getChildren()) {
+                        if ("Terrain".equals(existing.getClassName())) {
+                            hasTerrain = true;
+                            break;
+                        }
+                    }
+                    for (Instance ch : new ArrayList<>(next.getChildren())) {
+                        if ("Terrain".equals(ch.getClassName()) && hasTerrain) {
+                            continue;
+                        }
+                        reparent(ch, targetSvc);
+                        inserted.add(ch);
+                        if ("Terrain".equals(ch.getClassName())) {
+                            hasTerrain = true;
+                        }
+                    }
+                    continue;
+                }
                 if (parent == null) {
                     boolean isMatOnly = Intrinsics.areEqual(next.getClassName(), "MaterialVariant");
                     if (!isMatOnly && Intrinsics.areEqual(next.getClassName(), "Folder") && !next.getChildren().isEmpty()) {
@@ -1521,30 +1692,38 @@ public final class Studio {
                 reparent(next, service);
                 inserted.add(next);
             }
-            ArrayList<Instance> arrayList = inserted;
-            Collection arrayList2 = new ArrayList();
-            for (Instance instance3 : arrayList) {
-                Iterable iterablePlus = CollectionsKt.plus((Collection) CollectionsKt.listOf(instance3), (Iterable) Instance.descendants$default(instance3, null, 1, null));
-                Collection arrayList3 = new ArrayList();
-                for (Object obj2 : iterablePlus) {
-                    Collection collection = arrayList;
-                    if (((Instance) obj2).isA("BasePart")) {
-                        Collection collection2 = arrayList3;
-                        collection2.add(obj2);
-                        arrayList3 = (ArrayList) collection2;
-                    }
-                    arrayList = (ArrayList) collection;
+            ArrayList<Instance> shiftParts = new ArrayList<>();
+            ArrayList<Instance> shiftModels = new ArrayList<>();
+            for (Instance instance3 : (ArrayList<Instance>) inserted) {
+                if (instance3.isA("BasePart") && !"Terrain".equals(instance3.getClassName())) {
+                    shiftParts.add(instance3);
+                } else if ("Model".equals(instance3.getClassName())) {
+                    shiftModels.add(instance3);
                 }
-                CollectionsKt.addAll(arrayList2, (List) arrayList3);
+                for (Instance desc : Instance.descendants$default(instance3, null, 1, null)) {
+                    if (desc.isA("BasePart") && !"Terrain".equals(desc.getClassName())) {
+                        shiftParts.add(desc);
+                    } else if ("Model".equals(desc.getClassName())) {
+                        shiftModels.add(desc);
+                    }
+                }
             }
-            List<Instance> list = (List) arrayList2;
-            Pair<Vector3, Vector3> pairBoundsOf = Geometry.INSTANCE.boundsOf(list);
+            Pair<Vector3, Vector3> pairBoundsOf = Geometry.INSTANCE.boundsOf(shiftParts);
             if (pairBoundsOf != null) {
                 Vector3 vector3Component1 = pairBoundsOf.component1();
                 Vector3 vector3Component2 = pairBoundsOf.component2();
                 Vector3 vector3Minus = spawnPoint(vector3Component2.minus(vector3Component1)).minus(vector3Component1.plus(vector3Component2).div(2.0f));
-                for (Instance instance4 : list) {
+                for (Instance instance4 : shiftParts) {
                     setProp(instance4, "CFrame", PartData.INSTANCE.cframe(instance4).plus(vector3Minus));
+                }
+                for (Instance mdl : shiftModels) {
+                    Object wpObj = mdl.getProps().get("WorldPivotData");
+                    if (wpObj instanceof com.goydevv.studrblx.model.OptionalCFrame) {
+                        CFrame wpCf = ((com.goydevv.studrblx.model.OptionalCFrame) wpObj).getCframe();
+                        if (wpCf != null) {
+                            setProp(mdl, "WorldPivotData", new com.goydevv.studrblx.model.OptionalCFrame(wpCf.plus(vector3Minus)));
+                        }
+                    }
                 }
             }
             this.undo.commit();
@@ -1555,6 +1734,7 @@ public final class Studio {
         while (it4.hasNext()) {
             ((Listener) it4.next()).onSelectionChanged();
         }
+        runImportReport("Insert", inserted, doc.getWarnings());
     }
 
     public final void select(List<? extends Instance> list) {

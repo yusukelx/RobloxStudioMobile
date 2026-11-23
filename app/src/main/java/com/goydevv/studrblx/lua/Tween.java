@@ -4,12 +4,14 @@ import com.goydevv.studrblx.model.Instance;
 import java.util.Map;
 import kotlin.collections.MapsKt;
 import kotlin.jvm.internal.Intrinsics;
+import org.luaj.vm2.LuaValue;
 
 /* JADX INFO: compiled from: LuaRuntime.kt */
 /* JADX INFO: loaded from: classes4.dex */
 public final class Tween {
     private float elapsed;
     private final Map<String, Object> goals;
+    private LuaValue guiCallback;
     private final TweenInfoV info;
     private final Instance inst;
     private int repeatsDone;
@@ -78,5 +80,13 @@ public final class Tween {
 
     public final void setReversing(boolean z) {
         this.reversing = z;
+    }
+
+    public final LuaValue getGuiCallback() {
+        return this.guiCallback;
+    }
+
+    public final void setGuiCallback(LuaValue cb) {
+        this.guiCallback = cb;
     }
 }

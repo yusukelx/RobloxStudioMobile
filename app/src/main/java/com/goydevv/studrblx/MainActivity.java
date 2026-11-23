@@ -308,6 +308,9 @@ public final class MainActivity extends AppCompatActivity implements MainActions
         StudioApp.logBreadcrumb("MainActivity.onCreate started");
         try {
             com.goydevv.studrblx.net.AssetFetcher.INSTANCE.init(getApplicationContext());
+            for (long aid : new long[]{507766666L, 507766951L, 913402848L, 913376220L, 507765000L, 507767968L, 507765644L, 180435571L, 180435792L, 180426354L, 125750702L, 180436148L, 180436334L}) {
+                com.goydevv.studrblx.engine.AnimLibrary.INSTANCE.get(aid);
+            }
         } catch (Throwable ignored) {
         }
         Settings.INSTANCE.init(this);

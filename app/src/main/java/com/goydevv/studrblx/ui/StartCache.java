@@ -17,7 +17,6 @@ import kotlin.collections.IntIterator;
 import kotlin.jvm.internal.Intrinsics;
 import kotlin.ranges.RangesKt;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 /* JADX INFO: compiled from: StartScreen.kt */
@@ -49,9 +48,16 @@ public final class StartCache {
 
     private final JSONObject gameJson(RobloxCloud.Game g) {
         try {
-        return new JSONObject().put("u", g.getUniverseId()).put("n", g.getName()).put("r", g.getRootPlaceId()).put("t", g.getUpdated()).put("o", g.getOwner()).put("g", g.getGroupId());
-    }
-        catch (Throwable _ktEx) {
+            return new JSONObject()
+                    .put("u", g.getUniverseId())
+                    .put("n", g.getName())
+                    .put("r", g.getRootPlaceId())
+                    .put("t", g.getUpdated())
+                    .put("o", g.getOwner())
+                    .put("g", g.getGroupId())
+                    .put("p", g.getPrivacyType())
+                    .put("a", g.isArchived());
+        } catch (Throwable _ktEx) {
             throw com.goydevv.studrblx.util.KtCompat.sneakyThrow(_ktEx);
         }
     }
@@ -65,7 +71,9 @@ public final class StartCache {
         Intrinsics.checkNotNullExpressionValue(strOptString2, "optString(...)");
         String strOptString3 = o.optString("o");
         Intrinsics.checkNotNullExpressionValue(strOptString3, "optString(...)");
-        return new RobloxCloud.Game(jOptLong, strOptString, jOptLong2, strOptString2, strOptString3, o.optLong("g"));
+        String strOptString4 = o.optString("p", "");
+        Intrinsics.checkNotNullExpressionValue(strOptString4, "optString(...)");
+        return new RobloxCloud.Game(jOptLong, strOptString, jOptLong2, strOptString2, strOptString3, o.optLong("g"), strOptString4, o.optBoolean("a", false));
     }
 
     public static /* synthetic */ List<RobloxCloud.Game> games$default(StartCache startCache, Context context, long j, String str, int i, Object obj) {
@@ -179,24 +187,23 @@ public final class StartCache {
 
     public final void putGroups(Context ctx, long uid, int inGroups, List<? extends Pair<RobloxCloud.Group, ? extends List<RobloxCloud.Game>>> list) {
         try {
-        Intrinsics.checkNotNullParameter(ctx, "ctx");
-        Intrinsics.checkNotNullParameter(list, "list");
-        JSONArray a = new JSONArray();
-        for (Pair<RobloxCloud.Group, ? extends List<RobloxCloud.Game>> pair : list) {
-            RobloxCloud.Group g = pair.component1();
-            Iterable iterable = (List) pair.component2();
-            JSONObject jSONObjectPut = new JSONObject().put("id", g.getId()).put("name", g.getName()).put("role", g.getRole()).put("rank", g.getRank());
-            JSONArray jSONArray = new JSONArray();
-            Iterator it = iterable.iterator();
-            while (it.hasNext()) {
-                jSONArray.put(INSTANCE.gameJson((RobloxCloud.Game) it.next()));
+            Intrinsics.checkNotNullParameter(ctx, "ctx");
+            Intrinsics.checkNotNullParameter(list, "list");
+            JSONArray a = new JSONArray();
+            for (Pair<RobloxCloud.Group, ? extends List<RobloxCloud.Game>> pair : list) {
+                RobloxCloud.Group g = pair.component1();
+                Iterable iterable = (List) pair.component2();
+                JSONObject jSONObjectPut = new JSONObject().put("id", g.getId()).put("name", g.getName()).put("role", g.getRole()).put("rank", g.getRank());
+                JSONArray jSONArray = new JSONArray();
+                Iterator it = iterable.iterator();
+                while (it.hasNext()) {
+                    jSONArray.put(INSTANCE.gameJson((RobloxCloud.Game) it.next()));
+                }
+                Unit unit = Unit.INSTANCE;
+                a.put(jSONObjectPut.put("games", jSONArray));
             }
-            Unit unit = Unit.INSTANCE;
-            a.put(jSONObjectPut.put("games", jSONArray));
-        }
-        prefs(ctx).edit().putString("groups_" + uid, new JSONObject().put("in", inGroups).put("list", a).toString()).apply();
-    }
-        catch (Throwable _ktEx) {
+            prefs(ctx).edit().putString("groups_" + uid, new JSONObject().put("in", inGroups).put("list", a).toString()).apply();
+        } catch (Throwable _ktEx) {
             throw com.goydevv.studrblx.util.KtCompat.sneakyThrow(_ktEx);
         }
     }

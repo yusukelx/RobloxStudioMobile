@@ -76,7 +76,7 @@ public final class InstanceApi {
         char c = 6;
         char c2 = 21;
         this.commonMethods = SetsKt.setOf(new String[]{"FindFirstChild", "FindFirstChildOfClass", "FindFirstChildWhichIsA", "FindFirstAncestor", "FindFirstAncestorOfClass", "FindFirstAncestorWhichIsA", "FindFirstDescendant", "WaitForChild", "GetChildren", "GetDescendants", "IsA", "IsDescendantOf", "IsAncestorOf", "Destroy", "Remove", "Clone", "ClearAllChildren", "GetFullName", "GetAttribute", "SetAttribute", "GetAttributes", "GetAttributeChangedSignal", "GetPropertyChangedSignal", "GetService", "FindService", "GetTags", "HasTag", "AddTag", "RemoveTag", "GetActor", "GetDebugId", "IsPropertyModified", "ResetPropertyToDefault"});
-        this.classMethods = MapsKt.mapOf(TuplesKt.to("BasePart", SetsKt.setOf(new String[]{"GetMass", "ApplyImpulse", "ApplyAngularImpulse", "GetConnectedParts", "GetTouchingParts", "GetRootPart", "SetNetworkOwner", "GetNetworkOwner", "CanSetNetworkOwnership", "BreakJoints", "MakeJoints", "Resize", "GetVelocityAtPosition", "GetPivot", "PivotTo", "IsGrounded", "GetJoints"})), TuplesKt.to("Model", SetsKt.setOf(new String[]{"GetPivot", "PivotTo", "MoveTo", "SetPrimaryPartCFrame", "GetPrimaryPartCFrame", "GetBoundingBox", "GetExtentsSize", "BreakJoints", "MakeJoints", "TranslateBy", "GetModelCFrame", "GetModelSize", "ScaleTo", "GetScale"})), TuplesKt.to("Humanoid", SetsKt.setOf(new String[]{"TakeDamage", "MoveTo", "ChangeState", "GetState", "LoadAnimation", "EquipTool", "UnequipTools", "GetPlayingAnimationTracks", "SetStateEnabled", "GetStateEnabled", "Move", "ApplyDescription", "GetAppliedDescription", "AddAccessory", "GetAccessories"})), TuplesKt.to("Animator", SetsKt.setOf(new String[]{"LoadAnimation", "GetPlayingAnimationTracks"})), TuplesKt.to("AnimationController", SetsKt.setOf(new String[]{"LoadAnimation", "GetPlayingAnimationTracks"})), TuplesKt.to("Workspace", SetsKt.setOf(new String[]{"Raycast", "FindPartOnRay", "FindPartOnRayWithIgnoreList", "FindPartOnRayWithWhitelist", "GetPartBoundsInBox", "GetPartBoundsInRadius", "GetPartsInPart", "GetServerTimeNow", "GetRealPhysicsFPS", "Spherecast", "Blockcast", "FindPartsInRegion3", "FindPartsInRegion3WithIgnoreList", "FindPartsInRegion3WithWhiteList", "IsRegion3Empty", "IsRegion3EmptyWithIgnoreList", "JoinToOutsiders", "UnjoinFromOutsiders", "BulkMoveTo", "ArePartsTouchingOthers", "GetNumAwakeParts", "PGSIsEnabled", "SetInsertPoint", "ZoomToExtents", "CalculateJumpPower", "CalculateJumpHeight", "GetPhysicsThrottling", "Shapecast"})), TuplesKt.to("Players", SetsKt.setOf(new String[]{"GetPlayers", "GetPlayerFromCharacter", "GetPlayerByUserId", "GetUserIdFromNameAsync", "GetNameFromUserIdAsync", "GetUserThumbnailAsync", "GetHumanoidDescriptionFromUserId"})), TuplesKt.to("Player", SetsKt.setOf(new String[]{"Kick", "LoadCharacter", "GetMouse", "IsInGroup", "GetRankInGroup", "GetRoleInGroup", "DistanceFromCharacter", "IsFriendsWith", "HasAppearanceLoaded", "GetJoinData", "ClearCharacterAppearance", "GetNetworkPing"})), TuplesKt.to("RunService", SetsKt.setOf(new String[]{"IsStudio", "IsRunning", "IsServer", "IsClient", "IsEdit", "IsRunMode", "BindToRenderStep", "UnbindFromRenderStep"})), TuplesKt.to("TweenService", SetsKt.setOf(new String[]{"Create", "GetValue", "SmoothDamp"})), TuplesKt.to("Debris", SetsKt.setOf(new String[]{"AddItem", "addItem"})), TuplesKt.to("HttpService", SetsKt.setOf(new String[]{"JSONEncode", "JSONDecode", "GenerateGUID", "UrlEncode", "GetAsync", "PostAsync", "RequestAsync"})), TuplesKt.to("CollectionService", SetsKt.setOf(new String[]{"GetTagged", "AddTag", "RemoveTag", "HasTag", "GetTags", "GetInstanceAddedSignal", "GetInstanceRemovedSignal", "GetAllTags"})), TuplesKt.to("Selection", SetsKt.setOf(new String[]{"Get", "Set", "Add", "Remove"})), TuplesKt.to("ChangeHistoryService", SetsKt.setOf(new String[]{"SetWaypoint", "TryBeginRecording", "FinishRecording", "Undo", "Redo", "ResetWaypoints", "SetEnabled", "GetCanUndo", "GetCanRedo"})), TuplesKt.to("DataStoreService", SetsKt.setOf(new String[]{"GetDataStore", "GetGlobalDataStore", "GetOrderedDataStore"})), TuplesKt.to("MarketplaceService", SetsKt.setOf(new String[]{"PromptPurchase", "PromptGamePassPurchase", "PromptProductPurchase", "UserOwnsGamePassAsync", "GetProductInfo", "PlayerOwnsAsset"})), TuplesKt.to("UserInputService", SetsKt.setOf(new String[]{"GetMouseLocation", "IsKeyDown", "GetFocusedTextBox", "IsMouseButtonPressed", "GetKeysPressed", "GetLastInputType", "GetConnectedGamepads"})), TuplesKt.to("ContextActionService", SetsKt.setOf(new String[]{"BindAction", "UnbindAction", "BindActionAtPriority", "SetTitle", "SetImage", "SetPosition", "SetDescription", "GetButton", "UnbindAllActions", "GetBoundActionInfo", "GetAllBoundActionInfo"})), TuplesKt.to("StarterGui", SetsKt.setOf(new String[]{"SetCore", "GetCore", "SetCoreGuiEnabled", "GetCoreGuiEnabled"})), TuplesKt.to("BindableEvent", SetsKt.setOf("Fire")), TuplesKt.to("BindableFunction", SetsKt.setOf("Invoke")), TuplesKt.to("RemoteEvent", SetsKt.setOf(new String[]{"FireServer", "FireClient", "FireAllClients"})), TuplesKt.to("UnreliableRemoteEvent", SetsKt.setOf(new String[]{"FireServer", "FireClient", "FireAllClients"})), TuplesKt.to("RemoteFunction", SetsKt.setOf(new String[]{"InvokeServer", "InvokeClient"})), TuplesKt.to("Sound", SetsKt.setOf(new String[]{"Play", "Stop", "Pause", "Resume"})), TuplesKt.to("GuiObject", SetsKt.setOf(new String[]{"TweenPosition", "TweenSize", "TweenSizeAndPosition"})), TuplesKt.to("TextBox", SetsKt.setOf(new String[]{"CaptureFocus", "ReleaseFocus", "IsFocused"})), TuplesKt.to("TextService", SetsKt.setOf(new String[]{"GetTextSize", "FilterStringAsync"})), TuplesKt.to("Plugin", SetsKt.setOf(new String[]{"CreateToolbar", "GetSetting", "SetSetting", "CreateDockWidgetPluginGui", "CreateDockWidgetPluginGuiAsync", "CreateQWidgetPluginGui", "OpenScript", "GetMouse", "Activate", "Deactivate", "IsActivated", "IsActivatedWithExclusiveMouse", "GetStudioUserId", "CreatePluginAction", "CreatePluginMenu", "SelectRibbonTool", "GetSelectedRibbonTool", "Union", "Negate", "Separate", "Intersect", "StartDrag", "OpenWikiPage", "SaveSelectedToRoblox", "GetJoinMode", "PromptForExistingAssetId", "ImportFbxRig", "GetItem", "SetItem", "GetGridSize", "IsLoaded", "PromptSaveSelection"})), TuplesKt.to("PluginGui", SetsKt.setOf(new String[]{"BindToClose", "GetRelativeMousePosition"})), TuplesKt.to("PluginToolbar", SetsKt.setOf("CreateButton")), TuplesKt.to("PluginToolbarButton", SetsKt.setOf("SetActive")), TuplesKt.to("ParticleEmitter", SetsKt.setOf(new String[]{"Emit", "Clear"})), TuplesKt.to("Camera", SetsKt.setOf(new String[]{"WorldToScreenPoint", "WorldToViewportPoint", "ScreenPointToRay", "ViewportPointToRay", "GetPartsObscuringTarget"})), TuplesKt.to("Lighting", SetsKt.setOf(new String[]{"GetMinutesAfterMidnight", "SetMinutesAfterMidnight", "GetSunDirection", "GetMoonDirection"})), TuplesKt.to("SoundService", SetsKt.setOf("PlayLocalSound")), TuplesKt.to("PathfindingService", SetsKt.setOf(new String[]{"CreatePath", "FindPathAsync"})), TuplesKt.to("BadgeService", SetsKt.setOf(new String[]{"AwardBadge", "UserHasBadgeAsync", "GetBadgeInfoAsync"})), TuplesKt.to("TeleportService", SetsKt.setOf(new String[]{"Teleport", "TeleportAsync", "TeleportToPlaceInstance"})), TuplesKt.to("InsertService", SetsKt.setOf("LoadAsset")), TuplesKt.to("Teams", SetsKt.setOf("GetTeams")), TuplesKt.to("Team", SetsKt.setOf("GetPlayers")), TuplesKt.to("PhysicsService", SetsKt.setOf(new String[]{"RegisterCollisionGroup", "CollisionGroupSetCollidable", "SetPartCollisionGroup", "CreateCollisionGroup", "CollisionGroupsAreCollidable", "GetRegisteredCollisionGroups"})), TuplesKt.to("Tool", SetsKt.setOf(new String[]{"Activate", "Deactivate"})), TuplesKt.to("ProximityPrompt", SetsKt.setOf(new String[]{"InputHoldBegin", "InputHoldEnd"})), TuplesKt.to("PlayerGui", SetsKt.setOf(new String[]{"SetTopbarTransparency", "GetGuiObjectsAtPosition"})), TuplesKt.to("MessagingService", SetsKt.setOf(new String[]{"PublishAsync", "SubscribeAsync"})), TuplesKt.to("Chat", SetsKt.setOf(new String[]{"Chat", "FilterStringForBroadcast"})), TuplesKt.to("TextChannel", SetsKt.setOf(new String[]{"SendAsync", "DisplaySystemMessage"})), TuplesKt.to("GuiService", SetsKt.setOf(new String[]{"GetGuiInset", "IsTenFootInterface"})), TuplesKt.to("LocalizationService", SetsKt.setOf(new String[]{"GetTranslatorForPlayerAsync", "GetCountryRegionForPlayerAsync"})), TuplesKt.to("PolicyService", SetsKt.setOf("GetPolicyInfoForPlayerAsync")), TuplesKt.to("StudioService", SetsKt.setOf(new String[]{"GetUserId", "PromptImportFile"})), TuplesKt.to("RbxAnalyticsService", SetsKt.setOf(new String[]{"GetSessionId", "GetClientId", "GetPlaySessionId", "ReportStats", "SendEventDeferred", "SendEventImmediately", "ReportCounter", "ReportInfluxSeries", "TrackEvent", "FireLogEvent", "SetRBXEvent"})), TuplesKt.to("DataModel", SetsKt.setOf(new String[]{"BindToClose", "IsLoaded", "GetJobsInfo", "SetPlaceId", "GetObjects"})));
+        this.classMethods = MapsKt.mapOf(TuplesKt.to("BasePart", SetsKt.setOf(new String[]{"GetMass", "ApplyImpulse", "ApplyAngularImpulse", "GetConnectedParts", "GetTouchingParts", "GetRootPart", "SetNetworkOwner", "GetNetworkOwner", "CanSetNetworkOwnership", "BreakJoints", "MakeJoints", "Resize", "GetVelocityAtPosition", "GetPivot", "PivotTo", "IsGrounded", "GetJoints"})), TuplesKt.to("Model", SetsKt.setOf(new String[]{"GetPivot", "PivotTo", "MoveTo", "SetPrimaryPartCFrame", "GetPrimaryPartCFrame", "GetBoundingBox", "GetExtentsSize", "BreakJoints", "MakeJoints", "TranslateBy", "GetModelCFrame", "GetModelSize", "ScaleTo", "GetScale"})), TuplesKt.to("Humanoid", SetsKt.setOf(new String[]{"TakeDamage", "MoveTo", "ChangeState", "GetState", "LoadAnimation", "EquipTool", "UnequipTools", "GetPlayingAnimationTracks", "SetStateEnabled", "GetStateEnabled", "Move", "ApplyDescription", "GetAppliedDescription", "AddAccessory", "GetAccessories"})), TuplesKt.to("Animator", SetsKt.setOf(new String[]{"LoadAnimation", "GetPlayingAnimationTracks"})), TuplesKt.to("AnimationController", SetsKt.setOf(new String[]{"LoadAnimation", "GetPlayingAnimationTracks"})), TuplesKt.to("Workspace", SetsKt.setOf(new String[]{"Raycast", "FindPartOnRay", "FindPartOnRayWithIgnoreList", "FindPartOnRayWithWhitelist", "GetPartBoundsInBox", "GetPartBoundsInRadius", "GetPartsInPart", "GetServerTimeNow", "GetRealPhysicsFPS", "Spherecast", "Blockcast", "FindPartsInRegion3", "FindPartsInRegion3WithIgnoreList", "FindPartsInRegion3WithWhiteList", "IsRegion3Empty", "IsRegion3EmptyWithIgnoreList", "JoinToOutsiders", "UnjoinFromOutsiders", "BulkMoveTo", "ArePartsTouchingOthers", "GetNumAwakeParts", "PGSIsEnabled", "SetInsertPoint", "ZoomToExtents", "CalculateJumpPower", "CalculateJumpHeight", "GetPhysicsThrottling", "Shapecast"})), TuplesKt.to("Players", SetsKt.setOf(new String[]{"GetPlayers", "GetPlayerFromCharacter", "GetPlayerByUserId", "GetUserIdFromNameAsync", "GetNameFromUserIdAsync", "GetUserThumbnailAsync", "GetHumanoidDescriptionFromUserId"})), TuplesKt.to("Player", SetsKt.setOf(new String[]{"Kick", "LoadCharacter", "GetMouse", "IsInGroup", "GetRankInGroup", "GetRoleInGroup", "DistanceFromCharacter", "IsFriendsWith", "HasAppearanceLoaded", "GetJoinData", "ClearCharacterAppearance", "GetNetworkPing"})), TuplesKt.to("RunService", SetsKt.setOf(new String[]{"IsStudio", "IsRunning", "IsServer", "IsClient", "IsEdit", "IsRunMode", "BindToRenderStep", "UnbindFromRenderStep"})), TuplesKt.to("TweenService", SetsKt.setOf(new String[]{"Create", "GetValue", "SmoothDamp"})), TuplesKt.to("Debris", SetsKt.setOf(new String[]{"AddItem", "addItem"})), TuplesKt.to("HttpService", SetsKt.setOf(new String[]{"JSONEncode", "JSONDecode", "GenerateGUID", "UrlEncode", "GetAsync", "PostAsync", "RequestAsync"})), TuplesKt.to("CollectionService", SetsKt.setOf(new String[]{"GetTagged", "AddTag", "RemoveTag", "HasTag", "GetTags", "GetInstanceAddedSignal", "GetInstanceRemovedSignal", "GetAllTags"})), TuplesKt.to("Selection", SetsKt.setOf(new String[]{"Get", "Set", "Add", "Remove"})), TuplesKt.to("ChangeHistoryService", SetsKt.setOf(new String[]{"SetWaypoint", "TryBeginRecording", "FinishRecording", "Undo", "Redo", "ResetWaypoints", "SetEnabled", "GetCanUndo", "GetCanRedo"})), TuplesKt.to("DataStoreService", SetsKt.setOf(new String[]{"GetDataStore", "GetGlobalDataStore", "GetOrderedDataStore"})), TuplesKt.to("MarketplaceService", SetsKt.setOf(new String[]{"PromptPurchase", "PromptGamePassPurchase", "PromptProductPurchase", "UserOwnsGamePassAsync", "GetProductInfo", "PlayerOwnsAsset"})), TuplesKt.to("UserInputService", SetsKt.setOf(new String[]{"GetMouseLocation", "IsKeyDown", "GetFocusedTextBox", "IsMouseButtonPressed", "GetKeysPressed", "GetLastInputType", "GetConnectedGamepads"})), TuplesKt.to("ContextActionService", SetsKt.setOf(new String[]{"BindAction", "UnbindAction", "BindActionAtPriority", "SetTitle", "SetImage", "SetPosition", "SetDescription", "GetButton", "UnbindAllActions", "GetBoundActionInfo", "GetAllBoundActionInfo"})), TuplesKt.to("StarterGui", SetsKt.setOf(new String[]{"SetCore", "GetCore", "SetCoreGuiEnabled", "GetCoreGuiEnabled"})), TuplesKt.to("BindableEvent", SetsKt.setOf("Fire")), TuplesKt.to("BindableFunction", SetsKt.setOf("Invoke")), TuplesKt.to("RemoteEvent", SetsKt.setOf(new String[]{"FireServer", "FireClient", "FireAllClients"})), TuplesKt.to("UnreliableRemoteEvent", SetsKt.setOf(new String[]{"FireServer", "FireClient", "FireAllClients"})), TuplesKt.to("RemoteFunction", SetsKt.setOf(new String[]{"InvokeServer", "InvokeClient"})), TuplesKt.to("Sound", SetsKt.setOf(new String[]{"Play", "Stop", "Pause", "Resume"})), TuplesKt.to("GuiObject", SetsKt.setOf(new String[]{"TweenPosition", "TweenSize", "TweenSizeAndPosition"})), TuplesKt.to("TextBox", SetsKt.setOf(new String[]{"CaptureFocus", "ReleaseFocus", "IsFocused"})), TuplesKt.to("TextService", SetsKt.setOf(new String[]{"GetTextSize", "FilterStringAsync"})), TuplesKt.to("Plugin", SetsKt.setOf(new String[]{"CreateToolbar", "GetSetting", "SetSetting", "CreateDockWidgetPluginGui", "CreateDockWidgetPluginGuiAsync", "CreateQWidgetPluginGui", "OpenScript", "GetMouse", "Activate", "Deactivate", "IsActivated", "IsActivatedWithExclusiveMouse", "GetStudioUserId", "CreatePluginAction", "CreatePluginMenu", "SelectRibbonTool", "GetSelectedRibbonTool", "Union", "Negate", "Separate", "Intersect", "StartDrag", "OpenWikiPage", "SaveSelectedToRoblox", "GetJoinMode", "PromptForExistingAssetId", "ImportFbxRig", "GetItem", "SetItem", "GetGridSize", "IsLoaded", "PromptSaveSelection"})), TuplesKt.to("PluginGui", SetsKt.setOf(new String[]{"BindToClose", "GetRelativeMousePosition"})), TuplesKt.to("PluginToolbar", SetsKt.setOf("CreateButton")), TuplesKt.to("PluginToolbarButton", SetsKt.setOf("SetActive")), TuplesKt.to("ParticleEmitter", SetsKt.setOf(new String[]{"Emit", "Clear"})), TuplesKt.to("Camera", SetsKt.setOf(new String[]{"WorldToScreenPoint", "WorldToViewportPoint", "ScreenPointToRay", "ViewportPointToRay", "GetPartsObscuringTarget"})), TuplesKt.to("Lighting", SetsKt.setOf(new String[]{"GetMinutesAfterMidnight", "SetMinutesAfterMidnight", "GetSunDirection", "GetMoonDirection"})), TuplesKt.to("SoundService", SetsKt.setOf(new String[]{"PlayLocalSound", "SetListener", "GetListener"})), TuplesKt.to("PathfindingService", SetsKt.setOf(new String[]{"CreatePath", "FindPathAsync"})), TuplesKt.to("BadgeService", SetsKt.setOf(new String[]{"AwardBadge", "UserHasBadgeAsync", "GetBadgeInfoAsync"})), TuplesKt.to("TeleportService", SetsKt.setOf(new String[]{"Teleport", "TeleportAsync", "TeleportToPlaceInstance"})), TuplesKt.to("InsertService", SetsKt.setOf("LoadAsset")), TuplesKt.to("Teams", SetsKt.setOf("GetTeams")), TuplesKt.to("Team", SetsKt.setOf("GetPlayers")), TuplesKt.to("PhysicsService", SetsKt.setOf(new String[]{"RegisterCollisionGroup", "CollisionGroupSetCollidable", "SetPartCollisionGroup", "CreateCollisionGroup", "CollisionGroupsAreCollidable", "GetRegisteredCollisionGroups"})), TuplesKt.to("Tool", SetsKt.setOf(new String[]{"Activate", "Deactivate"})), TuplesKt.to("ProximityPrompt", SetsKt.setOf(new String[]{"InputHoldBegin", "InputHoldEnd"})), TuplesKt.to("PlayerGui", SetsKt.setOf(new String[]{"SetTopbarTransparency", "GetGuiObjectsAtPosition"})), TuplesKt.to("MessagingService", SetsKt.setOf(new String[]{"PublishAsync", "SubscribeAsync"})), TuplesKt.to("Chat", SetsKt.setOf(new String[]{"Chat", "FilterStringForBroadcast"})), TuplesKt.to("TextChannel", SetsKt.setOf(new String[]{"SendAsync", "DisplaySystemMessage"})), TuplesKt.to("GuiService", SetsKt.setOf(new String[]{"GetGuiInset", "IsTenFootInterface"})), TuplesKt.to("LocalizationService", SetsKt.setOf(new String[]{"GetTranslatorForPlayerAsync", "GetCountryRegionForPlayerAsync"})), TuplesKt.to("PolicyService", SetsKt.setOf("GetPolicyInfoForPlayerAsync")), TuplesKt.to("StudioService", SetsKt.setOf(new String[]{"GetUserId", "PromptImportFile"})), TuplesKt.to("RbxAnalyticsService", SetsKt.setOf(new String[]{"GetSessionId", "GetClientId", "GetPlaySessionId", "ReportStats", "SendEventDeferred", "SendEventImmediately", "ReportCounter", "ReportInfluxSeries", "TrackEvent", "FireLogEvent", "SetRBXEvent"})), TuplesKt.to("DataModel", SetsKt.setOf(new String[]{"BindToClose", "IsLoaded", "GetJobsInfo", "SetPlaceId", "GetObjects"})));
         this.events = SetsKt.setOf(new String[]{"Touched", "TouchEnded", "ChildAdded", "ChildRemoved", "DescendantAdded", "DescendantRemoving", "Changed", "AncestryChanged", "Destroying", "AttributeChanged", "Heartbeat", "RenderStepped", "Stepped", "PreSimulation", "PostSimulation", "PreRender", "PlayerAdded", "PlayerRemoving", "CharacterAdded", "CharacterRemoving", "CharacterAppearanceLoaded", "Died", "HealthChanged", "Running", "Jumping", "StateChanged", "MoveToFinished", "FreeFalling", "Seated", "MouseButton1Click", "MouseButton1Down", "MouseButton1Up", "MouseButton2Click", "Activated", "MouseEnter", "MouseLeave", "FocusLost", "Focused", "Event", "OnServerEvent", "OnClientEvent", "MouseClick", "RightMouseClick", "MouseHoverEnter", "MouseHoverLeave", "Triggered", "TriggerEnded", "PromptShown", "PromptHidden", "PromptTriggered", "Completed", "Click", "SelectionChanged", "InputBegan", "InputEnded", "InputChanged", "TouchTapInWorld", "TouchTap", "TouchStarted", "TouchEnded", "TouchMoved", "Equipped", "Unequipped", "Deactivated", "Played", "Ended", "Paused", "Resumed", "Loaded", "Chatted", "Idled", "Button1Down", "Button1Up", "Move", "Blocked", "PromptPurchaseFinished", "PromptGamePassPurchaseFinished", "ServerScriptServiceChanged", "WindowFocused", "WindowFocusReleased", "Unloading", "Close", "BindToClose", "Deactivation", "ChildAddedToCharacter", "ReturnPressedFromOnScreenKeyboard", "TextChanged", "MessageReceived", "OnIncomingMessage", "LastInputTypeChanged", "JumpRequest", "MouseDrag", "Unloading", "Deactivation", "Loaded", "PromptProductPurchaseFinished", "PromptPurchaseFinished", "PromptGamePassPurchaseFinished", "PromptBundlePurchaseFinished", "Loaded", "GraphicsQualityChangeRequest", "OnTeleport", "ChildRemoving", "ClockTimeChanged", "PlaybackStateChanged", "DidLoop", "Stopped", "KeyframeReached", "OnUndo", "OnRedo", "OnRecordingStarted", "OnRecordingFinished", "WaypointSet", "Activated", "PromptDismissed", "DragBegin", "DragContinue", "DragEnd", "MouseButton2Down", "MouseButton2Up", "MouseWheelForward", "MouseWheelBackward", "WheelBackward", "WheelForward", "Button2Down", "Button2Up", "KeyDown", "KeyUp", "SelectionGained", "SelectionLost"});
         this.sequenceClasses = SetsKt.setOf(new String[]{"UIGradient", "ParticleEmitter", "Beam", "Trail"});
         this.universalEvents = SetsKt.setOf(new String[]{"ChildAdded", "ChildRemoved", "DescendantAdded", "DescendantRemoving", "Changed", "AncestryChanged", "Destroying", "AttributeChanged"});
@@ -134,7 +134,7 @@ public final class InstanceApi {
         this.CONSTRAINT_READOUTS = SetsKt.setOf(new String[]{"CurrentPosition", "CurrentAngle", "CurrentDistance", "CurrentLength"});
         this.BASE_PROPS = SetsKt.setOf(new String[]{"Name", "ClassName", "Parent", "Archivable"});
         this.PART_PROPS = SetsKt.setOf(new String[]{"Position", "Orientation", "Rotation", "Size", "Color", "BrickColor", "CFrame", "AssemblyLinearVelocity", "Velocity", "AssemblyAngularVelocity", "RotVelocity", "Mass", "AssemblyMass", "PivotOffset", "AssemblyRootPart", "Anchored", "CanCollide", "Transparency", "Material", "Shape", "CanTouch", "CanQuery", "Locked", "Massless", "Reflectance", "CastShadow"});
-        this.SPECIAL_PROPS = MapsKt.mapOf(TuplesKt.to("DataModel", SetsKt.setOf(new String[]{"PlaceId", "GameId", "CreatorId", "CreatorType", "PlaceVersion", "JobId", "PrivateServerId", "PrivateServerOwnerId"})), TuplesKt.to("ImageLabel", SetsKt.setOf("IsLoaded")), TuplesKt.to("ImageButton", SetsKt.setOf("IsLoaded")), TuplesKt.to("StudioService", SetsKt.setOf(new String[]{"GridSize", "RotateIncrement", "UseLocalSpace", "DraggerSolveConstraints", "ShowConstraintDetails", "ActiveScript", "StudioLocaleId", "Theme"})), TuplesKt.to("DraggerService", SetsKt.setOf(new String[]{"HoverThickness", "AlignDraggedObjects", "ShowHover", "AnimateHover", "PivotSnapToGeometry", "ShowPivotIndicator", "JointsEnabled", "CollisionsEnabled", "AngleSnapEnabled", "AngleSnapIncrement", "LinearSnapEnabled", "LinearSnapIncrement", "HoverAnimateFrequency", "GeometrySnapColor"})), TuplesKt.to("Players", SetsKt.setOf(new String[]{"LocalPlayer", "MaxPlayers"})), TuplesKt.to("Humanoid", SetsKt.setOf(new String[]{"Health", "RootPart", "MoveDirection", "FloorMaterial", "Jump", "SeatPart", "Sit", "PlatformStand", "AutoRotate", "UseJumpPower", "JumpHeight", "RigType"})), TuplesKt.to("Workspace", SetsKt.setOf(new String[]{"DistributedGameTime", "CurrentCamera", "Gravity", "StreamingEnabled"})), TuplesKt.to("Camera", SetsKt.setOf(new String[]{"ViewportSize", "CFrame", "Focus", "CameraSubject", "CameraType", "FieldOfView"})), TuplesKt.to("Lighting", SetsKt.setOf(new String[]{"TimeOfDay", "ClockTime", "Brightness", "Ambient", "OutdoorAmbient", "FogEnd", "FogStart", "FogColor", "GlobalShadows"})), TuplesKt.to("UserInputService", SetsKt.setOf(new String[]{"TouchEnabled", "KeyboardEnabled", "MouseEnabled", "GamepadEnabled", "VREnabled", "MouseBehavior", "MouseIconEnabled", "AccelerometerEnabled", "GyroscopeEnabled", "ModalEnabled"})), TuplesKt.to("HttpService", SetsKt.setOf("HttpEnabled")), TuplesKt.to("RunService", SetsKt.setOf("ClientGitHash")), TuplesKt.to("Player", SetsKt.setOf(new String[]{"PlayerGui", "Backpack", "Character", "UserId", "DisplayName", "Team", "TeamColor", "Neutral", "AccountAge", "MembershipType", "RespawnLocation", "CameraMode", "CameraMaxZoomDistance", "CameraMinZoomDistance", "DevTouchMovementMode"})), TuplesKt.to("TextBox", SetsKt.setOf(new String[]{"TextBounds", "ContentText", "TextFits"})), TuplesKt.to("TextLabel", SetsKt.setOf(new String[]{"TextBounds", "ContentText", "TextFits"})), TuplesKt.to("TextButton", SetsKt.setOf(new String[]{"TextBounds", "ContentText", "TextFits"})), TuplesKt.to("StarterGui", SetsKt.setOf(new String[]{"ShowDevelopmentGui", "ResetPlayerGuiOnSpawn"})), TuplesKt.to("Sound", SetsKt.setOf(new String[]{"TimePosition", "TimeLength", "IsPlaying", "IsLoaded", "PlaybackSpeed", "PlaybackLoudness"})));
+        this.SPECIAL_PROPS = MapsKt.mapOf(TuplesKt.to("DataModel", SetsKt.setOf(new String[]{"PlaceId", "GameId", "CreatorId", "CreatorType", "PlaceVersion", "JobId", "PrivateServerId", "PrivateServerOwnerId"})), TuplesKt.to("ImageLabel", SetsKt.setOf("IsLoaded")), TuplesKt.to("ImageButton", SetsKt.setOf("IsLoaded")), TuplesKt.to("StudioService", SetsKt.setOf(new String[]{"GridSize", "RotateIncrement", "UseLocalSpace", "DraggerSolveConstraints", "ShowConstraintDetails", "ActiveScript", "StudioLocaleId", "Theme"})), TuplesKt.to("DraggerService", SetsKt.setOf(new String[]{"HoverThickness", "AlignDraggedObjects", "ShowHover", "AnimateHover", "PivotSnapToGeometry", "ShowPivotIndicator", "JointsEnabled", "CollisionsEnabled", "AngleSnapEnabled", "AngleSnapIncrement", "LinearSnapEnabled", "LinearSnapIncrement", "HoverAnimateFrequency", "GeometrySnapColor"})), TuplesKt.to("Players", SetsKt.setOf(new String[]{"LocalPlayer", "MaxPlayers"})), TuplesKt.to("Humanoid", SetsKt.setOf(new String[]{"Health", "RootPart", "MoveDirection", "FloorMaterial", "Jump", "SeatPart", "Sit", "PlatformStand", "AutoRotate", "UseJumpPower", "JumpHeight", "RigType"})), TuplesKt.to("Workspace", SetsKt.setOf(new String[]{"DistributedGameTime", "CurrentCamera", "Gravity", "StreamingEnabled"})), TuplesKt.to("Camera", SetsKt.setOf(new String[]{"ViewportSize", "CFrame", "Focus", "CameraSubject", "CameraType", "FieldOfView"})), TuplesKt.to("Lighting", SetsKt.setOf(new String[]{"TimeOfDay", "ClockTime", "Brightness", "Ambient", "OutdoorAmbient", "FogEnd", "FogStart", "FogColor", "GlobalShadows"})), TuplesKt.to("UserInputService", SetsKt.setOf(new String[]{"TouchEnabled", "KeyboardEnabled", "MouseEnabled", "GamepadEnabled", "VREnabled", "MouseBehavior", "MouseIconEnabled", "AccelerometerEnabled", "GyroscopeEnabled", "ModalEnabled"})), TuplesKt.to("HttpService", SetsKt.setOf("HttpEnabled")), TuplesKt.to("RunService", SetsKt.setOf("ClientGitHash")), TuplesKt.to("Player", SetsKt.setOf(new String[]{"PlayerGui", "Backpack", "Character", "UserId", "DisplayName", "Team", "TeamColor", "Neutral", "AccountAge", "MembershipType", "RespawnLocation", "CameraMode", "CameraMaxZoomDistance", "CameraMinZoomDistance", "DevTouchMovementMode"})), TuplesKt.to("TextBox", SetsKt.setOf(new String[]{"TextBounds", "ContentText", "TextFits"})), TuplesKt.to("TextLabel", SetsKt.setOf(new String[]{"TextBounds", "ContentText", "TextFits"})), TuplesKt.to("TextButton", SetsKt.setOf(new String[]{"TextBounds", "ContentText", "TextFits"})), TuplesKt.to("StarterGui", SetsKt.setOf(new String[]{"ShowDevelopmentGui", "ResetPlayerGuiOnSpawn"})), TuplesKt.to("Sound", SetsKt.setOf(new String[]{"SoundId", "Volume", "Looped", "Playing", "IsPlaying", "IsPaused", "IsLoaded", "TimeLength", "TimePosition", "PlaybackSpeed", "PlaybackLoudness", "RollOffMinDistance", "RollOffMaxDistance", "RollOffMode", "PlayOnRemove", "SoundGroup"})), TuplesKt.to("SoundService", SetsKt.setOf(new String[]{"AmbientReverb", "DistanceFactor", "DopplerScale", "RolloffScale", "RespectFilteringEnabled"})));
         HashMap map = new HashMap();
         List listListOf = CollectionsKt.listOf(new String[]{"TextLabel", "TextButton", "TextBox", "Message", "Hint"});
         Iterator it = CollectionsKt.listOf(new String[]{"Text", "TextScaled", "TextSize", "TextBounds", "TextColor3", "TextWrapped", "TextXAlignment", "TextYAlignment", "Font", "FontFace", "TextTransparency", "TextStrokeTransparency", "TextStrokeColor3", "RichText", "LineHeight", "MaxVisibleGraphemes", "TextFits", "ContentText", "TextTruncate", "TextDirection", "TextWrap"}).iterator();
@@ -754,6 +754,161 @@ public final class InstanceApi {
                     return Instance.findFirstChild$default(inst, "Camera", false, 2, null);
                 }
                 return inst.get(k);
+            case "IsPlaying":
+                if ("Sound".equals(inst.getClassName())) {
+                    Object ip = inst.get("IsPlaying");
+                    if (ip instanceof Boolean) return ip;
+                    Object pl = inst.get("Playing");
+                    return pl instanceof Boolean ? pl : Boolean.FALSE;
+                }
+                return inst.get(k);
+            case "IsPaused":
+                if ("Sound".equals(inst.getClassName())) {
+                    Object pa = inst.get("IsPaused");
+                    return pa instanceof Boolean ? pa : Boolean.FALSE;
+                }
+                return inst.get(k);
+            case "IsLoaded":
+                if ("Sound".equals(inst.getClassName())) {
+                    Object ld = inst.get("IsLoaded");
+                    return ld instanceof Boolean ? ld : Boolean.FALSE;
+                }
+                return inst.get(k);
+            case "TimeLength":
+                if ("Sound".equals(inst.getClassName())) {
+                    Object tl = inst.get("TimeLength");
+                    return tl instanceof Number ? tl : Double.valueOf(0.0d);
+                }
+                return inst.get(k);
+            case "TimePosition":
+                if ("Sound".equals(inst.getClassName())) {
+                    Object tp = inst.get("TimePosition");
+                    return tp instanceof Number ? tp : Double.valueOf(0.0d);
+                }
+                return inst.get(k);
+            case "PlaybackSpeed":
+                if ("Sound".equals(inst.getClassName())) {
+                    Object ps = inst.get("PlaybackSpeed");
+                    if (ps == null) ps = inst.get("Pitch");
+                    return ps instanceof Number ? ps : Float.valueOf(1.0f);
+                }
+                return inst.get(k);
+            case "PlaybackLoudness":
+                if ("Sound".equals(inst.getClassName())) {
+                    Object pl = inst.get("PlaybackLoudness");
+                    return pl instanceof Number ? pl : Float.valueOf(0.0f);
+                }
+                return inst.get(k);
+            case "RollOffMinDistance":
+                if ("Sound".equals(inst.getClassName())) {
+                    Object mn = inst.get("RollOffMinDistance");
+                    if (mn == null) mn = inst.get("xmlRead_MinDistance_3");
+                    return mn instanceof Number ? mn : Float.valueOf(10.0f);
+                }
+                return inst.get(k);
+            case "RollOffMaxDistance":
+                if ("Sound".equals(inst.getClassName())) {
+                    Object mx = inst.get("RollOffMaxDistance");
+                    if (mx == null) mx = inst.get("xmlRead_MaxDistance_3");
+                    return mx instanceof Number ? mx : Float.valueOf(10000.0f);
+                }
+                return inst.get(k);
+            case "RollOffMode":
+                if ("Sound".equals(inst.getClassName())) {
+                    Object rm = inst.get("RollOffMode");
+                    if (rm instanceof EnumValue) return rm;
+                    if (rm instanceof Number) return new EnumValue(((Number) rm).intValue());
+                    return new EnumValue(0);
+                }
+                return inst.get(k);
+            case "PlayOnRemove":
+                if ("Sound".equals(inst.getClassName())) {
+                    Object por = inst.get("PlayOnRemove");
+                    return por instanceof Boolean ? por : Boolean.FALSE;
+                }
+                return inst.get(k);
+            case "AmbientReverb":
+                if ("SoundService".equals(inst.getClassName())) {
+                    Object ar = inst.get("AmbientReverb");
+                    if (ar instanceof EnumValue) return ar;
+                    if (ar instanceof Number) return new EnumValue(((Number) ar).intValue());
+                    return new EnumValue(0);
+                }
+                return inst.get(k);
+            case "DistanceFactor":
+                if ("SoundService".equals(inst.getClassName())) {
+                    Object df = inst.get("DistanceFactor");
+                    return df instanceof Number ? df : Float.valueOf(3.33f);
+                }
+                return inst.get(k);
+            case "DopplerScale":
+                if ("SoundService".equals(inst.getClassName())) {
+                    Object ds = inst.get("DopplerScale");
+                    return ds instanceof Number ? ds : Float.valueOf(1.0f);
+                }
+                return inst.get(k);
+            case "RolloffScale":
+                if ("SoundService".equals(inst.getClassName())) {
+                    Object rs = inst.get("RolloffScale");
+                    return rs instanceof Number ? rs : Float.valueOf(1.0f);
+                }
+                return inst.get(k);
+            case "RespectFilteringEnabled":
+                if ("SoundService".equals(inst.getClassName())) {
+                    Object rfe = inst.get("RespectFilteringEnabled");
+                    return rfe instanceof Boolean ? rfe : Boolean.TRUE;
+                }
+                return inst.get(k);
+            case "AbsolutePosition":
+                return new com.goydevv.studrblx.model.Vector2(inst.getAbsX(), inst.getAbsY());
+            case "AbsoluteSize":
+                return new com.goydevv.studrblx.model.Vector2(inst.getAbsW(), inst.getAbsH());
+            case "AbsoluteRotation": {
+                Object ar = inst.getAttributes().get("__absRotation");
+                if (ar instanceof Number) return Float.valueOf(((Number) ar).floatValue());
+                Object rot = inst.get("Rotation");
+                return rot instanceof Number ? Float.valueOf(((Number) rot).floatValue()) : Float.valueOf(0.0f);
+            }
+            case "AbsoluteContentSize":
+                return new com.goydevv.studrblx.model.Vector2(inst.getAbsW(), inst.getAbsH());
+            case "AbsoluteCellSize": {
+                Object acs = inst.getAttributes().get("__absCellSize");
+                return acs instanceof com.goydevv.studrblx.model.Vector2 ? acs : new com.goydevv.studrblx.model.Vector2(0.0f, 0.0f);
+            }
+            case "AbsoluteCellCount": {
+                Object acc = inst.getAttributes().get("__absCellCount");
+                return acc instanceof com.goydevv.studrblx.model.Vector2 ? acc : new com.goydevv.studrblx.model.Vector2(0.0f, 0.0f);
+            }
+            case "AbsoluteCanvasSize": {
+                Object acvs = inst.getAttributes().get("__absCanvasSize");
+                return acvs instanceof com.goydevv.studrblx.model.Vector2 ? acvs : new com.goydevv.studrblx.model.Vector2(inst.getAbsW(), inst.getAbsH());
+            }
+            case "AbsoluteWindowSize": {
+                Object aws = inst.getAttributes().get("__absWindowSize");
+                return aws instanceof com.goydevv.studrblx.model.Vector2 ? aws : new com.goydevv.studrblx.model.Vector2(inst.getAbsW(), inst.getAbsH());
+            }
+            case "TextBounds": {
+                Object tb = inst.getAttributes().get("__textBounds");
+                return tb instanceof com.goydevv.studrblx.model.Vector2 ? tb : new com.goydevv.studrblx.model.Vector2(0.0f, 0.0f);
+            }
+            case "TextFits": {
+                Object tf = inst.getAttributes().get("__textFits");
+                return tf instanceof Boolean ? tf : Boolean.TRUE;
+            }
+            case "ContentText": {
+                Object txtObj = inst.get("Text");
+                String txt = txtObj instanceof String ? (String) txtObj : "";
+                if (Boolean.TRUE.equals(inst.get("RichText"))) {
+                    String stripped = txt.replaceAll("<[^>]*>", "");
+                    stripped = stripped.replace("&lt;", "<")
+                            .replace("&gt;", ">")
+                            .replace("&quot;", "\"")
+                            .replace("&apos;", "'")
+                            .replace("&amp;", "&");
+                    return stripped;
+                }
+                return txt;
+            }
             default:
                 Object v = inst.get(k);
                 if (v == null && "Size".equals(k)) v = inst.get("size");
@@ -777,7 +932,7 @@ public final class InstanceApi {
         if (inst.isA("GuiBase2d") && StringsKt.startsWith(name, "Absolute", false)) {
             return true;
         }
-        if (inst.isA("UIGridStyleLayout") && (Intrinsics.areEqual(name, "AbsoluteContentSize") || (Intrinsics.areEqual(name, "AbsoluteCellSize") && Intrinsics.areEqual(inst.getClassName(), "UIGridLayout")))) {
+        if (inst.isA("UIGridStyleLayout") && (Intrinsics.areEqual(name, "AbsoluteContentSize") || ((Intrinsics.areEqual(name, "AbsoluteCellSize") || Intrinsics.areEqual(name, "AbsoluteCellCount")) && Intrinsics.areEqual(inst.getClassName(), "UIGridLayout")))) {
             return true;
         }
         if (inst.isA("BaseScript") && Intrinsics.areEqual(name, "Enabled")) {
@@ -906,12 +1061,28 @@ public final class InstanceApi {
                 inst.set(k, v, true);
                 return;
             case "Playing":
-                if ("Sound".equals(inst.getClassName()) && Boolean.TRUE.equals(v)) {
-                    Object sq = inst.getAttributes().get("__playSeq");
-                    int nsq = (sq instanceof Integer) ? ((Integer) sq).intValue() + 1 : 1;
-                    inst.getAttributes().put("__playSeq", Integer.valueOf(nsq));
+                if ("Sound".equals(inst.getClassName())) {
+                    boolean pl = Boolean.TRUE.equals(v);
+                    inst.set("Playing", Boolean.valueOf(pl), true);
+                    inst.set("IsPlaying", Boolean.valueOf(pl), false);
+                    if (pl) {
+                        inst.set("IsPaused", Boolean.FALSE, false);
+                    }
+                    return;
                 }
                 inst.set("Playing", v, true);
+                return;
+            case "TimePosition":
+                if ("Sound".equals(inst.getClassName()) && v instanceof Number) {
+                    double tp = Math.max(0.0d, ((Number) v).doubleValue());
+                    inst.set("TimePosition", Double.valueOf(tp), true);
+                    Object ssq = inst.getAttributes().get("__seekSeq");
+                    int nssq = (ssq instanceof Integer) ? ((Integer) ssq).intValue() + 1 : 1;
+                    inst.getAttributes().put("__seekSeq", Integer.valueOf(nssq));
+                    inst.getAttributes().put("__scriptTimePos", Double.valueOf(tp));
+                    return;
+                }
+                inst.set("TimePosition", v, true);
                 return;
             default:
                 inst.set(k, v, true);
@@ -1081,6 +1252,7 @@ public final class InstanceApi {
             case "RequiresLineOfSight":
             case "HttpEnabled":
             case "AutoAssignable":
+            case "RespectFilteringEnabled":
                 return 2;
             case "ZIndex":
             case "LayoutOrder":
@@ -1112,6 +1284,9 @@ public final class InstanceApi {
             case "TimePosition":
             case "RollOffMaxDistance":
             case "RollOffMinDistance":
+            case "DistanceFactor":
+            case "DopplerScale":
+            case "RolloffScale":
             case "Brightness":
             case "Range":
             case "Angle":
@@ -1234,6 +1409,8 @@ public final class InstanceApi {
             case "Style":
             case "KeyboardKeyCode":
             case "GamepadKeyCode":
+            case "RollOffMode":
+            case "AmbientReverb":
                 return 18;
             case "Parent":
             case "PrimaryPart":
@@ -2283,6 +2460,9 @@ public final class InstanceApi {
             case "GetAttributes": {
                 LuaTable tbl = new LuaTable();
                 for (Map.Entry<String, Object> e : inst.getAttributes().entrySet()) {
+                    if (e.getKey().startsWith("__")) {
+                        continue;
+                    }
                     tbl.set(e.getKey(), this.rt.toLua(e.getValue(), inst, e.getKey()));
                 }
                 return tbl;
@@ -2301,19 +2481,54 @@ public final class InstanceApi {
                     Object sq = inst.getAttributes().get("__playSeq");
                     int nsq = (sq instanceof Integer) ? ((Integer) sq).intValue() + 1 : 1;
                     inst.getAttributes().put("__playSeq", Integer.valueOf(nsq));
+                    inst.getAttributes().put("__loopCount", Integer.valueOf(0));
+                    inst.getAttributes().remove("__stopFlag");
+                    inst.set("IsPaused", Boolean.FALSE, false);
+                    inst.set("IsPlaying", Boolean.TRUE, false);
                     inst.set("Playing", Boolean.TRUE, true);
+                    Object sidObj = inst.get("SoundId");
+                    String sid = sidObj != null ? sidObj.toString() : "";
+                    this.rt.fire(inst, "Played", new LuaValue[]{LuaValue.valueOf(sid)});
                 }
                 return LuaValue.NIL;
             }
-            case "Stop": case "Pause": {
+            case "Stop": {
                 if ("Sound".equals(cn)) {
                     inst.set("Playing", Boolean.FALSE, true);
+                    inst.set("IsPlaying", Boolean.FALSE, false);
+                    inst.set("IsPaused", Boolean.FALSE, false);
+                    inst.set("TimePosition", Double.valueOf(0.0d), false);
+                    inst.set("PlaybackLoudness", Float.valueOf(0.0f), false);
+                    inst.getAttributes().put("__loopCount", Integer.valueOf(0));
+                    inst.getAttributes().remove("__scriptTimePos");
+                    inst.getAttributes().put("__stopFlag", Boolean.TRUE);
+                    Object sidObj = inst.get("SoundId");
+                    String sid = sidObj != null ? sidObj.toString() : "";
+                    this.rt.fire(inst, "Stopped", new LuaValue[]{LuaValue.valueOf(sid)});
+                }
+                return LuaValue.NIL;
+            }
+            case "Pause": {
+                if ("Sound".equals(cn)) {
+                    inst.set("Playing", Boolean.FALSE, true);
+                    inst.set("IsPlaying", Boolean.FALSE, false);
+                    inst.set("IsPaused", Boolean.TRUE, false);
+                    inst.set("PlaybackLoudness", Float.valueOf(0.0f), false);
+                    inst.getAttributes().remove("__stopFlag");
+                    Object sidObj = inst.get("SoundId");
+                    String sid = sidObj != null ? sidObj.toString() : "";
+                    this.rt.fire(inst, "Paused", new LuaValue[]{LuaValue.valueOf(sid)});
                 }
                 return LuaValue.NIL;
             }
             case "Resume": {
                 if ("Sound".equals(cn)) {
+                    inst.set("IsPaused", Boolean.FALSE, false);
+                    inst.set("IsPlaying", Boolean.TRUE, false);
                     inst.set("Playing", Boolean.TRUE, true);
+                    Object sidObj = inst.get("SoundId");
+                    String sid = sidObj != null ? sidObj.toString() : "";
+                    this.rt.fire(inst, "Resumed", new LuaValue[]{LuaValue.valueOf(sid)});
                 }
                 return LuaValue.NIL;
             }
@@ -2384,6 +2599,36 @@ public final class InstanceApi {
         if ("Humanoid".equals(cn) || "Animator".equals(cn) || "AnimationController".equals(cn)) return humanoidCall(inst, name, args);
         if (inst.isA("Model")) return modelCall(inst, name, args);
         if (inst.isA("BasePart")) return partCall(inst, name, args);
+        if (inst.isA("GuiObject") && ("TweenPosition".equals(name) || "TweenSize".equals(name) || "TweenSizeAndPosition".equals(name))) {
+            return guiTweenCall(inst, name, args);
+        }
+        if ("TextBox".equals(cn) && ("CaptureFocus".equals(name) || "ReleaseFocus".equals(name) || "IsFocused".equals(name))) {
+            if ("CaptureFocus".equals(name)) {
+                if (Boolean.FALSE.equals(inst.get("TextEditable"))) {
+                    return LuaValue.NIL;
+                }
+                Instance prev = this.rt.getFocusedTextBox();
+                if (prev != null && prev != inst) {
+                    this.rt.setFocusedTextBox(null);
+                    this.rt.fire(prev, "FocusLost", new LuaValue[]{LuaValue.FALSE, LuaValue.NIL});
+                }
+                if (!Boolean.FALSE.equals(inst.get("ClearTextOnFocus"))) {
+                    inst.set("Text", "", true);
+                }
+                this.rt.setFocusedTextBox(inst);
+                this.rt.fire(inst, "Focused", new LuaValue[0]);
+                return LuaValue.NIL;
+            }
+            if ("ReleaseFocus".equals(name)) {
+                boolean submitted = args.arg(2).optboolean(false);
+                if (this.rt.getFocusedTextBox() == inst) {
+                    this.rt.setFocusedTextBox(null);
+                    this.rt.fire(inst, "FocusLost", new LuaValue[]{LuaValue.valueOf(submitted), LuaValue.NIL});
+                }
+                return LuaValue.NIL;
+            }
+            return LuaValue.valueOf(this.rt.getFocusedTextBox() == inst);
+        }
         try {
             return RobloxServices.INSTANCE.call(this, this.rt, inst, name, args);
         } catch (LuaError e) {
@@ -2391,6 +2636,85 @@ public final class InstanceApi {
         } catch (Exception e) {
             throw new LuaError(name + ": " + e);
         }
+    }
+
+    private int parseEnumOrd(LuaValue v, String enumType, int def) {
+        if (v == null || v.isnil()) {
+            return def;
+        }
+        if (v.isuserdata()) {
+            Object u = v.touserdata();
+            if (u instanceof EnumItemV) {
+                return ((EnumItemV) u).getValue();
+            }
+        }
+        if (v.isnumber()) {
+            return v.toint();
+        }
+        if (v.isstring()) {
+            String key = v.tojstring();
+            java.util.LinkedHashMap<String, Integer> map = Enums.INSTANCE.getTypes().get(enumType);
+            if (map != null) {
+                Integer val = map.get(key);
+                if (val != null) {
+                    return val.intValue();
+                }
+            }
+        }
+        return def;
+    }
+
+    private LuaValue guiTweenCall(Instance inst, String name, Varargs args) {
+        java.util.LinkedHashMap<String, Object> goals = new java.util.LinkedHashMap<>();
+        int argIdx;
+        if ("TweenPosition".equals(name)) {
+            Object pObj = args.arg(2).isuserdata() ? args.arg(2).touserdata() : null;
+            if (!(pObj instanceof com.goydevv.studrblx.model.UDim2)) {
+                return LuaValue.FALSE;
+            }
+            goals.put("Position", pObj);
+            argIdx = 3;
+        } else if ("TweenSize".equals(name)) {
+            Object sObj = args.arg(2).isuserdata() ? args.arg(2).touserdata() : null;
+            if (!(sObj instanceof com.goydevv.studrblx.model.UDim2)) {
+                return LuaValue.FALSE;
+            }
+            goals.put("Size", sObj);
+            argIdx = 3;
+        } else {
+            Object sObj = args.arg(2).isuserdata() ? args.arg(2).touserdata() : null;
+            Object pObj = args.arg(3).isuserdata() ? args.arg(3).touserdata() : null;
+            if (!(sObj instanceof com.goydevv.studrblx.model.UDim2) || !(pObj instanceof com.goydevv.studrblx.model.UDim2)) {
+                return LuaValue.FALSE;
+            }
+            goals.put("Size", sObj);
+            goals.put("Position", pObj);
+            argIdx = 4;
+        }
+        int dir = parseEnumOrd(args.arg(argIdx), "EasingDirection", 1);
+        int style = parseEnumOrd(args.arg(argIdx + 1), "EasingStyle", 3);
+        float time = (float) args.arg(argIdx + 2).optdouble(1.0d);
+        boolean override = args.arg(argIdx + 3).optboolean(false);
+        LuaValue cb = args.arg(argIdx + 4);
+        if (!override) {
+            for (Tween existing : this.rt.getTweens()) {
+                int st = existing.getState();
+                if (existing.getInst() == inst && (st == 1 || st == 2 || st == 3)) {
+                    for (String gk : goals.keySet()) {
+                        if (existing.getGoals().containsKey(gk)) {
+                            return LuaValue.FALSE;
+                        }
+                    }
+                }
+            }
+        }
+        TweenInfoV info = new TweenInfoV(time, style, dir, 0, false, 0.0f);
+        Tween tw = new Tween(inst, info, goals);
+        if (cb != null && cb.isfunction()) {
+            tw.setGuiCallback(cb);
+        }
+        this.rt.playTween(tw);
+        return LuaValue.TRUE;
     }
 
     /* JADX WARN: Can't fix incorrect switch cases order, some code will duplicate */
@@ -3527,11 +3851,38 @@ public final class InstanceApi {
             case "ChangeState": {
                 LuaValue stArg = args.arg(2);
                 String stName = stArg.isuserdata() && stArg.touserdata() instanceof EnumItemV ? ((EnumItemV) stArg.touserdata()).getName() : stArg.optjstring("Running");
-                Object prevObj = h.getAttributes().get("__state");
-                String prevName = prevObj instanceof String ? (String) prevObj : "Running";
-                h.getAttributes().put("__state", stName);
-                this.rt.fire(h, "StateChanged", LuaTypes.INSTANCE.enumItem("HumanoidStateType", prevName), LuaTypes.INSTANCE.enumItem("HumanoidStateType", stName));
+                PlaySession pl = this.rt.getPlay();
+                if (pl != null) {
+                    pl.changeState(h, stName);
+                } else {
+                    Object prevObj = h.getAttributes().get("__state");
+                    String prevName = prevObj instanceof String ? (String) prevObj : "Running";
+                    h.getAttributes().put("__state", stName);
+                    this.rt.fire(h, "StateChanged", LuaTypes.INSTANCE.enumItem("HumanoidStateType", prevName), LuaTypes.INSTANCE.enumItem("HumanoidStateType", stName));
+                }
                 return LuaValue.NIL;
+            }
+            case "SetStateEnabled": {
+                LuaValue stArg = args.arg(2);
+                String stName = stArg.isuserdata() && stArg.touserdata() instanceof EnumItemV ? ((EnumItemV) stArg.touserdata()).getName() : stArg.optjstring("Running");
+                boolean enabled = args.arg(3).optboolean(true);
+                PlaySession pl = this.rt.getPlay();
+                if (pl != null) {
+                    pl.setStateEnabled(h, stName, enabled);
+                } else {
+                    h.getAttributes().put("__stateEnabled_" + stName, Boolean.valueOf(enabled));
+                }
+                return LuaValue.NIL;
+            }
+            case "GetStateEnabled": {
+                LuaValue stArg = args.arg(2);
+                String stName = stArg.isuserdata() && stArg.touserdata() instanceof EnumItemV ? ((EnumItemV) stArg.touserdata()).getName() : stArg.optjstring("Running");
+                PlaySession pl = this.rt.getPlay();
+                if (pl != null) {
+                    return LuaValue.valueOf(pl.isStateEnabled(h, stName));
+                }
+                Object enObj = h.getAttributes().get("__stateEnabled_" + stName);
+                return LuaValue.valueOf(!(enObj instanceof Boolean) || ((Boolean) enObj).booleanValue());
             }
             case "EquipTool": {
                 Object tObj = args.arg(2).isuserdata() ? args.arg(2).touserdata() : null;

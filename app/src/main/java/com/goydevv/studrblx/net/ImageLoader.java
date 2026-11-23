@@ -69,7 +69,7 @@ public final class ImageLoader {
         pool = BackgroundPool.create(3);
         idQueue = ConcurrentHashMap.newKeySet();
         listeners = new CopyOnWriteArrayList<>();
-        idRx = CollectionsKt.listOf(new Regex[]{new Regex("rbxassetid://(\\d+)", RegexOption.IGNORE_CASE), new Regex("[?&]id=(\\d+)", RegexOption.IGNORE_CASE), new Regex("^\\s*(\\d+)\\s*$"), new Regex("rbxthumb://.*id=(\\d+)", RegexOption.IGNORE_CASE)});
+        idRx = CollectionsKt.listOf(new Regex[]{new Regex("rbxassetid://(\\d+)", RegexOption.IGNORE_CASE), new Regex("[?&]id=(\\d+)", RegexOption.IGNORE_CASE), new Regex("^\\s*(\\d+)\\s*$"), new Regex("rbxthumb://.*id=(\\d+)", RegexOption.IGNORE_CASE), new Regex("roblox\\.com/library/(\\d+)", RegexOption.IGNORE_CASE), new Regex("create\\.roblox\\.com/store/asset/(\\d+)", RegexOption.IGNORE_CASE)});
         idMemo = new ConcurrentHashMap<>();
         keyMemo = new ConcurrentHashMap<>();
     }

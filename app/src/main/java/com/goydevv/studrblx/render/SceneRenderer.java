@@ -81,15 +81,15 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
     private static final int GL_TEXTURE_MAX_ANISOTROPY = 34046;
     private static final String LINE_FS = "\nprecision mediump float;\nuniform vec4 uColor;\nvoid main() { gl_FragColor = uColor; }";
     private static final String LINE_VS = "\nuniform mat4 uVP; uniform mat4 uModel;\nattribute vec3 aPos;\nvoid main() { gl_Position = uVP * uModel * vec4(aPos, 1.0); }";
-    private static final String LIT_FS = "\nprecision mediump float;\n\n#ifdef BATCH\nvarying vec3 vN; varying vec3 vW; varying vec4 vS; varying vec3 vA; varying vec4 vCol; varying vec4 vMat;\n#else\nvarying vec3 vN; varying vec3 vW; varying vec3 vL; varying vec3 vLN; varying vec4 vS;\n#endif\nuniform vec4 uColor; uniform vec3 uLight; uniform vec3 uCam; uniform float uEmissive;\nuniform float uGrid; uniform vec3 uSize; uniform vec3 uHorizon; uniform vec3 uZenith; uniform vec3 uSun;\nuniform float uAmbient; uniform vec3 uFogColor; uniform vec3 uFog; uniform vec4 uMat; uniform vec3 uSurfA; uniform vec3 uSurfB;\nuniform sampler2D uShadow; uniform float uShadowOn; uniform vec2 uShadowTexel; uniform float uShadowSoft; uniform vec3 uShiftBot; uniform float uEnvSpec; uniform int uPtCount; uniform vec4 uPtPos[8]; uniform vec4 uPtCol[8]; uniform vec4 uPtDir[8]; uniform vec4 uCCParams; uniform vec3 uCCTint; uniform vec4 uBloom; uniform vec4 uDof; uniform vec3 uAmbRgb; uniform float uExposure; uniform float uTime; uniform float uTruss;\nuniform sampler2D uSurfTex; uniform float uHasSurfTex;\n#ifdef TEXTURED\nvarying vec3 vT; varying vec3 vB;\nuniform sampler2D uMatTex; uniform sampler2D uMatNrm; uniform float uTexScale; uniform float uHasNrm;\n#endif\n\nfloat hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nvec2 hash2(vec2 p) { return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453); }\nfloat noise(vec2 p) {\n  vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);\n  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);\n}\nfloat fbm(vec2 p) { return noise(p) * 0.5 + noise(p * 2.03 + 7.1) * 0.3 + noise(p * 4.1 + 3.3) * 0.2; }\n#ifdef ADVANCED\n// Cellular noise: x = distance to the nearest cell point, y = distance to the cell edge (approx).\nvec3 voro(vec2 x) {\n  vec2 n = floor(x); vec2 f = fract(x);\n  float d1 = 8.0; float d2 = 8.0; vec2 id = n;\n  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {\n    vec2 g = vec2(float(i), float(j));\n    vec2 r = g + hash2(n + g) - f;\n    float d = dot(r, r);\n    if (d < d1) { d2 = d1; d1 = d; id = n + g; } else if (d < d2) { d2 = d; }\n  }\n  return vec3(sqrt(d1), sqrt(d2) - sqrt(d1), hash(id));\n}\n#endif\n// Roblox surface types on one face (sp = stud coordinates on the face, fsz = face size).\n// Roblox's stud look: a raised disc lit from the upper left with a soft shadow to the lower right.\nfloat studShade(vec2 f, float R) {\n  vec2 L = vec2(-0.62, 0.78);\n  float r = length(f);\n  float inside = smoothstep(R + 0.012, R - 0.012, r);\n  float rim = smoothstep(R - 0.09, R, r) * inside;\n  float side = dot(f / max(r, 0.001), L);\n  float shadow = smoothstep(R + 0.1, R, length(f + L * 0.05)) * (1.0 - inside);\n  return 1.0 + inside * 0.05 + rim * side * 0.22 - shadow * 0.2;\n}\nvec3 surface(vec3 c, float s, vec2 sp, vec2 fsz) {\n  if (s < 0.5 || s > 9.5) return c;\n  if (uHasSurfTex > 0.5 && s < 5.5) {\n    // Roblox's own surface textures: one 2x8-stud tile per type, shaded around grey 128\n    // (R = studs, G = weld/glue, B = inlet). Sampled with repeat (no fract) so mipmapping\n    // never sees a seam. s is the same for a whole face, so this branch is uniform per triangle.\n    vec2 st = vec2(sp.x * 0.5, -sp.y * 0.125);\n    vec3 t = texture2D(uSurfTex, st).rgb;\n    float k;\n    if (s < 2.5) k = t.g;\n    else if (s < 3.5) k = t.r;\n    else if (s < 4.5) k = t.b;\n    else { vec2 cell = floor(fract(st) * vec2(2.0, 8.0)); k = mod(cell.x + cell.y, 2.0) < 0.5 ? t.r : t.b; }\n    return c * (k * 2.0);\n  }\n  vec2 f = fract(sp) - 0.5; float r = length(f);\n  if (s > 2.5 && s < 3.5) { // Studs\n    c *= studShade(f, 0.29);\n  } else if (s > 3.5 && s < 4.5) { // Inlet: a sunken hole, shaded the opposite way\n    vec2 L = vec2(-0.62, 0.78);\n    float inside = smoothstep(0.302, 0.278, r);\n    float rim = smoothstep(0.2, 0.29, r) * inside;\n    c *= 1.0 - inside * 0.16 - rim * dot(f / max(r, 0.001), L) * 0.2 + smoothstep(0.36, 0.3, r) * (1.0 - inside) * 0.05;\n  } else if (s > 4.5 && s < 5.5) { // Universal: a stud with a hole in it\n    c *= studShade(f, 0.29) * (1.0 - smoothstep(0.14, 0.12, r) * 0.18);\n  } else if (s > 1.5 && s < 2.5) { // Weld: diagonal hatching\n    float l = fract((sp.x + sp.y) * 1.25);\n    c *= mix(1.0, 0.84, smoothstep(0.82, 0.88, l) * smoothstep(1.0, 0.94, l));\n  } else if (s > 0.5 && s < 1.5) { // Glue: grid of small crosses\n    vec2 g = abs(fract(sp * 2.0) - 0.5);\n    float cr = max(step(g.x, 0.05) * step(g.y, 0.22), step(g.y, 0.05) * step(g.x, 0.22));\n    c *= 1.0 - 0.14 * cr;\n  } else { // Hinge / Motor / SteppingMotor: a yellow joint in the middle of the face\n    float rr = length(sp - fsz * 0.5);\n    vec3 yellow = vec3(0.96, 0.8, 0.16);\n    if (s > 6.5) {\n      if (rr < 0.75) c = mix(c, vec3(0.45, 0.45, 0.47), smoothstep(0.75, 0.7, rr));\n      if (s > 7.5 && rr < 0.75 && rr > 0.5) { float a = atan(sp.y - fsz.y * 0.5, sp.x - fsz.x * 0.5); c *= 0.75 + 0.25 * step(0.5, fract(a * 1.273)); }\n    }\n    if (rr < 0.45) c = mix(c, yellow, smoothstep(0.45, 0.4, rr));\n  }\n  return c;\n}\nfloat unpackDepth(vec4 c) { return dot(c, vec4(1.0, 1.0 / 255.0, 1.0 / 65025.0, 1.0 / 16581375.0)); }\nfloat sampleShadow(vec2 uv, float z) { return z > unpackDepth(texture2D(uShadow, uv)) ? 0.0 : 1.0; }\nfloat shadowAt(float ndl) {\n  if (uShadowOn < 0.5 || ndl <= 0.0) return 1.0;\n  vec3 p = vS.xyz / vS.w * 0.5 + 0.5;\n  if (p.x <= 0.001 || p.x >= 0.999 || p.y <= 0.001 || p.y >= 0.999 || p.z >= 1.0) return 1.0; float shEdge = smoothstep(0.78, 1.0, max(abs(p.x - 0.5) * 2.0, abs(p.y - 0.5) * 2.0));\n  float z = p.z - (0.00025 + 0.00085 * (1.0 - ndl));\n  vec2 t = uShadowTexel * mix(0.65, 2.85, clamp(uShadowSoft, 0.0, 1.0));\n  float s = sampleShadow(p.xy, z) * 2.0;\n  s += sampleShadow(p.xy + vec2(-t.x, -t.y), z);\n  s += sampleShadow(p.xy + vec2(t.x, -t.y), z);\n  s += sampleShadow(p.xy + vec2(-t.x, t.y), z);\n  s += sampleShadow(p.xy + vec2(t.x, t.y), z);\n  s /= 6.0;\n  vec2 e = min(p.xy, 1.0 - p.xy);\n  float fade = clamp(min(e.x, e.y) * 12.0, 0.0, 1.0);\n  return mix(1.0, s, fade);\n}\nvoid main() {\n  vec3 n = normalize(vN);\n  if (!gl_FrontFacing) n = -n;\n#ifdef BATCH\n  vec3 c = vCol.rgb; vec4 mat = vMat; float emis = vCol.a; float alpha = 1.0;\n  vec2 uv = vA.xy; vec2 fsz = vec2(1.0); float sf = vA.z;\n#else\n  vec3 c = uColor.rgb; vec4 mat = uMat; float emis = uEmissive; float alpha = uColor.a;\n  vec3 a = abs(vLN);\n  vec3 p = vL * uSize + uSize * 0.5;\n  bool yFace = a.y > a.x && a.y > a.z; bool xFace = !yFace && a.x > a.z;\n  vec2 uv = yFace ? p.xz : (xFace ? p.zy : p.xy);\n  vec2 fsz = yFace ? uSize.xz : (xFace ? uSize.zy : uSize.xy);\n  // Surface types (studs, inlets, welds, hinges...) on whichever face this is.\n  float sf = yFace ? (vLN.y > 0.0 ? uSurfA.y : uSurfB.y) : (xFace ? (vLN.x > 0.0 ? uSurfA.x : uSurfB.x) : (vLN.z > 0.0 ? uSurfA.z : uSurfB.z));\n  if (uTruss > 0.5) {\n    // Lattice: frame and diagonals per 2-stud cell; everything else is see-through.\n    vec2 cell = fract(uv / 2.0);\n    float e = min(min(cell.x, cell.y), min(1.0 - cell.x, 1.0 - cell.y));\n    float dg = min(abs(cell.x - cell.y), abs(cell.x + cell.y - 1.0));\n    if (e > 0.11 && dg > 0.07) discard;\n  }\n#endif\n  vec3 glow = vec3(0.0);\n  float type = mat.x;\n#ifdef TEXTURED\n  // Roblox material textures: the color map tints the part color; the normal map bends the light.\n  vec2 tuv = vec2(uv.x, -uv.y) * uTexScale;\n  c *= texture2D(uMatTex, tuv).rgb * 1.08;\n  if (uHasNrm > 0.5) {\n    vec3 tn = texture2D(uMatNrm, tuv).xyz * 2.0 - 1.0;\n    n = normalize(normalize(vT) * tn.x + normalize(vB) * tn.y + n * max(tn.z, 0.25));\n  }\n  type = 0.0;\n#endif\n  if (type > 0.5) {\n    float amt = mat.y; float sc = mat.z;\n#ifdef ADVANCED\n    if (type > 10.5) {\n      if (type < 11.5) { // Marble veins\n        float v = abs(sin((uv.x * 0.6 + uv.y * 0.25 + fbm(uv * 0.35) * 5.0) * 1.7));\n        c *= mix(0.8, 1.05, pow(v, 0.35)) + (noise(uv * 3.0) - 0.5) * 0.04;\n      } else if (type < 12.5) { // Slate / sandstone: layered plates\n        float layer = floor(uv.y * sc * 2.0 + fbm(uv * 0.3) * 2.5);\n        c *= 0.9 + hash(vec2(layer, 3.0)) * 0.16 + (noise(uv * 5.0) - 0.5) * amt;\n      } else if (type < 13.5) { // Cobblestone / pebble / basalt: cells with dark gaps\n        vec3 v = voro(uv * sc);\n        c *= mix(0.62, 0.92 + v.z * 0.16, smoothstep(0.03, 0.12, v.y)) * (1.0 - v.x * 0.12);\n      } else if (type < 14.5) { // Cracked lava: dark rock with glowing cracks\n        vec3 v = voro(uv * sc);\n        c *= 0.55 + fbm(uv * 1.5) * 0.25;\n        glow = vec3(1.0, 0.36, 0.05) * smoothstep(0.08, 0.0, v.y) * (0.7 + 0.3 * sin(uTime * 1.5 + v.z * 6.0));\n      } else if (type < 15.5) { // Corroded metal: rust patches\n        float rust = smoothstep(0.42, 0.66, fbm(uv * sc));\n        c = mix(c * (0.95 + (noise(uv * vec2(18.0, 0.8)) - 0.5) * 0.08), c * vec3(0.7, 0.42, 0.24) + vec3(0.14, 0.05, 0.0), rust * 0.8);\n      } else if (type < 16.5) { // Tiles (ceramic / pavement)\n        vec2 tf = fract(uv / sc); float grout = step(0.035, tf.x) * step(0.035, tf.y);\n        c *= mix(0.72, 1.0 + (hash(floor(uv / sc)) - 0.5) * amt * 2.0 + (noise(uv * 3.0) - 0.5) * 0.04, grout);\n      } else if (type < 17.5) { // Roof tiles / shingles: overlapping rows\n        float row = floor(uv.y / (0.8 * sc));\n        vec2 q = vec2(uv.x / sc + mod(row, 2.0) * 0.5, fract(uv.y / (0.8 * sc)));\n        float edge = smoothstep(0.0, 0.08, fract(q.x)) * smoothstep(1.0, 0.92, fract(q.x));\n        c *= (0.8 + 0.25 * q.y) * mix(0.82, 1.0, edge) * (0.94 + hash(vec2(floor(q.x), row)) * 0.12);\n      } else if (type < 18.5) { // Cardboard corrugation\n        c *= 0.95 + 0.05 * sin(uv.x * 22.0) + (noise(uv * 8.0) - 0.5) * 0.06;\n      } else if (type < 19.5) { // ForceField: moving bands\n        float s = sin((uv.x + uv.y) * 2.5 - uTime * 2.2) * 0.5 + 0.5;\n        c = c * (0.55 + 0.45 * s) + vec3(0.12) * s;\n      } else if (type < 20.5) { // Leather: small creased cells\n        vec3 v = voro(uv * 6.0);\n        c *= 0.9 + 0.1 * smoothstep(0.0, 0.12, v.y) + (v.z - 0.5) * 0.04;\n      } else if (type < 21.5) { // Carpet: dense fibres\n        c *= 0.9 + hash(floor(uv * 28.0)) * 0.12 + (noise(uv * 6.0) - 0.5) * 0.1;\n      } else if (type < 22.5) { // Asphalt: speckled\n        c *= 0.9 + (hash(floor(uv * 16.0)) - 0.5) * 0.25 + (noise(uv * 2.0) - 0.5) * 0.08;\n      } else if (type < 23.5) { // Concrete: blotchy with pores\n        c *= 1.0 + (fbm(uv * sc) - 0.5) * amt * 2.4 - step(0.985, hash(floor(uv * 20.0))) * 0.18;\n      } else if (type < 24.5) { // Granite: mixed grains\n        float g = hash(floor(uv * 12.0));\n        c *= 0.88 + g * 0.22 - step(0.9, g) * 0.3 + (fbm(uv * 1.5) - 0.5) * 0.1;\n      } else { // Sand / snow / salt: fine grain with sparkle\n        float g = hash(floor(uv * 30.0));\n        c *= 1.0 + (g - 0.5) * amt * 2.0 + (fbm(uv * sc) - 0.5) * 0.1;\n        c += vec3(step(0.996, g) * 0.15);\n      }\n    } else\n    if (type < 1.5) { c *= 1.0 + (noise(uv * 2.2) - 0.5) * amt * 2.0; }\n    else if (type < 2.5) {\n      float g = sin((uv.x * 1.3 + fbm(uv * vec2(0.35, 2.2)) * 4.0) * 5.0);\n      c *= 1.0 + g * amt * 0.6 - amt * 0.2;\n    } else if (type < 3.5) {\n      float plank = floor(uv.y);\n      float seamY = smoothstep(0.0, 0.05, fract(uv.y)) * smoothstep(1.0, 0.95, fract(uv.y));\n      float off = hash(vec2(plank, 3.0)) * 8.0;\n      float seamX = smoothstep(0.0, 0.04, fract((uv.x + off) / 6.0) * 6.0);\n      float g = sin((uv.x * 1.6 + fbm(vec2(uv.x * 0.3, uv.y * 3.0 + plank)) * 3.0) * 6.0);\n      c *= (0.9 + hash(vec2(plank, 1.0)) * 0.18) * (1.0 + g * amt * 0.35) * mix(0.72, 1.0, seamY * seamX);\n    } else if (type < 4.5) {\n      // Brick: running bond with light grey mortar, like Roblox's brick material.\n      vec2 b = vec2(uv.x / 1.6, uv.y / 0.66);\n      float row = floor(b.y);\n      b.x += mod(row, 2.0) * 0.5;\n      vec2 f = fract(b);\n      float mortar = smoothstep(0.05, 0.09, f.y) * smoothstep(0.025, 0.05, f.x) * smoothstep(1.0, 0.985, f.x);\n      vec3 brick = c * (0.9 + (hash(floor(b)) - 0.5) * amt * 2.2 + (noise(uv * 7.0) - 0.5) * 0.08);\n      vec3 grout = mix(vec3(dot(c, vec3(0.3, 0.59, 0.11))), vec3(0.82), 0.55);\n      c = mix(grout, brick, mortar);\n    } else if (type < 5.5) { c *= 1.0 + (fbm(uv * sc) - 0.5) * amt * 2.6; }\n    else if (type < 6.5) {\n      vec2 q = vec2(uv.x + uv.y, uv.x - uv.y) * 1.4;\n      vec2 f = fract(q) - 0.5;\n      float bump = smoothstep(0.18, 0.05, abs(f.x) * 0.35 + abs(f.y));\n      c *= 0.92 + bump * 0.22 + (noise(uv * 8.0) - 0.5) * 0.05;\n    } else if (type < 7.5) { c *= 1.0 + (noise(uv * vec2(24.0, 0.6)) - 0.5) * amt * 2.0; }\n    else if (type < 8.5) {\n      float f = fbm(uv * sc);\n      c *= 1.0 + (f - 0.5) * amt * 2.4 + (noise(uv * 9.0) - 0.5) * 0.05;\n      c.r += (noise(uv * 0.25) - 0.5) * 0.04;\n    } else if (type < 9.5) { c *= 1.0 + sin(uv.x * 30.0) * sin(uv.y * 30.0) * amt; }\n    else { c *= 1.0 + (fbm(uv * sc) - 0.5) * amt * 2.0; }\n#else\n    // Lean variant: plastic grain only (other materials use the ADVANCED program).\n    c *= 1.0 + (noise(uv * 2.2) - 0.5) * amt * 2.0;\n#endif\n  }\n  c = surface(c, sf, uv, fsz);\n#ifndef BATCH\n  if (uGrid > 0.5) {\n    vec2 f = abs(fract(uv / 4.0 + 0.5) - 0.5) * 4.0;\n    float d = min(f.x, f.y);\n    c *= mix(0.84, 1.0, smoothstep(0.04, 0.09, d));\n  }\n#endif\n  vec3 col;\n  if (emis > 0.5) {\n    col = c * 1.15 + vec3(0.06);\n  } else {\n    float ndl = dot(n, uLight);\n    float diff = max(ndl, 0.0);\n    float sh = shadowAt(ndl);\n    vec3 skyTop = mix(vec3(1.0), mix(uHorizon, uZenith, 0.5), 0.22);\n    vec3 groundBounce = mix(vec3(0.58, 0.59, 0.62), uHorizon * 0.72, 0.18);\n    float hemi = clamp(n.y * 0.5 + 0.5, 0.0, 1.0);\n    vec3 amb = uAmbient * uAmbRgb * mix(groundBounce, skyTop, hemi);\n    // Subtle back-fill wrap so shadow sides retain Roblox OutdoorAmbient richness\n    float wrap = max(0.0, (-ndl) * 0.14);\n    col = c * (amb + uSun * (diff * sh + wrap * 0.35) + uShiftBot * max(-ndl, 0.0) * 0.35);\n    vec3 v = normalize(uCam - vW);\n    vec3 h = normalize(uLight + v);\n    float rough = clamp(1.0 - mat.w * 0.78, 0.14, 0.94);\n    float specPow = mix(96.0, 12.0, rough * rough);\n    float ndh = max(dot(n, h), 0.0);\n    float a2 = rough * rough * rough * rough;\n    float dDen = (ndh * ndh) * (a2 - 1.0) + 1.0;\n    float ggx = a2 / max(3.14159 * dDen * dDen, 0.002);\n    float schlick = 0.04 + 0.96 * pow(1.0 - max(dot(h, v), 0.0), 5.0);\n    float spec = min(ggx * schlick * (0.28 + mat.w * 0.95), 2.2) * diff * sh * uEnvSpec;\n    col += uSun * spec;\n    if (uPtCount > 0) for (int li = 0; li < 8; li++) {\n      if (li >= uPtCount) break;\n      vec3 L = uPtPos[li].xyz - vW;\n      float d = length(L);\n      float r = uPtPos[li].w;\n      if (d < r) {\n        vec3 ldir = L / max(d, 0.001);\n        float tt = clamp(1.0 - (d / r) * (d / r), 0.0, 1.0);\n        float att = (tt * tt) / (1.0 + 0.04 * d * d);\n        if (uPtDir[li].w > 0.5) {\n          float ca = dot(-ldir, uPtDir[li].xyz);\n          att *= smoothstep(uPtCol[li].w, min(uPtCol[li].w + 0.14, 0.999), ca);\n        }\n        float pndl = max(dot(n, ldir), 0.0);\n        vec3 ph = normalize(ldir + v);\n        float pspec = pow(max(dot(n, ph), 0.0), specPow) * (0.12 + mat.w * 0.55) * uEnvSpec;\n        col += (c * pndl + vec3(pspec)) * uPtCol[li].rgb * att;\n      }\n    }\n    float fres = pow(1.0 - max(dot(n, v), 0.0), 4.5) * (0.04 + mat.w * 0.26) * uEnvSpec;\n    col = mix(col, mix(uHorizon, uZenith, 0.5), fres);\n  }\n  col += glow;\n  col *= uExposure;\n  // ACES Filmic tone mapping (matches Roblox Future/ShadowMap highlight roll-off)\n  if (uBloom.x > 0.001) { float blum = dot(col, vec3(0.2126, 0.7152, 0.0722)); float knee = smoothstep(uBloom.y * 0.75, uBloom.y + 0.65, blum); col += mix(col, vec3(blum), 0.35) * knee * uBloom.x * 0.20; }\n  vec3 mapped = clamp((col * (2.51 * col + 0.03)) / (col * (2.43 * col + 0.59) + 0.14), 0.0, 1.0); col = mix(clamp(col, 0.0, 1.0), mapped, 0.22);\n  if (uCCParams.w > 0.5) {\n    col = clamp(col + vec3(uCCParams.x), 0.0, 1.0);\n    col = clamp((col - 0.5) * (1.0 + uCCParams.y) + 0.5, 0.0, 1.0);\n    float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));\n    col = clamp(mix(vec3(luma), col, 1.0 + uCCParams.z) * uCCTint, 0.0, 1.0);\n  }\n  float dist = length(uCam - vW);\n  if (uDof.z > 0.001 || uDof.w > 0.001) {\n    float coc = max(0.0, (dist - (uDof.x + uDof.y)) / max(uDof.y + 12.0, 1.0)) * uDof.z + max(0.0, ((uDof.x - uDof.y) - dist) / max(uDof.x, 1.0)) * uDof.w;\n    col = mix(col, mix(uHorizon, uFogColor, 0.5), clamp(coc * 0.42, 0.0, 0.55));\n  }\n  float fog;\n  if (uFog.z > 1.5) fog = (1.0 - exp(-dist * uFog.x)) * uFog.y;\n  else if (uFog.z > 0.5) fog = clamp((dist - uFog.x) / max(uFog.y - uFog.x, 1.0), 0.0, 1.0);\n  else fog = smoothstep(140.0, 950.0, dist) * 0.88;\n  vec3 mieFog = uFogColor + uSun * pow(max(dot(normalize(vW - uCam), uLight), 0.0), 6.0) * 0.20;\n  col = mix(col, mieFog, fog);\n  gl_FragColor = vec4(col, alpha);\n}";
+    private static final String LIT_FS = "\nprecision mediump float;\n\n#ifdef BATCH\nvarying vec3 vN; varying vec3 vW; varying vec4 vS; varying vec3 vA; varying vec4 vCol; varying vec4 vMat;\n#else\nvarying vec3 vN; varying vec3 vW; varying vec3 vL; varying vec3 vLN; varying vec4 vS;\n#endif\nuniform vec4 uColor; uniform vec3 uLight; uniform vec3 uCam; uniform float uEmissive;\nuniform float uGrid; uniform vec3 uSize; uniform vec3 uHorizon; uniform vec3 uZenith; uniform vec3 uSun;\nuniform float uAmbient; uniform vec3 uFogColor; uniform vec3 uFog; uniform vec4 uMat; uniform vec3 uSurfA; uniform vec3 uSurfB;\nuniform sampler2D uShadow; uniform float uShadowOn; uniform vec2 uShadowTexel; uniform float uShadowSoft; uniform vec3 uShiftBot; uniform float uEnvSpec; uniform int uPtCount; uniform vec4 uPtPos[8]; uniform vec4 uPtCol[8]; uniform vec4 uPtDir[8]; uniform vec4 uCCParams; uniform vec3 uCCTint; uniform vec4 uBloom; uniform vec4 uDof; uniform vec3 uAmbRgb; uniform vec4 uLightingFlags; uniform vec3 uIndoorAmb; uniform vec4 uAtmo; uniform vec3 uAtmoDecay; uniform float uExposure; uniform float uTime; uniform float uTruss;\nuniform sampler2D uSurfTex; uniform float uHasSurfTex;\n#ifdef TEXTURED\nvarying vec3 vT; varying vec3 vB;\nuniform sampler2D uMatTex; uniform sampler2D uMatNrm; uniform float uTexScale; uniform float uHasNrm;\n#endif\n\nfloat hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nvec2 hash2(vec2 p) { return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453); }\nfloat noise(vec2 p) {\n  vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);\n  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);\n}\nfloat fbm(vec2 p) { return noise(p) * 0.5 + noise(p * 2.03 + 7.1) * 0.3 + noise(p * 4.1 + 3.3) * 0.2; }\n#ifdef ADVANCED\n// Cellular noise: x = distance to the nearest cell point, y = distance to the cell edge (approx).\nvec3 voro(vec2 x) {\n  vec2 n = floor(x); vec2 f = fract(x);\n  float d1 = 8.0; float d2 = 8.0; vec2 id = n;\n  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {\n    vec2 g = vec2(float(i), float(j));\n    vec2 r = g + hash2(n + g) - f;\n    float d = dot(r, r);\n    if (d < d1) { d2 = d1; d1 = d; id = n + g; } else if (d < d2) { d2 = d; }\n  }\n  return vec3(sqrt(d1), sqrt(d2) - sqrt(d1), hash(id));\n}\n#endif\n// Roblox surface types on one face (sp = stud coordinates on the face, fsz = face size).\n// Roblox's stud look: a raised disc lit from the upper left with a soft shadow to the lower right.\nfloat studShade(vec2 f, float R) {\n  vec2 L = vec2(-0.62, 0.78);\n  float r = length(f);\n  float inside = smoothstep(R + 0.012, R - 0.012, r);\n  float rim = smoothstep(R - 0.09, R, r) * inside;\n  float side = dot(f / max(r, 0.001), L);\n  float shadow = smoothstep(R + 0.1, R, length(f + L * 0.05)) * (1.0 - inside);\n  return 1.0 + inside * 0.05 + rim * side * 0.22 - shadow * 0.2;\n}\nvec3 surface(vec3 c, float s, vec2 sp, vec2 fsz) {\n  if (s < 0.5 || s > 9.5) return c;\n  if (uHasSurfTex > 0.5 && s < 5.5) {\n    // Roblox's own surface textures: one 2x8-stud tile per type, shaded around grey 128\n    // (R = studs, G = weld/glue, B = inlet). Sampled with repeat (no fract) so mipmapping\n    // never sees a seam. s is the same for a whole face, so this branch is uniform per triangle.\n    vec2 st = vec2(sp.x * 0.5, -sp.y * 0.125);\n    vec3 t = texture2D(uSurfTex, st).rgb;\n    float k;\n    if (s < 2.5) k = t.g;\n    else if (s < 3.5) k = t.r;\n    else if (s < 4.5) k = t.b;\n    else { vec2 cell = floor(fract(st) * vec2(2.0, 8.0)); k = mod(cell.x + cell.y, 2.0) < 0.5 ? t.r : t.b; }\n    return c * (k * 2.0);\n  }\n  vec2 f = fract(sp) - 0.5; float r = length(f);\n  if (s > 2.5 && s < 3.5) { // Studs\n    c *= studShade(f, 0.29);\n  } else if (s > 3.5 && s < 4.5) { // Inlet: a sunken hole, shaded the opposite way\n    vec2 L = vec2(-0.62, 0.78);\n    float inside = smoothstep(0.302, 0.278, r);\n    float rim = smoothstep(0.2, 0.29, r) * inside;\n    c *= 1.0 - inside * 0.16 - rim * dot(f / max(r, 0.001), L) * 0.2 + smoothstep(0.36, 0.3, r) * (1.0 - inside) * 0.05;\n  } else if (s > 4.5 && s < 5.5) { // Universal: a stud with a hole in it\n    c *= studShade(f, 0.29) * (1.0 - smoothstep(0.14, 0.12, r) * 0.18);\n  } else if (s > 1.5 && s < 2.5) { // Weld: diagonal hatching\n    float l = fract((sp.x + sp.y) * 1.25);\n    c *= mix(1.0, 0.84, smoothstep(0.82, 0.88, l) * smoothstep(1.0, 0.94, l));\n  } else if (s > 0.5 && s < 1.5) { // Glue: grid of small crosses\n    vec2 g = abs(fract(sp * 2.0) - 0.5);\n    float cr = max(step(g.x, 0.05) * step(g.y, 0.22), step(g.y, 0.05) * step(g.x, 0.22));\n    c *= 1.0 - 0.14 * cr;\n  } else { // Hinge / Motor / SteppingMotor: a yellow joint in the middle of the face\n    float rr = length(sp - fsz * 0.5);\n    vec3 yellow = vec3(0.96, 0.8, 0.16);\n    if (s > 6.5) {\n      if (rr < 0.75) c = mix(c, vec3(0.45, 0.45, 0.47), smoothstep(0.75, 0.7, rr));\n      if (s > 7.5 && rr < 0.75 && rr > 0.5) { float a = atan(sp.y - fsz.y * 0.5, sp.x - fsz.x * 0.5); c *= 0.75 + 0.25 * step(0.5, fract(a * 1.273)); }\n    }\n    if (rr < 0.45) c = mix(c, yellow, smoothstep(0.45, 0.4, rr));\n  }\n  return c;\n}\nfloat unpackDepth(vec4 c) { return dot(c, vec4(1.0, 1.0 / 255.0, 1.0 / 65025.0, 1.0 / 16581375.0)); }\nfloat sampleShadow(vec2 uv, float z) { return z > unpackDepth(texture2D(uShadow, uv)) ? 0.0 : 1.0; }\nfloat shadowAt(float ndl) {\n  if (uShadowOn < 0.5 || ndl <= 0.0) return 1.0;\n  vec3 p = vS.xyz / vS.w * 0.5 + 0.5;\n  if (p.x <= 0.001 || p.x >= 0.999 || p.y <= 0.001 || p.y >= 0.999 || p.z >= 1.0) return 1.0; float shEdge = smoothstep(0.78, 1.0, max(abs(p.x - 0.5) * 2.0, abs(p.y - 0.5) * 2.0));\n  float z = p.z - (0.00025 + 0.00085 * (1.0 - ndl));\n  vec2 t = uShadowTexel * mix(0.65, 2.85, clamp(uShadowSoft, 0.0, 1.0));\n  float s = sampleShadow(p.xy, z) * 2.0;\n  s += sampleShadow(p.xy + vec2(-t.x, -t.y), z);\n  s += sampleShadow(p.xy + vec2(t.x, -t.y), z);\n  s += sampleShadow(p.xy + vec2(-t.x, t.y), z);\n  s += sampleShadow(p.xy + vec2(t.x, t.y), z);\n  s /= 6.0;\n  return mix(s, 1.0, shEdge);\n}\nvoid main() {\n  vec3 n = normalize(vN);\n  if (!gl_FrontFacing) n = -n;\n#ifdef BATCH\n  vec3 c = vCol.rgb; vec4 mat = vMat; float emis = vCol.a; float alpha = 1.0;\n  vec2 uv = vA.xy; vec2 fsz = vec2(1.0); float sf = vA.z;\n#else\n  vec3 c = uColor.rgb; vec4 mat = uMat; float emis = uEmissive; float alpha = uColor.a;\n  vec3 a = abs(vLN);\n  vec3 p = vL * uSize + uSize * 0.5;\n  bool yFace = a.y > a.x && a.y > a.z; bool xFace = !yFace && a.x > a.z;\n  vec2 uv = yFace ? p.xz : (xFace ? p.zy : p.xy);\n  vec2 fsz = yFace ? uSize.xz : (xFace ? uSize.zy : uSize.xy);\n  // Surface types (studs, inlets, welds, hinges...) on whichever face this is.\n  float sf = yFace ? (vLN.y > 0.0 ? uSurfA.y : uSurfB.y) : (xFace ? (vLN.x > 0.0 ? uSurfA.x : uSurfB.x) : (vLN.z > 0.0 ? uSurfA.z : uSurfB.z));\n  if (uTruss > 0.5) {\n    // Lattice: frame and diagonals per 2-stud cell; everything else is see-through.\n    vec2 cell = fract(uv / 2.0);\n    float e = min(min(cell.x, cell.y), min(1.0 - cell.x, 1.0 - cell.y));\n    float dg = min(abs(cell.x - cell.y), abs(cell.x + cell.y - 1.0));\n    if (e > 0.11 && dg > 0.07) discard;\n  }\n#endif\n  vec3 glow = vec3(0.0);\n  float type = mat.x;\n#ifdef TEXTURED\n  // Roblox material textures: the color map tints the part color; the normal map bends the light.\n  vec2 tuv = vec2(uv.x, -uv.y) * uTexScale;\n  c *= texture2D(uMatTex, tuv).rgb * 1.08;\n  if (uHasNrm > 0.5) {\n    vec3 tn = texture2D(uMatNrm, tuv).xyz * 2.0 - 1.0;\n    n = normalize(normalize(vT) * tn.x + normalize(vB) * tn.y + n * max(tn.z, 0.25));\n  }\n  type = 0.0;\n#endif\n  if (type > 0.5) {\n    float amt = mat.y; float sc = mat.z;\n#ifdef ADVANCED\n    if (type > 10.5) {\n      if (type < 11.5) { // Marble veins\n        float v = abs(sin((uv.x * 0.6 + uv.y * 0.25 + fbm(uv * 0.35) * 5.0) * 1.7));\n        c *= mix(0.8, 1.05, pow(v, 0.35)) + (noise(uv * 3.0) - 0.5) * 0.04;\n      } else if (type < 12.5) { // Slate / sandstone: layered plates\n        float layer = floor(uv.y * sc * 2.0 + fbm(uv * 0.3) * 2.5);\n        c *= 0.9 + hash(vec2(layer, 3.0)) * 0.16 + (noise(uv * 5.0) - 0.5) * amt;\n      } else if (type < 13.5) { // Cobblestone / pebble / basalt: cells with dark gaps\n        vec3 v = voro(uv * sc);\n        c *= mix(0.62, 0.92 + v.z * 0.16, smoothstep(0.03, 0.12, v.y)) * (1.0 - v.x * 0.12);\n      } else if (type < 14.5) { // Cracked lava: dark rock with glowing cracks\n        vec3 v = voro(uv * sc);\n        c *= 0.55 + fbm(uv * 1.5) * 0.25;\n        glow = vec3(1.0, 0.36, 0.05) * smoothstep(0.08, 0.0, v.y) * (0.7 + 0.3 * sin(uTime * 1.5 + v.z * 6.0));\n      } else if (type < 15.5) { // Corroded metal: rust patches\n        float rust = smoothstep(0.42, 0.66, fbm(uv * sc));\n        c = mix(c * (0.95 + (noise(uv * vec2(18.0, 0.8)) - 0.5) * 0.08), c * vec3(0.7, 0.42, 0.24) + vec3(0.14, 0.05, 0.0), rust * 0.8);\n      } else if (type < 16.5) { // Tiles (ceramic / pavement)\n        vec2 tf = fract(uv / sc); float grout = step(0.035, tf.x) * step(0.035, tf.y);\n        c *= mix(0.72, 1.0 + (hash(floor(uv / sc)) - 0.5) * amt * 2.0 + (noise(uv * 3.0) - 0.5) * 0.04, grout);\n      } else if (type < 17.5) { // Roof tiles / shingles: overlapping rows\n        float row = floor(uv.y / (0.8 * sc));\n        vec2 q = vec2(uv.x / sc + mod(row, 2.0) * 0.5, fract(uv.y / (0.8 * sc)));\n        float edge = smoothstep(0.0, 0.08, fract(q.x)) * smoothstep(1.0, 0.92, fract(q.x));\n        c *= (0.8 + 0.25 * q.y) * mix(0.82, 1.0, edge) * (0.94 + hash(vec2(floor(q.x), row)) * 0.12);\n      } else if (type < 18.5) { // Cardboard corrugation\n        c *= 0.95 + 0.05 * sin(uv.x * 22.0) + (noise(uv * 8.0) - 0.5) * 0.06;\n      } else if (type < 19.5) { // ForceField: moving bands\n        float s = sin((uv.x + uv.y) * 2.5 - uTime * 2.2) * 0.5 + 0.5;\n        c = c * (0.55 + 0.45 * s) + vec3(0.12) * s;\n      } else if (type < 20.5) { // Leather: small creased cells\n        vec3 v = voro(uv * 6.0);\n        c *= 0.9 + 0.1 * smoothstep(0.0, 0.12, v.y) + (v.z - 0.5) * 0.04;\n      } else if (type < 21.5) { // Carpet: dense fibres\n        c *= 0.9 + hash(floor(uv * 28.0)) * 0.12 + (noise(uv * 6.0) - 0.5) * 0.1;\n      } else if (type < 22.5) { // Asphalt: speckled\n        c *= 0.9 + (hash(floor(uv * 16.0)) - 0.5) * 0.25 + (noise(uv * 2.0) - 0.5) * 0.08;\n      } else if (type < 23.5) { // Concrete: blotchy with pores\n        c *= 1.0 + (fbm(uv * sc) - 0.5) * amt * 2.4 - step(0.985, hash(floor(uv * 20.0))) * 0.18;\n      } else if (type < 24.5) { // Granite: mixed grains\n        float g = hash(floor(uv * 12.0));\n        c *= 0.88 + g * 0.22 - step(0.9, g) * 0.3 + (fbm(uv * 1.5) - 0.5) * 0.1;\n      } else { // Sand / snow / salt: fine grain with sparkle\n        float g = hash(floor(uv * 30.0));\n        c *= 1.0 + (g - 0.5) * amt * 2.0 + (fbm(uv * sc) - 0.5) * 0.1;\n        c += vec3(step(0.996, g) * 0.15);\n      }\n    } else\n    if (type < 1.5) { c *= 1.0 + (noise(uv * 2.2) - 0.5) * amt * 2.0; }\n    else if (type < 2.5) {\n      float g = sin((uv.x * 1.3 + fbm(uv * vec2(0.35, 2.2)) * 4.0) * 5.0);\n      c *= 1.0 + g * amt * 0.6 - amt * 0.2;\n    } else if (type < 3.5) {\n      float plank = floor(uv.y);\n      float seamY = smoothstep(0.0, 0.05, fract(uv.y)) * smoothstep(1.0, 0.95, fract(uv.y));\n      float off = hash(vec2(plank, 3.0)) * 8.0;\n      float seamX = smoothstep(0.0, 0.04, fract((uv.x + off) / 6.0) * 6.0);\n      float g = sin((uv.x * 1.6 + fbm(vec2(uv.x * 0.3, uv.y * 3.0 + plank)) * 3.0) * 6.0);\n      c *= (0.9 + hash(vec2(plank, 1.0)) * 0.18) * (1.0 + g * amt * 0.35) * mix(0.72, 1.0, seamY * seamX);\n    } else if (type < 4.5) {\n      // Brick: running bond with light grey mortar, like Roblox's brick material.\n      vec2 b = vec2(uv.x / 1.6, uv.y / 0.66);\n      float row = floor(b.y);\n      b.x += mod(row, 2.0) * 0.5;\n      vec2 f = fract(b);\n      float mortar = smoothstep(0.05, 0.09, f.y) * smoothstep(0.025, 0.05, f.x) * smoothstep(1.0, 0.985, f.x);\n      vec3 brick = c * (0.9 + (hash(floor(b)) - 0.5) * amt * 2.2 + (noise(uv * 7.0) - 0.5) * 0.08);\n      vec3 grout = mix(vec3(dot(c, vec3(0.3, 0.59, 0.11))), vec3(0.82), 0.55);\n      c = mix(grout, brick, mortar);\n    } else if (type < 5.5) { c *= 1.0 + (fbm(uv * sc) - 0.5) * amt * 2.6; }\n    else if (type < 6.5) {\n      vec2 q = vec2(uv.x + uv.y, uv.x - uv.y) * 1.4;\n      vec2 f = fract(q) - 0.5;\n      float bump = smoothstep(0.18, 0.05, abs(f.x) * 0.35 + abs(f.y));\n      c *= 0.92 + bump * 0.22 + (noise(uv * 8.0) - 0.5) * 0.05;\n    } else if (type < 7.5) { c *= 1.0 + (noise(uv * vec2(24.0, 0.6)) - 0.5) * amt * 2.0; }\n    else if (type < 8.5) {\n      float f = fbm(uv * sc);\n      c *= 1.0 + (f - 0.5) * amt * 2.4 + (noise(uv * 9.0) - 0.5) * 0.05;\n      c.r += (noise(uv * 0.25) - 0.5) * 0.04;\n    } else if (type < 9.5) { c *= 1.0 + sin(uv.x * 30.0) * sin(uv.y * 30.0) * amt; }\n    else { c *= 1.0 + (fbm(uv * sc) - 0.5) * amt * 2.0; }\n#else\n    // Lean variant: plastic grain only (other materials use the ADVANCED program).\n    c *= 1.0 + (noise(uv * 2.2) - 0.5) * amt * 2.0;\n#endif\n  }\n  c = surface(c, sf, uv, fsz);\n#ifndef BATCH\n  if (uGrid > 0.5) {\n    vec2 f = abs(fract(uv / 4.0 + 0.5) - 0.5) * 4.0;\n    float d = min(f.x, f.y);\n    c *= mix(0.84, 1.0, smoothstep(0.04, 0.09, d));\n  }\n#endif\n  vec3 col;\n  if (emis > 0.5) {\n    col = c * 1.15 + vec3(0.06);\n  } else {\n    float ndl = dot(n, uLight);\n    float diff = max(ndl, 0.0);\n    float sh = shadowAt(ndl);\n    vec3 skyTop = mix(vec3(1.0), mix(uHorizon, uZenith, 0.5), 0.22);\n    vec3 groundBounce = mix(vec3(0.58, 0.59, 0.62), uHorizon * 0.72, 0.18);\n    float hemi = clamp(n.y * 0.5 + 0.5, 0.0, 1.0);\n    float skyVis = uAmbient > 0.5 ? clamp(mix(0.25, 1.0, hemi) * mix(0.20, 1.0, sh), 0.0, 1.0) : 0.0;\n    vec3 amb = mix(uIndoorAmb, uAmbRgb, skyVis) * mix(groundBounce, skyTop, hemi);\n    float wrap = max(0.0, (-ndl) * 0.14);\n    col = c * (amb + uSun * (diff * sh + wrap * 0.35) + uShiftBot * max(-ndl, 0.0) * 0.35);\n    vec3 v = normalize(uCam - vW);\n    vec3 h = normalize(uLight + v);\n    float rough = clamp(1.0 - mat.w * 0.78, 0.14, 0.94);\n    float ndh = max(dot(n, h), 0.0);\n    float a2 = rough * rough * rough * rough;\n    float dDen = (ndh * ndh) * (a2 - 1.0) + 1.0;\n    float ggx = a2 / max(3.14159 * dDen * dDen, 0.002);\n    float schlick = 0.04 + 0.96 * pow(1.0 - max(dot(h, v), 0.0), 5.0);\n    float spec = min(ggx * schlick * (0.28 + mat.w * 0.95), 2.2) * diff * sh * uLightingFlags.w;\n    col += uSun * spec;\n    if (uPtCount > 0) for (int li = 0; li < 8; li++) {\n      if (li >= uPtCount) break;\n      vec3 L = uPtPos[li].xyz - vW;\n      float d = length(L);\n      float r = uPtPos[li].w;\n      if (d < r) {\n        vec3 ldir = L / max(d, 0.001);\n        float areaR = uPtDir[li].w > 1.5 ? (uPtDir[li].w - 2.0) : 0.0;\n        float effD = max(d - areaR * 0.45, 0.25);\n        float tt = clamp(1.0 - (d / r) * (d / r), 0.0, 1.0);\n        float att = (tt * tt) / (1.0 + 0.04 * effD * effD);\n        if (uPtDir[li].w > 0.5) {\n          float ca = dot(-ldir, uPtDir[li].xyz);\n          att *= smoothstep(uPtCol[li].w, min(uPtCol[li].w + 0.14, 0.999), ca);\n        }\n        float pndl = max(dot(n, ldir), 0.0);\n        float pspec = 0.0;\n        if (uLightingFlags.x >= 3.5 && uLightingFlags.w > 0.5 && pndl > 0.0) {\n          vec3 ph = normalize(ldir + v);\n          float pndh = max(dot(n, ph), 0.0);\n          float pdDen = (pndh * pndh) * (a2 - 1.0) + 1.0;\n          float pggx = a2 / max(3.14159 * pdDen * pdDen, 0.002);\n          float psch = 0.04 + 0.96 * pow(1.0 - max(dot(ph, v), 0.0), 5.0);\n          pspec = min(pggx * psch * (0.28 + mat.w * 0.95), 2.0) * pndl;\n        }\n        col += (c * pndl + vec3(pspec)) * uPtCol[li].rgb * att;\n      }\n    }\n    float fres = pow(1.0 - max(dot(n, v), 0.0), 4.5) * (0.04 + mat.w * 0.26) * uLightingFlags.z;\n    col = mix(col, mix(uHorizon, uZenith, 0.5), fres);\n  }\n  col += glow;\n  col *= uExposure;\n  if (uBloom.x > 0.001) { float blum = dot(col, vec3(0.2126, 0.7152, 0.0722)); float knee = smoothstep(uBloom.y * 0.75, uBloom.y + 0.65, blum); col += mix(col, vec3(blum), 0.35) * knee * uBloom.x * 0.20; }\n  if (uLightingFlags.y > 0.5) {\n    col = col / (vec3(1.0) + col * 0.28);\n    col = clamp((col - 0.5) * 1.08 + 0.5, 0.0, 1.0);\n  } else {\n    vec3 x = col * 0.82;\n    col = clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);\n  }\n  if (uCCParams.w > 0.5) {\n    col = clamp(col + vec3(uCCParams.x), 0.0, 1.0);\n    col = clamp((col - 0.5) * (1.0 + uCCParams.y) + 0.5, 0.0, 1.0);\n    float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));\n    col = clamp(mix(vec3(luma), col, 1.0 + uCCParams.z) * uCCTint, 0.0, 1.0);\n  }\n  float dist = length(uCam - vW);\n  if (uDof.z > 0.001 || uDof.w > 0.001) {\n    float coc = max(0.0, (dist - (uDof.x + uDof.y)) / max(uDof.y + 12.0, 1.0)) * uDof.z + max(0.0, ((uDof.x - uDof.y) - dist) / max(uDof.x, 1.0)) * uDof.w;\n    col = mix(col, mix(uHorizon, uFogColor, 0.5), clamp(coc * 0.42, 0.0, 0.55));\n  }\n  float fog;\n  vec3 fogCol = uFogColor;\n  vec3 viewDir = normalize(vW - uCam);\n  float sunAlign = max(dot(viewDir, uLight), 0.0);\n  if (uFog.z > 1.5) {\n    float effDist = max(dist - uAtmo.z * 90.0, 0.0);\n    fog = (1.0 - exp(-effDist * uFog.x)) * uFog.y;\n    if (uAtmo.w > 0.5 && uAtmo.x > 0.01 && uAtmo.y > 0.01) {\n      fogCol = mix(uFogColor, uAtmoDecay, clamp((1.0 - sunAlign) * 0.65, 0.0, 1.0));\n      fogCol += uSun * pow(sunAlign, 6.0) * clamp(uAtmo.y * 0.10, 0.0, 0.75);\n    } else {\n      fogCol += uSun * pow(sunAlign, 6.0) * 0.16;\n    }\n  } else if (uFog.z > 0.5) {\n    fog = clamp((dist - uFog.x) / max(uFog.y - uFog.x, 1.0), 0.0, 1.0);\n  } else {\n    fog = smoothstep(140.0, 950.0, dist) * 0.88;\n    fogCol += uSun * pow(sunAlign, 6.0) * 0.16;\n  }\n  col = mix(col, fogCol, fog);\n  gl_FragColor = vec4(col, alpha);\n}";
     private static final String LIT_VS = "\nuniform mat4 uVP; uniform mat4 uModel; uniform mat3 uNrm; uniform mat4 uShadowVP;\n#ifdef BATCH\n// Static batches: vertices are already in world space and carry the part's look.\nattribute vec3 aPos; attribute vec4 aNrm; attribute vec2 aUv; attribute vec4 aCol; attribute vec4 aMat;\nvarying vec3 vN; varying vec3 vW; varying vec4 vS; varying vec3 vA; varying vec4 vCol; varying vec4 vMat;\n#ifdef TEXTURED\nattribute vec3 aTan; attribute vec3 aBit;\nvarying vec3 vT; varying vec3 vB;\n#endif\nvoid main() {\n  vW = aPos; vN = aNrm.xyz;\n  vS = uShadowVP * vec4(aPos, 1.0);\n  vA = vec3(aUv, floor(aNrm.w * 127.0 + 0.5));\n  vCol = aCol;\n  vMat = vec4(aMat.x, aMat.y / 1000.0, aMat.z / 50.0, aMat.w / 120.0);\n#ifdef TEXTURED\n  vT = aTan; vB = aBit;\n#endif\n  gl_Position = uVP * vec4(aPos, 1.0);\n}\n#else\nattribute vec3 aPos; attribute vec3 aNrm;\nvarying vec3 vN; varying vec3 vW; varying vec3 vL; varying vec3 vLN; varying vec4 vS;\n#ifdef TEXTURED\nvarying vec3 vT; varying vec3 vB;\n#endif\nvoid main() {\n  vec4 w = uModel * vec4(aPos, 1.0);\n  vW = w.xyz; vN = uNrm * aNrm; vL = aPos; vLN = aNrm;\n  vS = uShadowVP * w;\n#ifdef TEXTURED\n  // World directions of the face's texture axes (same box projection the fragment shader uses).\n  vec3 an = abs(aNrm);\n  bool yF = an.y > an.x && an.y > an.z; bool xF = !yF && an.x > an.z;\n  vT = (uModel * vec4(yF ? vec3(1.0, 0.0, 0.0) : (xF ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0)), 0.0)).xyz;\n  vB = (uModel * vec4(yF ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0), 0.0)).xyz;\n#endif\n  gl_Position = uVP * w;\n}\n#endif";
-    private static final String MESH_FS = "\nprecision mediump float;\nvarying vec3 vN; varying vec3 vW; varying vec2 vUv; varying vec4 vS;\nuniform vec4 uColor; uniform vec3 uTint; uniform vec3 uLight; uniform vec3 uSun; uniform float uAmbient; uniform vec3 uCam;\nuniform sampler2D uTex; uniform float uHasTex; uniform sampler2D uShadow; uniform float uShadowOn; uniform vec2 uShadowTexel; uniform float uShadowSoft; uniform vec3 uShiftBot; uniform float uEnvSpec; uniform int uPtCount; uniform vec4 uPtPos[8]; uniform vec4 uPtCol[8]; uniform vec4 uPtDir[8]; uniform vec4 uCCParams; uniform vec3 uCCTint; uniform vec4 uBloom; uniform vec4 uDof; uniform vec3 uAmbRgb; uniform sampler2D uPbrNrm; uniform sampler2D uPbrRough; uniform sampler2D uPbrMetal; uniform vec4 uPbrFlags; uniform vec4 uPbrEmis;\nuniform vec3 uFogColor; uniform vec3 uFog; uniform float uExposure; uniform float uEmissive; uniform vec3 uHorizon; uniform vec3 uZenith;\nfloat unpackDepth(vec4 c) { return dot(c, vec4(1.0, 1.0 / 255.0, 1.0 / 65025.0, 1.0 / 16581375.0)); }\nfloat sampleShadow(vec2 uv, float z) { return z > unpackDepth(texture2D(uShadow, uv)) ? 0.0 : 1.0; }\nfloat shadowAt(float ndl) {\n  if (uShadowOn < 0.5 || ndl <= 0.0) return 1.0;\n  vec3 p = vS.xyz / vS.w * 0.5 + 0.5;\n  if (p.x <= 0.001 || p.x >= 0.999 || p.y <= 0.001 || p.y >= 0.999 || p.z >= 1.0) return 1.0; float shEdge = smoothstep(0.78, 1.0, max(abs(p.x - 0.5) * 2.0, abs(p.y - 0.5) * 2.0));\n  float z = p.z - (0.00030 + 0.00095 * (1.0 - ndl));\n  vec2 t = uShadowTexel * mix(0.65, 2.85, clamp(uShadowSoft, 0.0, 1.0));\n  float s = sampleShadow(p.xy, z) * 2.0;\n  s += sampleShadow(p.xy + vec2(-t.x, -t.y), z);\n  s += sampleShadow(p.xy + vec2(t.x, -t.y), z);\n  s += sampleShadow(p.xy + vec2(-t.x, t.y), z);\n  s += sampleShadow(p.xy + vec2(t.x, t.y), z);\n  return mix(s / 6.0, 1.0, shEdge);\n}\n#ifdef BATCH\nvarying vec4 vCol;\n#endif\nvoid main() {\n  vec3 n = normalize(vN);\n  if (!gl_FrontFacing) n = -n;\n#ifdef BATCH\n  vec3 c = vCol.rgb; float a = 1.0; float emis = vCol.a; vec3 tint = vec3(1.0);\n#else\n  vec3 c = uColor.rgb; float a = uColor.a; float emis = uEmissive; vec3 tint = uTint;\n#endif\n  if (uHasTex > 0.5) {\n    vec4 t = texture2D(uTex, vUv);\n    float am = uPbrFlags.w;\n    if (am > 1.5) { c = mix(t.rgb, t.rgb * c, t.a); }\n    else if (am > 0.5) { if (t.a < 0.04) discard; c = t.rgb; a *= t.a; }\n    else if (uPbrFlags.x + uPbrFlags.y + uPbrFlags.z > 0.5) { c = mix(c, t.rgb, t.a); }\n    else { if (t.a < 0.12) discard; c = t.rgb / max(t.a, 0.001); }\n  }\n  c *= tint;\n  float pbrRough = uPbrFlags.y > 0.5 ? clamp(texture2D(uPbrRough, vUv).r, 0.06, 0.98) : 0.65;\n  float pbrMetal = uPbrFlags.z > 0.5 ? clamp(texture2D(uPbrMetal, vUv).r, 0.0, 1.0) : 0.0;\n  if (uPbrFlags.x > 0.5) {\n    vec3 tn = texture2D(uPbrNrm, vUv).xyz * 2.0 - 1.0;\n    vec3 upRef = abs(n.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);\n    vec3 tang = normalize(cross(upRef, n));\n    vec3 bitang = cross(n, tang);\n    n = normalize(tang * tn.x + bitang * tn.y + n * max(tn.z, 0.25));\n  }\n  vec3 col;\n  if (emis > 0.5) col = c * 1.15;\n  else {\n    float ndl = dot(n, uLight);\n    float sh = shadowAt(ndl);\n    vec3 skyTop = mix(vec3(1.0), mix(uHorizon, uZenith, 0.5), 0.22);\n    vec3 groundBounce = mix(vec3(0.78, 0.79, 0.82), uHorizon * 0.85, 0.14);\n    float hemi = clamp(n.y * 0.5 + 0.5, 0.0, 1.0);\n    vec3 amb = max(uAmbient, 0.48) * uAmbRgb * mix(groundBounce, skyTop, hemi);\n    float wrap = max(0.0, (-ndl) * 0.26) + 0.14;\n    float diffScale = 1.0 - pbrMetal * 0.72;\n    col = c * diffScale * (amb + uSun * (max(ndl, 0.0) * sh + wrap * 0.36) + uShiftBot * max(-ndl, 0.0) * 0.35);\n    vec3 v = normalize(uCam - vW);\n    vec3 h = normalize(uLight + v);\n    float specPow = mix(128.0, 10.0, pbrRough * pbrRough);\n    vec3 specCol = mix(uSun, c * uSun, pbrMetal);\n    float specInt = mix(0.12, 0.82, (1.0 - pbrRough) * 0.65 + pbrMetal * 0.35);\n    col += specCol * pow(max(dot(n, h), 0.0), specPow) * specInt * sh * uEnvSpec;\n    if (uPbrFlags.y + uPbrFlags.z > 0.5) {\n      float fres = pow(1.0 - max(dot(n, v), 0.0), 4.0) * (0.04 + (1.0 - pbrRough) * 0.24 + pbrMetal * 0.38) * uEnvSpec;\n      col = mix(col, mix(uHorizon, uZenith, 0.5) * mix(vec3(1.0), c, pbrMetal), clamp(fres, 0.0, 0.75));\n    }\n    col += uPbrEmis.rgb * uPbrEmis.w;\n    if (uPtCount > 0) for (int li = 0; li < 8; li++) {\n      if (li >= uPtCount) break;\n      vec3 L = uPtPos[li].xyz - vW;\n      float d = length(L);\n      float r = uPtPos[li].w;\n      if (d < r) {\n        vec3 ldir = L / max(d, 0.001);\n        float tt = clamp(1.0 - (d / r) * (d / r), 0.0, 1.0);\n        float att = (tt * tt) / (1.0 + 0.04 * d * d);\n        if (uPtDir[li].w > 0.5) {\n          float ca = dot(-ldir, uPtDir[li].xyz);\n          att *= smoothstep(uPtCol[li].w, min(uPtCol[li].w + 0.14, 0.999), ca);\n        }\n        float pndl = max(dot(n, ldir), 0.0);\n        vec3 ph = normalize(ldir + v);\n        float pspec = pow(max(dot(n, ph), 0.0), 32.0) * 0.16 * uEnvSpec;\n        col += (c * pndl + vec3(pspec)) * uPtCol[li].rgb * att;\n      }\n    }\n  }\n  col *= uExposure;\n  if (uBloom.x > 0.001) { float blum = dot(col, vec3(0.2126, 0.7152, 0.0722)); float knee = smoothstep(uBloom.y * 0.75, uBloom.y + 0.65, blum); col += mix(col, vec3(blum), 0.35) * knee * uBloom.x * 0.20; }\n  vec3 mapped = clamp((col * (2.51 * col + 0.03)) / (col * (2.43 * col + 0.59) + 0.14), 0.0, 1.0); col = mix(clamp(col, 0.0, 1.0), mapped, 0.22);\n  if (uCCParams.w > 0.5) {\n    col = clamp(col + vec3(uCCParams.x), 0.0, 1.0);\n    col = clamp((col - 0.5) * (1.0 + uCCParams.y) + 0.5, 0.0, 1.0);\n    float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));\n    col = clamp(mix(vec3(luma), col, 1.0 + uCCParams.z) * uCCTint, 0.0, 1.0);\n  }\n  float dist = length(uCam - vW);\n  if (uDof.z > 0.001 || uDof.w > 0.001) {\n    float coc = max(0.0, (dist - (uDof.x + uDof.y)) / max(uDof.y + 12.0, 1.0)) * uDof.z + max(0.0, ((uDof.x - uDof.y) - dist) / max(uDof.x, 1.0)) * uDof.w;\n    col = mix(col, mix(uHorizon, uFogColor, 0.5), clamp(coc * 0.42, 0.0, 0.55));\n  }\n  float fog;\n  if (uFog.z > 1.5) fog = (1.0 - exp(-dist * uFog.x)) * uFog.y;\n  else if (uFog.z > 0.5) fog = clamp((dist - uFog.x) / max(uFog.y - uFog.x, 1.0), 0.0, 1.0);\n  else fog = smoothstep(140.0, 950.0, dist) * 0.88;\n  vec3 mieFog = uFogColor + uSun * pow(max(dot(normalize(vW - uCam), uLight), 0.0), 6.0) * 0.20;\n  gl_FragColor = vec4(mix(col, mieFog, fog), a);\n}";
+    private static final String MESH_FS = "\nprecision mediump float;\nvarying vec3 vN; varying vec3 vW; varying vec2 vUv; varying vec4 vS;\nuniform vec4 uColor; uniform vec3 uTint; uniform vec3 uLight; uniform vec3 uSun; uniform float uAmbient; uniform vec3 uCam;\nuniform sampler2D uTex; uniform float uHasTex; uniform sampler2D uShadow; uniform float uShadowOn; uniform vec2 uShadowTexel; uniform float uShadowSoft; uniform vec3 uShiftBot; uniform float uEnvSpec; uniform int uPtCount; uniform vec4 uPtPos[8]; uniform vec4 uPtCol[8]; uniform vec4 uPtDir[8]; uniform vec4 uCCParams; uniform vec3 uCCTint; uniform vec4 uBloom; uniform vec4 uDof; uniform vec3 uAmbRgb; uniform vec4 uLightingFlags; uniform vec3 uIndoorAmb; uniform vec4 uAtmo; uniform vec3 uAtmoDecay; uniform sampler2D uPbrNrm; uniform sampler2D uPbrRough; uniform sampler2D uPbrMetal; uniform vec4 uPbrFlags; uniform vec4 uPbrEmis;\nuniform vec3 uFogColor; uniform vec3 uFog; uniform float uExposure; uniform float uEmissive; uniform vec3 uHorizon; uniform vec3 uZenith;\nfloat unpackDepth(vec4 c) { return dot(c, vec4(1.0, 1.0 / 255.0, 1.0 / 65025.0, 1.0 / 16581375.0)); }\nfloat sampleShadow(vec2 uv, float z) { return z > unpackDepth(texture2D(uShadow, uv)) ? 0.0 : 1.0; }\nfloat shadowAt(float ndl) {\n  if (uShadowOn < 0.5 || ndl <= 0.0) return 1.0;\n  vec3 p = vS.xyz / vS.w * 0.5 + 0.5;\n  if (p.x <= 0.001 || p.x >= 0.999 || p.y <= 0.001 || p.y >= 0.999 || p.z >= 1.0) return 1.0; float shEdge = smoothstep(0.78, 1.0, max(abs(p.x - 0.5) * 2.0, abs(p.y - 0.5) * 2.0));\n  float z = p.z - (0.00030 + 0.00095 * (1.0 - ndl));\n  vec2 t = uShadowTexel * mix(0.65, 2.85, clamp(uShadowSoft, 0.0, 1.0));\n  float s = sampleShadow(p.xy, z) * 2.0;\n  s += sampleShadow(p.xy + vec2(-t.x, -t.y), z);\n  s += sampleShadow(p.xy + vec2(t.x, -t.y), z);\n  s += sampleShadow(p.xy + vec2(-t.x, t.y), z);\n  s += sampleShadow(p.xy + vec2(t.x, t.y), z);\n  return mix(s / 6.0, 1.0, shEdge);\n}\n#ifdef BATCH\nvarying vec4 vCol;\n#endif\nvoid main() {\n  vec3 n = normalize(vN);\n  if (!gl_FrontFacing) n = -n;\n#ifdef BATCH\n  vec3 c = vCol.rgb; float a = 1.0; float emis = vCol.a; vec3 tint = vec3(1.0);\n#else\n  vec3 c = uColor.rgb; float a = uColor.a; float emis = uEmissive; vec3 tint = uTint;\n#endif\n  if (uHasTex > 0.5) {\n    vec4 t = texture2D(uTex, vUv);\n    float am = uPbrFlags.w;\n    if (am > 1.5) { c = mix(t.rgb, t.rgb * c, t.a); }\n    else if (am > 0.5) { if (t.a < 0.04) discard; c = t.rgb; a *= t.a; }\n    else if (uPbrFlags.x + uPbrFlags.y + uPbrFlags.z > 0.5) { c = mix(c, t.rgb, t.a); }\n    else { if (t.a < 0.12) discard; c = t.rgb / max(t.a, 0.001); }\n  }\n  c *= tint;\n  float pbrRough = uPbrFlags.y > 0.5 ? clamp(texture2D(uPbrRough, vUv).r, 0.06, 0.98) : 0.65;\n  float pbrMetal = uPbrFlags.z > 0.5 ? clamp(texture2D(uPbrMetal, vUv).r, 0.0, 1.0) : 0.0;\n  if (uPbrFlags.x > 0.5) {\n    vec3 tn = texture2D(uPbrNrm, vUv).xyz * 2.0 - 1.0;\n    vec3 upRef = abs(n.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);\n    vec3 tang = normalize(cross(upRef, n));\n    vec3 bitang = cross(n, tang);\n    n = normalize(tang * tn.x + bitang * tn.y + n * max(tn.z, 0.25));\n  }\n  vec3 col;\n  if (emis > 0.5) col = c * 1.15;\n  else {\n    float ndl = dot(n, uLight);\n    float sh = shadowAt(ndl);\n    vec3 skyTop = mix(vec3(1.0), mix(uHorizon, uZenith, 0.5), 0.22);\n    vec3 groundBounce = mix(vec3(0.58, 0.59, 0.62), uHorizon * 0.72, 0.18);\n    float hemi = clamp(n.y * 0.5 + 0.5, 0.0, 1.0);\n    float skyVis = uAmbient > 0.5 ? clamp(mix(0.25, 1.0, hemi) * mix(0.20, 1.0, sh), 0.0, 1.0) : 0.0;\n    vec3 amb = mix(uIndoorAmb, uAmbRgb, skyVis) * mix(groundBounce, skyTop, hemi);\n    float wrap = max(0.0, (-ndl) * 0.14);\n    float diffScale = 1.0 - pbrMetal * 0.72;\n    col = c * diffScale * (amb + uSun * (max(ndl, 0.0) * sh + wrap * 0.35) + uShiftBot * max(-ndl, 0.0) * 0.35);\n    vec3 v = normalize(uCam - vW);\n    vec3 h = normalize(uLight + v);\n    float specPow = mix(128.0, 10.0, pbrRough * pbrRough);\n    vec3 specCol = mix(uSun, c * uSun, pbrMetal);\n    float specInt = mix(0.12, 0.82, (1.0 - pbrRough) * 0.65 + pbrMetal * 0.35);\n    col += specCol * pow(max(dot(n, h), 0.0), specPow) * specInt * sh * uLightingFlags.w;\n    if (uPbrFlags.y + uPbrFlags.z > 0.5) {\n      float fres = pow(1.0 - max(dot(n, v), 0.0), 4.0) * (0.04 + (1.0 - pbrRough) * 0.24 + pbrMetal * 0.38) * uLightingFlags.z;\n      col = mix(col, mix(uHorizon, uZenith, 0.5) * mix(vec3(1.0), c, pbrMetal), clamp(fres, 0.0, 0.75));\n    }\n    col += uPbrEmis.rgb * uPbrEmis.w;\n    if (uPtCount > 0) for (int li = 0; li < 8; li++) {\n      if (li >= uPtCount) break;\n      vec3 L = uPtPos[li].xyz - vW;\n      float d = length(L);\n      float r = uPtPos[li].w;\n      if (d < r) {\n        vec3 ldir = L / max(d, 0.001);\n        float areaR = uPtDir[li].w > 1.5 ? (uPtDir[li].w - 2.0) : 0.0;\n        float effD = max(d - areaR * 0.45, 0.25);\n        float tt = clamp(1.0 - (d / r) * (d / r), 0.0, 1.0);\n        float att = (tt * tt) / (1.0 + 0.04 * effD * effD);\n        if (uPtDir[li].w > 0.5) {\n          float ca = dot(-ldir, uPtDir[li].xyz);\n          att *= smoothstep(uPtCol[li].w, min(uPtCol[li].w + 0.14, 0.999), ca);\n        }\n        float pndl = max(dot(n, ldir), 0.0);\n        vec3 pspec = vec3(0.0);\n        if (uLightingFlags.x >= 3.5 && uLightingFlags.w > 0.5 && pndl > 0.0) {\n          vec3 ph = normalize(ldir + v);\n          float pndh = max(dot(n, ph), 0.0);\n          float ma2 = pbrRough * pbrRough * pbrRough * pbrRough;\n          float pdDen = (pndh * pndh) * (ma2 - 1.0) + 1.0;\n          float pggx = ma2 / max(3.14159 * pdDen * pdDen, 0.002);\n          vec3 f0 = mix(vec3(0.04), c, pbrMetal);\n          vec3 psch = f0 + (1.0 - f0) * pow(1.0 - max(dot(ph, v), 0.0), 5.0);\n          pspec = min(pggx * psch * (0.32 + (1.0 - pbrRough) * 0.85), vec3(2.0)) * pndl;\n        }\n        col += (c * diffScale * pndl + pspec) * uPtCol[li].rgb * att;\n      }\n    }\n  }\n  col *= uExposure;\n  if (uBloom.x > 0.001) { float blum = dot(col, vec3(0.2126, 0.7152, 0.0722)); float knee = smoothstep(uBloom.y * 0.75, uBloom.y + 0.65, blum); col += mix(col, vec3(blum), 0.35) * knee * uBloom.x * 0.20; }\n  if (uLightingFlags.y > 0.5) {\n    col = col / (vec3(1.0) + col * 0.28);\n    col = clamp((col - 0.5) * 1.08 + 0.5, 0.0, 1.0);\n  } else {\n    vec3 x = col * 0.82;\n    col = clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);\n  }\n  if (uCCParams.w > 0.5) {\n    col = clamp(col + vec3(uCCParams.x), 0.0, 1.0);\n    col = clamp((col - 0.5) * (1.0 + uCCParams.y) + 0.5, 0.0, 1.0);\n    float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));\n    col = clamp(mix(vec3(luma), col, 1.0 + uCCParams.z) * uCCTint, 0.0, 1.0);\n  }\n  float dist = length(uCam - vW);\n  if (uDof.z > 0.001 || uDof.w > 0.001) {\n    float coc = max(0.0, (dist - (uDof.x + uDof.y)) / max(uDof.y + 12.0, 1.0)) * uDof.z + max(0.0, ((uDof.x - uDof.y) - dist) / max(uDof.x, 1.0)) * uDof.w;\n    col = mix(col, mix(uHorizon, uFogColor, 0.5), clamp(coc * 0.42, 0.0, 0.55));\n  }\n  float fog;\n  vec3 fogCol = uFogColor;\n  vec3 viewDir = normalize(vW - uCam);\n  float sunAlign = max(dot(viewDir, uLight), 0.0);\n  if (uFog.z > 1.5) {\n    float effDist = max(dist - uAtmo.z * 90.0, 0.0);\n    fog = (1.0 - exp(-effDist * uFog.x)) * uFog.y;\n    if (uAtmo.w > 0.5 && uAtmo.x > 0.01 && uAtmo.y > 0.01) {\n      fogCol = mix(uFogColor, uAtmoDecay, clamp((1.0 - sunAlign) * 0.65, 0.0, 1.0));\n      fogCol += uSun * pow(sunAlign, 6.0) * clamp(uAtmo.y * 0.10, 0.0, 0.75);\n    } else {\n      fogCol += uSun * pow(sunAlign, 6.0) * 0.16;\n    }\n  } else if (uFog.z > 0.5) {\n    fog = clamp((dist - uFog.x) / max(uFog.y - uFog.x, 1.0), 0.0, 1.0);\n  } else {\n    fog = smoothstep(140.0, 950.0, dist) * 0.88;\n    fogCol += uSun * pow(sunAlign, 6.0) * 0.16;\n  }\n  gl_FragColor = vec4(mix(col, fogCol, fog), a);\n}";
     private static final String MESH_VS = "\nuniform mat4 uVP; uniform mat4 uModel; uniform mat3 uNrm; uniform mat4 uShadowVP;\nvarying vec3 vN; varying vec3 vW; varying vec2 vUv; varying vec4 vS;\n#ifdef BATCH\nattribute vec3 aPos; attribute vec4 aNrm; attribute vec2 aUv; attribute vec4 aCol;\nvarying vec4 vCol;\nvoid main() {\n  vW = aPos; vN = aNrm.xyz; vUv = aUv; vS = uShadowVP * vec4(aPos, 1.0); vCol = aCol;\n  gl_Position = uVP * vec4(aPos, 1.0);\n}\n#else\nattribute vec3 aPos; attribute vec3 aNrm; attribute vec2 aUv;\nvoid main() {\n  vec4 w = uModel * vec4(aPos, 1.0);\n  vW = w.xyz; vN = uNrm * aNrm; vUv = aUv; vS = uShadowVP * w;\n  gl_Position = uVP * w;\n}\n#endif";
     private static final String PRECISION = "\n#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n";
-    private static final String SKYBOX_FS = "\nprecision mediump float;\nvarying vec2 vUv; uniform sampler2D uTex; uniform vec3 uTint;\nvoid main() { gl_FragColor = vec4(texture2D(uTex, vUv).rgb * uTint, 1.0); }";
-    private static final String SKYBOX_VS = "\nuniform mat4 uVP; uniform vec3 uCam; uniform mat3 uRot;\nattribute vec3 aPos; attribute vec2 aUv; varying vec2 vUv;\nvoid main() {\n  vUv = aUv;\n  vec4 p = uVP * vec4(uCam + uRot * aPos * 400.0, 1.0);\n  gl_Position = vec4(p.xy, p.w * 0.9999, p.w);\n}";
-    private static final String SKY_FS = "\n#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n\nvarying vec2 vNdc;\nuniform mat4 uInvVP; uniform vec3 uCam; uniform vec3 uSunDir; uniform vec3 uZenith; uniform vec3 uHorizon;\nuniform vec3 uSunColor; uniform float uTime; uniform float uDay; uniform vec2 uSunRays; uniform vec4 uCCParams; uniform vec3 uCCTint;\nfloat hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }\nfloat noise(vec2 p) {\n  vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);\n  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);\n}\nfloat fbm(vec2 p) {\n  float v = 0.0; float a = 0.52;\n  mat2 rot = mat2(0.80, -0.60, 0.60, 0.80);\n  for (int i = 0; i < 4; i++) { v += noise(p) * a; p = rot * p * 2.04 + vec2(17.1, 31.7); a *= 0.48; }\n  return v;\n}\nvoid main() {\n  vec4 far = uInvVP * vec4(vNdc, 1.0, 1.0);\n  vec3 dir = normalize(far.xyz / far.w - uCam);\n  float y = dir.y;\n  vec3 rbxZenith = mix(uZenith, vec3(0.28, 0.58, 0.91), 0.55 * uDay);\n  vec3 rbxMid = mix(uHorizon, vec3(0.58, 0.80, 0.98), 0.55 * uDay);\n  vec3 rbxHoriz = mix(uHorizon, vec3(0.87, 0.94, 1.00), 0.50 * uDay);\n  vec3 col = mix(rbxHoriz, rbxMid, smoothstep(0.0, 0.24, max(y, 0.0)));\n  col = mix(col, rbxZenith, smoothstep(0.18, 0.88, max(y, 0.0)));\n  if (y < 0.0) {\n    col = mix(rbxHoriz, mix(uHorizon * 0.78, vec3(0.64, 0.78, 0.90), 0.45 * uDay), smoothstep(0.0, 0.35, -y));\n  }\n  float sd = max(dot(dir, uSunDir), 0.0);\n  col += uSunColor * (smoothstep(0.99935, 0.99975, sd) * 2.4 + pow(sd, 140.0) * 0.26 + pow(sd, 12.0) * 0.09) * uDay;\n  if (y > 0.02) {\n    vec2 uv = dir.xz / (y + 0.24) * 1.15 + vec2(uTime * 0.0025, uTime * 0.0012);\n    float warp = fbm(uv * 0.7 + vec2(3.1, 7.4));\n    float cBase = fbm(uv + vec2(warp * 0.38, -warp * 0.26));\n    float cl = smoothstep(0.54, 0.78, cBase);\n    float cRim = smoothstep(0.46, 0.74, fbm(uv - uSunDir.xz * 0.06));\n    float fade = smoothstep(0.02, 0.28, y) * smoothstep(0.98, 0.55, y);\n    vec3 cDark = mix(vec3(0.45, 0.52, 0.64), vec3(0.84, 0.90, 0.97), uDay);\n    vec3 cLit = mix(vec3(0.62, 0.68, 0.78), vec3(1.00, 1.00, 1.00), uDay);\n    vec3 cloudCol = mix(cDark, cLit, clamp(0.45 + 0.45 * cRim + 0.18 * pow(sd, 4.0), 0.0, 1.0));\n    col = mix(col, cloudCol, cl * fade * 0.82 * (0.25 + 0.75 * uDay));\n  }\n  if (uDay < 0.6 && y > 0.0) {\n    float nFade = clamp(1.0 - uDay * 1.8, 0.0, 1.0);\n    vec2 suv = dir.xz / (y + 0.30) * 260.0;\n    float st = step(0.9972, hash(floor(suv)));\n    float tw = 0.68 + 0.32 * sin(uTime * 2.0 + hash(floor(suv * 0.5)) * 20.0);\n    col += vec3(0.88, 0.93, 1.0) * st * tw * nFade * smoothstep(0.03, 0.30, y);\n    float md = max(dot(dir, normalize(vec3(-uSunDir.x, max(abs(uSunDir.y), 0.28), -uSunDir.z))), 0.0);\n    col += vec3(0.82, 0.88, 1.0) * (smoothstep(0.9988, 0.9994, md) * 1.15 + pow(md, 48.0) * 0.16) * nFade;\n  }\n  if (uSunRays.x > 0.001 && uDay > 0.05) {\n    float srPow = mix(28.0, 2.5, clamp(uSunRays.y, 0.0, 1.0));\n    float ang = atan(dir.y - uSunDir.y, dir.x - uSunDir.x);\n    float shafts = 0.72 + 0.28 * sin(ang * 12.0 + uTime * 0.35) * cos(ang * 7.0 - uTime * 0.2);\n    col += uSunColor * pow(sd, srPow) * uSunRays.x * shafts * 0.45 * uDay;\n  }\n  col = clamp(col + vec3(uCCParams.x), 0.0, 1.0);\n  col = clamp((col - 0.5) * (1.0 + uCCParams.y) + 0.5, 0.0, 1.0);\n  float sluma = dot(col, vec3(0.2126, 0.7152, 0.0722));\n  col = clamp(mix(vec3(sluma), col, 1.0 + uCCParams.z) * uCCTint, 0.0, 1.0);\n  gl_FragColor = vec4(col, 1.0);\n}";
-    private static final String SKY_VS = "\nattribute vec2 aPos; varying vec2 vNdc;\nvoid main() { vNdc = aPos; gl_Position = vec4(aPos, 0.9999, 1.0); }";
+    private static final String SKYBOX_FS = "\nprecision mediump float;\nvarying vec2 vUv; varying vec3 vDir; uniform sampler2D uTex; uniform vec3 uTint; uniform vec4 uAtmo; uniform vec3 uAtmoColor; uniform vec3 uAtmoDecay; uniform vec3 uSunDir; uniform vec3 uSunColor; uniform float uDay;\nvoid main() {\n  vec3 col = texture2D(uTex, vUv).rgb * uTint;\n  if (uAtmo.w > 0.5 && uAtmo.x > 0.01) {\n    vec3 dir = normalize(vDir);\n    float hBand = exp(-abs(dir.y) * mix(7.0, 1.8, clamp(uAtmo.x * 0.15, 0.0, 1.0)));\n    float sunDot = max(dot(dir, uSunDir), 0.0);\n    vec3 hazeCol = (uAtmo.y > 0.01) ? mix(uAtmoColor, uAtmoDecay, clamp((1.0 - sunDot) * 0.65, 0.0, 1.0)) : uAtmoColor;\n    float hazeAmt = clamp(hBand * clamp(uAtmo.x * 0.22, 0.0, 0.92), 0.0, 0.92);\n    col = mix(col, hazeCol, hazeAmt);\n    if (uAtmo.y > 0.01) {\n      col += uSunColor * pow(sunDot, 8.0) * clamp(uAtmo.y * 0.12, 0.0, 0.85) * hBand * (0.25 + 0.75 * uDay);\n    }\n  }\n  gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);\n}";
+    private static final String SKYBOX_VS = "\nuniform mat4 uVP; uniform vec3 uCam; uniform mat3 uRot;\nattribute vec3 aPos; attribute vec2 aUv; varying vec2 vUv; varying vec3 vDir;\nvoid main() {\n  vUv = aUv;\n  vDir = normalize(uRot * aPos);\n  vec4 p = uVP * vec4(uCam + uRot * aPos * 400.0, 1.0);\n  gl_Position = vec4(p.xy, p.w, p.w);\n}";
+    private static final String SKY_FS = "\n#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n\nvarying vec2 vNdc;\nuniform mat4 uInvVP; uniform vec3 uCam; uniform vec3 uSunDir; uniform vec3 uZenith; uniform vec3 uHorizon;\nuniform vec3 uSunColor; uniform float uTime; uniform float uDay; uniform vec2 uSunRays; uniform vec4 uCCParams; uniform vec3 uCCTint; uniform vec4 uAtmo; uniform vec3 uAtmoColor; uniform vec3 uAtmoDecay;\nfloat hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }\nfloat noise(vec2 p) {\n  vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);\n  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);\n}\nfloat fbm(vec2 p) {\n  float v = 0.0; float a = 0.52;\n  mat2 rot = mat2(0.80, -0.60, 0.60, 0.80);\n  for (int i = 0; i < 4; i++) { v += noise(p) * a; p = rot * p * 2.04 + vec2(17.1, 31.7); a *= 0.48; }\n  return v;\n}\nvoid main() {\n  vec4 far = uInvVP * vec4(vNdc, 1.0, 1.0);\n  vec3 dir = normalize(far.xyz / far.w - uCam);\n  float y = dir.y;\n  vec3 rbxZenith = mix(uZenith, vec3(0.28, 0.58, 0.91), 0.55 * uDay);\n  vec3 rbxMid = mix(uHorizon, vec3(0.58, 0.80, 0.98), 0.55 * uDay);\n  vec3 rbxHoriz = mix(uHorizon, vec3(0.87, 0.94, 1.00), 0.50 * uDay);\n  vec3 col = mix(rbxHoriz, rbxMid, smoothstep(0.0, 0.24, max(y, 0.0)));\n  col = mix(col, rbxZenith, smoothstep(0.18, 0.88, max(y, 0.0)));\n  if (y < 0.0) {\n    col = mix(rbxHoriz, mix(uHorizon * 0.78, vec3(0.64, 0.78, 0.90), 0.45 * uDay), smoothstep(0.0, 0.35, -y));\n  }\n  float sd = max(dot(dir, uSunDir), 0.0);\n  col += uSunColor * (smoothstep(0.99935, 0.99975, sd) * 2.4 + pow(sd, 140.0) * 0.26 + pow(sd, 12.0) * 0.09) * uDay;\n  if (y > 0.02) {\n    vec2 uv = dir.xz / (y + 0.24) * 1.15 + vec2(uTime * 0.0025, uTime * 0.0012);\n    float warp = fbm(uv * 0.7 + vec2(3.1, 7.4));\n    float cBase = fbm(uv + vec2(warp * 0.38, -warp * 0.26));\n    float cl = smoothstep(0.54, 0.78, cBase);\n    float cRim = smoothstep(0.46, 0.74, fbm(uv - uSunDir.xz * 0.06));\n    float fade = smoothstep(0.02, 0.28, y) * smoothstep(0.98, 0.55, y);\n    vec3 cDark = mix(vec3(0.45, 0.52, 0.64), vec3(0.84, 0.90, 0.97), uDay);\n    vec3 cLit = mix(vec3(0.62, 0.68, 0.78), vec3(1.00, 1.00, 1.00), uDay);\n    vec3 cloudCol = mix(cDark, cLit, clamp(0.45 + 0.45 * cRim + 0.18 * pow(sd, 4.0), 0.0, 1.0));\n    col = mix(col, cloudCol, cl * fade * 0.82 * (0.25 + 0.75 * uDay));\n  }\n  if (uDay < 0.6 && y > 0.0) {\n    float nFade = clamp(1.0 - uDay * 1.8, 0.0, 1.0);\n    vec2 suv = dir.xz / (y + 0.30) * 260.0;\n    float st = step(0.9972, hash(floor(suv)));\n    float tw = 0.68 + 0.32 * sin(uTime * 2.0 + hash(floor(suv * 0.5)) * 20.0);\n    col += vec3(0.88, 0.93, 1.0) * st * tw * nFade * smoothstep(0.03, 0.30, y);\n    float md = max(dot(dir, normalize(vec3(-uSunDir.x, max(abs(uSunDir.y), 0.28), -uSunDir.z))), 0.0);\n    col += vec3(0.82, 0.88, 1.0) * (smoothstep(0.9988, 0.9994, md) * 1.15 + pow(md, 48.0) * 0.16) * nFade;\n  }\n  if (uSunRays.x > 0.001 && uDay > 0.05) {\n    float srPow = mix(28.0, 2.5, clamp(uSunRays.y, 0.0, 1.0));\n    float ang = atan(dir.y - uSunDir.y, dir.x - uSunDir.x);\n    float shafts = 0.72 + 0.28 * sin(ang * 12.0 + uTime * 0.35) * cos(ang * 7.0 - uTime * 0.2);\n    col += uSunColor * pow(sd, srPow) * uSunRays.x * shafts * 0.45 * uDay;\n  }\n  if (uAtmo.w > 0.5 && uAtmo.x > 0.01) {\n    float hBand = exp(-abs(y) * mix(7.0, 1.8, clamp(uAtmo.x * 0.15, 0.0, 1.0)));\n    vec3 hazeCol = (uAtmo.y > 0.01) ? mix(uAtmoColor, uAtmoDecay, clamp((1.0 - sd) * 0.65, 0.0, 1.0)) : uAtmoColor;\n    float hazeAmt = clamp(hBand * clamp(uAtmo.x * 0.22, 0.0, 0.92), 0.0, 0.92);\n    col = mix(col, hazeCol, hazeAmt);\n    if (uAtmo.y > 0.01) {\n      col += uSunColor * pow(sd, 8.0) * clamp(uAtmo.y * 0.12, 0.0, 0.85) * hBand * (0.25 + 0.75 * uDay);\n    }\n  }\n  col = clamp(col + vec3(uCCParams.x), 0.0, 1.0);\n  col = clamp((col - 0.5) * (1.0 + uCCParams.y) + 0.5, 0.0, 1.0);\n  float sluma = dot(col, vec3(0.2126, 0.7152, 0.0722));\n  col = clamp(mix(vec3(sluma), col, 1.0 + uCCParams.z) * uCCTint, 0.0, 1.0);\n  gl_FragColor = vec4(col, 1.0);\n}";
+    private static final String SKY_VS = "\nattribute vec2 aPos; varying vec2 vNdc;\nvoid main() { vNdc = aPos; gl_Position = vec4(aPos, 1.0, 1.0); }";
     private final Set<String> BATCH_CLASSES;
     private final float[] FLOAT4_ZERO;
     private final String[] SKY_FACES;
@@ -350,11 +350,40 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
     private float blurAmt = 0.0f;
     private int uAmbRgb;
     private int mAmbRgb;
+    private int uLightingFlags;
+    private int uIndoorAmb;
+    private int uAtmo;
+    private int uAtmoDecay;
+    private int mLightingFlags;
+    private int mIndoorAmb;
+    private int mAtmo;
+    private int mAtmoDecay;
+    private int sAtmo;
+    private int sAtmoColor;
+    private int sAtmoDecay;
+    private int kAtmo;
+    private int kAtmoColor;
+    private int kAtmoDecay;
+    private int kSunDir;
+    private int kSunColor;
+    private int kDay;
     private final float[] ambRgb = new float[]{1.0f, 1.0f, 1.0f};
+    private final float[] indoorAmb = new float[]{0.27f, 0.27f, 0.27f};
+    private final float[] atmoColor = new float[]{0.78f, 0.67f, 0.42f};
+    private final float[] atmoDecay = new float[]{0.42f, 0.44f, 0.48f};
+    private float atmoHaze = 0.0f;
+    private float atmoOffset = 0.25f;
+    private float hasAtmo = 0.0f;
+    private int effectiveTech = 3;
+    private float retroTonemap = 0.0f;
+    private float directSpecEnable = 1.0f;
+    private float decalAmbient = 0.5f;
+    private int shadowDepth = 0;
+    private int maxTexSize = 1024;
     private static final String POST_VS = "attribute vec2 aPos; varying vec2 vUv; void main() { vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }";
     private static final String BLOOM_EXT_FS = "precision mediump float; varying vec2 vUv; uniform sampler2D uTex; uniform float uThresh; uniform float uBlurOnly; void main() { vec3 c = texture2D(uTex, vUv).rgb; if (uBlurOnly > 0.5) { gl_FragColor = vec4(c, 1.0); return; } float lum = dot(c, vec3(0.2126, 0.7152, 0.0722)); float soft = smoothstep(uThresh * 0.65, uThresh + 0.35, lum); gl_FragColor = vec4(c * soft, 1.0); }";
     private static final String GAUSS_FS = "precision mediump float; varying vec2 vUv; uniform sampler2D uTex; uniform vec2 uDir; void main() { vec3 s = texture2D(uTex, vUv).rgb * 0.227027; s += (texture2D(uTex, vUv + uDir * 1.0).rgb + texture2D(uTex, vUv - uDir * 1.0).rgb) * 0.1945946; s += (texture2D(uTex, vUv + uDir * 2.0).rgb + texture2D(uTex, vUv - uDir * 2.0).rgb) * 0.1216216; s += (texture2D(uTex, vUv + uDir * 3.0).rgb + texture2D(uTex, vUv - uDir * 3.0).rgb) * 0.054054; s += (texture2D(uTex, vUv + uDir * 4.0).rgb + texture2D(uTex, vUv - uDir * 4.0).rgb) * 0.016216; gl_FragColor = vec4(s, 1.0); }";
-    private static final String POST_COMP_FS = "precision mediump float; varying vec2 vUv; uniform sampler2D uScene; uniform sampler2D uBloomTex; uniform float uBloomInt; uniform float uBlurMix; void main() { vec3 base = texture2D(uScene, vUv).rgb; vec3 bl = texture2D(uBloomTex, vUv).rgb; vec3 col = uBlurMix > 0.001 ? mix(base, bl, clamp(uBlurMix, 0.0, 1.0)) : (base + bl * uBloomInt); col = col / (vec3(1.0) + col * 0.12); gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0); }";
+    private static final String POST_COMP_FS = "precision mediump float; varying vec2 vUv; uniform sampler2D uScene; uniform sampler2D uBloomTex; uniform float uBloomInt; uniform float uBlurMix; void main() { vec3 base = texture2D(uScene, vUv).rgb; vec3 bl = texture2D(uBloomTex, vUv).rgb; vec3 col = uBlurMix > 0.001 ? mix(base, bl, clamp(uBlurMix, 0.0, 1.0)) : (base + bl * uBloomInt); gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0); }";
     private int postSceneFbo = 0;
     private int postSceneTex = 0;
     private int postSceneDepth = 0;
@@ -368,6 +397,20 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
     private int postExtProg = 0;
     private int postBlurProg = 0;
     private int postCompProg = 0;
+    private int p1Pos = -1, p1Tex = -1, p1Thresh = -1, p1BlurOnly = -1;
+    private int p2Pos = -1, p2Tex = -1, p2Dir = -1;
+    private int p4Pos = -1, p4Scene = -1, p4BloomTex = -1, p4BloomInt = -1, p4BlurMix = -1;
+    private final ArrayList<Draw> scratchTransparent = new ArrayList<>();
+    private final ArrayList<Instance> scratchAdvanced = new ArrayList<>();
+    private final ArrayList<Triple<Instance, Geo, TexBind>> scratchTextured = new ArrayList<>();
+    private final ArrayList<Pair<Instance, Geo>> scratchFileMeshes = new ArrayList<>();
+    private static final float[] DAY_Z = {0.23f, 0.50f, 0.90f};
+    private static final float[] DAY_H = {0.68f, 0.81f, 0.95f};
+    private static final float[] NIGHT_Z = {0.007f, 0.012f, 0.035f};
+    private static final float[] NIGHT_H = {0.018f, 0.030f, 0.072f};
+    private static final float[] DUSK_C = {0.96f, 0.52f, 0.28f};
+    private final float[] warmTmp = new float[3];
+    private final float[] lightDistsTmp = new float[8];
     private final IdentityHashMap<Instance, ArrayList<float[]>> trailHist = new IdentityHashMap<>();
     private int uShadowVP;
     private int uSize;
@@ -615,7 +658,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
     }
 
     private final LitLocs litLocs(int prog) {
-        return new LitLocs(prog, new int[]{GLES20.glGetUniformLocation(prog, "uVP"), GLES20.glGetUniformLocation(prog, "uModel"), GLES20.glGetUniformLocation(prog, "uNrm"), GLES20.glGetUniformLocation(prog, "uColor"), GLES20.glGetUniformLocation(prog, "uLight"), GLES20.glGetUniformLocation(prog, "uCam"), GLES20.glGetUniformLocation(prog, "uEmissive"), GLES20.glGetUniformLocation(prog, "uGrid"), GLES20.glGetUniformLocation(prog, "uSize"), GLES20.glGetUniformLocation(prog, "uHorizon"), GLES20.glGetUniformLocation(prog, "uZenith"), GLES20.glGetUniformLocation(prog, "uSun"), GLES20.glGetUniformLocation(prog, "uAmbient"), GLES20.glGetUniformLocation(prog, "uFogColor"), GLES20.glGetUniformLocation(prog, "uFog"), GLES20.glGetUniformLocation(prog, "uMat"), GLES20.glGetUniformLocation(prog, "uSurfA"), GLES20.glGetUniformLocation(prog, "uSurfB"), GLES20.glGetUniformLocation(prog, "uShadow"), GLES20.glGetUniformLocation(prog, "uShadowOn"), GLES20.glGetUniformLocation(prog, "uShadowTexel"), GLES20.glGetUniformLocation(prog, "uShadowVP"), GLES20.glGetUniformLocation(prog, "uExposure"), GLES20.glGetUniformLocation(prog, "uTime"), GLES20.glGetUniformLocation(prog, "uTruss"), GLES20.glGetAttribLocation(prog, "aPos"), GLES20.glGetAttribLocation(prog, "aNrm"), GLES20.glGetUniformLocation(prog, "uMatTex"), GLES20.glGetUniformLocation(prog, "uMatNrm"), GLES20.glGetUniformLocation(prog, "uTexScale"), GLES20.glGetUniformLocation(prog, "uHasNrm"), GLES20.glGetUniformLocation(prog, "uSurfTex"), GLES20.glGetUniformLocation(prog, "uHasSurfTex"), GLES20.glGetAttribLocation(prog, "aUv"), GLES20.glGetAttribLocation(prog, "aCol"), GLES20.glGetAttribLocation(prog, "aMat"), GLES20.glGetAttribLocation(prog, "aTan"), GLES20.glGetAttribLocation(prog, "aBit"), GLES20.glGetUniformLocation(prog, "uShadowSoft"), GLES20.glGetUniformLocation(prog, "uShiftBot"), GLES20.glGetUniformLocation(prog, "uEnvSpec"), GLES20.glGetUniformLocation(prog, "uPtCount"), GLES20.glGetUniformLocation(prog, "uPtPos"), GLES20.glGetUniformLocation(prog, "uPtCol"), GLES20.glGetUniformLocation(prog, "uPtDir"), GLES20.glGetUniformLocation(prog, "uCCParams"), GLES20.glGetUniformLocation(prog, "uCCTint"), GLES20.glGetUniformLocation(prog, "uBloom"), GLES20.glGetUniformLocation(prog, "uDof"), GLES20.glGetUniformLocation(prog, "uAmbRgb")});
+        return new LitLocs(prog, new int[]{GLES20.glGetUniformLocation(prog, "uVP"), GLES20.glGetUniformLocation(prog, "uModel"), GLES20.glGetUniformLocation(prog, "uNrm"), GLES20.glGetUniformLocation(prog, "uColor"), GLES20.glGetUniformLocation(prog, "uLight"), GLES20.glGetUniformLocation(prog, "uCam"), GLES20.glGetUniformLocation(prog, "uEmissive"), GLES20.glGetUniformLocation(prog, "uGrid"), GLES20.glGetUniformLocation(prog, "uSize"), GLES20.glGetUniformLocation(prog, "uHorizon"), GLES20.glGetUniformLocation(prog, "uZenith"), GLES20.glGetUniformLocation(prog, "uSun"), GLES20.glGetUniformLocation(prog, "uAmbient"), GLES20.glGetUniformLocation(prog, "uFogColor"), GLES20.glGetUniformLocation(prog, "uFog"), GLES20.glGetUniformLocation(prog, "uMat"), GLES20.glGetUniformLocation(prog, "uSurfA"), GLES20.glGetUniformLocation(prog, "uSurfB"), GLES20.glGetUniformLocation(prog, "uShadow"), GLES20.glGetUniformLocation(prog, "uShadowOn"), GLES20.glGetUniformLocation(prog, "uShadowTexel"), GLES20.glGetUniformLocation(prog, "uShadowVP"), GLES20.glGetUniformLocation(prog, "uExposure"), GLES20.glGetUniformLocation(prog, "uTime"), GLES20.glGetUniformLocation(prog, "uTruss"), GLES20.glGetAttribLocation(prog, "aPos"), GLES20.glGetAttribLocation(prog, "aNrm"), GLES20.glGetUniformLocation(prog, "uMatTex"), GLES20.glGetUniformLocation(prog, "uMatNrm"), GLES20.glGetUniformLocation(prog, "uTexScale"), GLES20.glGetUniformLocation(prog, "uHasNrm"), GLES20.glGetUniformLocation(prog, "uSurfTex"), GLES20.glGetUniformLocation(prog, "uHasSurfTex"), GLES20.glGetAttribLocation(prog, "aUv"), GLES20.glGetAttribLocation(prog, "aCol"), GLES20.glGetAttribLocation(prog, "aMat"), GLES20.glGetAttribLocation(prog, "aTan"), GLES20.glGetAttribLocation(prog, "aBit"), GLES20.glGetUniformLocation(prog, "uShadowSoft"), GLES20.glGetUniformLocation(prog, "uShiftBot"), GLES20.glGetUniformLocation(prog, "uEnvSpec"), GLES20.glGetUniformLocation(prog, "uPtCount"), GLES20.glGetUniformLocation(prog, "uPtPos"), GLES20.glGetUniformLocation(prog, "uPtCol"), GLES20.glGetUniformLocation(prog, "uPtDir"), GLES20.glGetUniformLocation(prog, "uCCParams"), GLES20.glGetUniformLocation(prog, "uCCTint"), GLES20.glGetUniformLocation(prog, "uBloom"), GLES20.glGetUniformLocation(prog, "uDof"), GLES20.glGetUniformLocation(prog, "uAmbRgb"), GLES20.glGetUniformLocation(prog, "uLightingFlags"), GLES20.glGetUniformLocation(prog, "uIndoorAmb"), GLES20.glGetUniformLocation(prog, "uAtmo"), GLES20.glGetUniformLocation(prog, "uAtmoDecay")});
     }
 
     private final void useLit(LitLocs l) {
@@ -673,6 +716,10 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         this.uBloom = a[47];
         this.uDof = a[48];
         this.uAmbRgb = a[49];
+        this.uLightingFlags = a[50];
+        this.uIndoorAmb = a[51];
+        this.uAtmo = a[52];
+        this.uAtmoDecay = a[53];
     }
 
     private final LitLocs batchProgram(int kind) {
@@ -804,8 +851,8 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         if (this.meshBatchProg != 0) {
             return this.meshBatchProg;
         }
-        int p = program("#define BATCH 1\n\nuniform mat4 uVP; uniform mat4 uModel; uniform mat3 uNrm; uniform mat4 uShadowVP;\nvarying vec3 vN; varying vec3 vW; varying vec2 vUv; varying vec4 vS;\n#ifdef BATCH\nattribute vec3 aPos; attribute vec4 aNrm; attribute vec2 aUv; attribute vec4 aCol;\nvarying vec4 vCol;\nvoid main() {\n  vW = aPos; vN = aNrm.xyz; vUv = aUv; vS = uShadowVP * vec4(aPos, 1.0); vCol = aCol;\n  gl_Position = uVP * vec4(aPos, 1.0);\n}\n#else\nattribute vec3 aPos; attribute vec3 aNrm; attribute vec2 aUv;\nvoid main() {\n  vec4 w = uModel * vec4(aPos, 1.0);\n  vW = w.xyz; vN = uNrm * aNrm; vUv = aUv; vS = uShadowVP * w;\n  gl_Position = uVP * w;\n}\n#endif", "#define BATCH 1\n\nprecision mediump float;\nvarying vec3 vN; varying vec3 vW; varying vec2 vUv; varying vec4 vS;\nuniform vec4 uColor; uniform vec3 uTint; uniform vec3 uLight; uniform vec3 uSun; uniform float uAmbient; uniform vec3 uCam;\nuniform sampler2D uTex; uniform float uHasTex; uniform sampler2D uShadow; uniform float uShadowOn; uniform vec2 uShadowTexel; uniform float uShadowSoft; uniform vec3 uShiftBot; uniform float uEnvSpec; uniform int uPtCount; uniform vec4 uPtPos[8]; uniform vec4 uPtCol[8]; uniform vec4 uPtDir[8]; uniform vec4 uCCParams; uniform vec3 uCCTint; uniform vec4 uBloom; uniform vec4 uDof; uniform vec3 uAmbRgb; uniform sampler2D uPbrNrm; uniform sampler2D uPbrRough; uniform sampler2D uPbrMetal; uniform vec4 uPbrFlags; uniform vec4 uPbrEmis;\nuniform vec3 uFogColor; uniform vec3 uFog; uniform float uExposure; uniform float uEmissive; uniform vec3 uHorizon; uniform vec3 uZenith;\nfloat unpackDepth(vec4 c) { return dot(c, vec4(1.0, 1.0 / 255.0, 1.0 / 65025.0, 1.0 / 16581375.0)); }\nfloat sampleShadow(vec2 uv, float z) { return z > unpackDepth(texture2D(uShadow, uv)) ? 0.0 : 1.0; }\nfloat shadowAt(float ndl) {\n  if (uShadowOn < 0.5 || ndl <= 0.0) return 1.0;\n  vec3 p = vS.xyz / vS.w * 0.5 + 0.5;\n  if (p.x <= 0.001 || p.x >= 0.999 || p.y <= 0.001 || p.y >= 0.999 || p.z >= 1.0) return 1.0; float shEdge = smoothstep(0.78, 1.0, max(abs(p.x - 0.5) * 2.0, abs(p.y - 0.5) * 2.0));\n  float z = p.z - (0.00030 + 0.00095 * (1.0 - ndl));\n  vec2 t = uShadowTexel * mix(0.65, 2.85, clamp(uShadowSoft, 0.0, 1.0));\n  float s = sampleShadow(p.xy, z) * 2.0;\n  s += sampleShadow(p.xy + vec2(-t.x, -t.y), z);\n  s += sampleShadow(p.xy + vec2(t.x, -t.y), z);\n  s += sampleShadow(p.xy + vec2(-t.x, t.y), z);\n  s += sampleShadow(p.xy + vec2(t.x, t.y), z);\n  return mix(s / 6.0, 1.0, shEdge);\n}\n#ifdef BATCH\nvarying vec4 vCol;\n#endif\nvoid main() {\n  vec3 n = normalize(vN);\n  if (!gl_FrontFacing) n = -n;\n#ifdef BATCH\n  vec3 c = vCol.rgb; float a = 1.0; float emis = vCol.a; vec3 tint = vec3(1.0);\n#else\n  vec3 c = uColor.rgb; float a = uColor.a; float emis = uEmissive; vec3 tint = uTint;\n#endif\n  if (uHasTex > 0.5) {\n    vec4 t = texture2D(uTex, vUv);\n    float am = uPbrFlags.w;\n    if (am > 1.5) { c = mix(t.rgb, t.rgb * c, t.a); }\n    else if (am > 0.5) { if (t.a < 0.04) discard; c = t.rgb; a *= t.a; }\n    else if (uPbrFlags.x + uPbrFlags.y + uPbrFlags.z > 0.5) { c = mix(c, t.rgb, t.a); }\n    else { if (t.a < 0.12) discard; c = t.rgb / max(t.a, 0.001); }\n  }\n  c *= tint;\n  float pbrRough = uPbrFlags.y > 0.5 ? clamp(texture2D(uPbrRough, vUv).r, 0.06, 0.98) : 0.65;\n  float pbrMetal = uPbrFlags.z > 0.5 ? clamp(texture2D(uPbrMetal, vUv).r, 0.0, 1.0) : 0.0;\n  if (uPbrFlags.x > 0.5) {\n    vec3 tn = texture2D(uPbrNrm, vUv).xyz * 2.0 - 1.0;\n    vec3 upRef = abs(n.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);\n    vec3 tang = normalize(cross(upRef, n));\n    vec3 bitang = cross(n, tang);\n    n = normalize(tang * tn.x + bitang * tn.y + n * max(tn.z, 0.25));\n  }\n  vec3 col;\n  if (emis > 0.5) col = c * 1.15;\n  else {\n    float ndl = dot(n, uLight);\n    float sh = shadowAt(ndl);\n    vec3 skyTop = mix(vec3(1.0), mix(uHorizon, uZenith, 0.5), 0.22);\n    vec3 groundBounce = mix(vec3(0.78, 0.79, 0.82), uHorizon * 0.85, 0.14);\n    float hemi = clamp(n.y * 0.5 + 0.5, 0.0, 1.0);\n    vec3 amb = max(uAmbient, 0.48) * uAmbRgb * mix(groundBounce, skyTop, hemi);\n    float wrap = max(0.0, (-ndl) * 0.26) + 0.14;\n    float diffScale = 1.0 - pbrMetal * 0.72;\n    col = c * diffScale * (amb + uSun * (max(ndl, 0.0) * sh + wrap * 0.36) + uShiftBot * max(-ndl, 0.0) * 0.35);\n    vec3 v = normalize(uCam - vW);\n    vec3 h = normalize(uLight + v);\n    float specPow = mix(128.0, 10.0, pbrRough * pbrRough);\n    vec3 specCol = mix(uSun, c * uSun, pbrMetal);\n    float specInt = mix(0.12, 0.82, (1.0 - pbrRough) * 0.65 + pbrMetal * 0.35);\n    col += specCol * pow(max(dot(n, h), 0.0), specPow) * specInt * sh * uEnvSpec;\n    if (uPbrFlags.y + uPbrFlags.z > 0.5) {\n      float fres = pow(1.0 - max(dot(n, v), 0.0), 4.0) * (0.04 + (1.0 - pbrRough) * 0.24 + pbrMetal * 0.38) * uEnvSpec;\n      col = mix(col, mix(uHorizon, uZenith, 0.5) * mix(vec3(1.0), c, pbrMetal), clamp(fres, 0.0, 0.75));\n    }\n    col += uPbrEmis.rgb * uPbrEmis.w;\n    if (uPtCount > 0) for (int li = 0; li < 8; li++) {\n      if (li >= uPtCount) break;\n      vec3 L = uPtPos[li].xyz - vW;\n      float d = length(L);\n      float r = uPtPos[li].w;\n      if (d < r) {\n        vec3 ldir = L / max(d, 0.001);\n        float tt = clamp(1.0 - (d / r) * (d / r), 0.0, 1.0);\n        float att = (tt * tt) / (1.0 + 0.04 * d * d);\n        if (uPtDir[li].w > 0.5) {\n          float ca = dot(-ldir, uPtDir[li].xyz);\n          att *= smoothstep(uPtCol[li].w, min(uPtCol[li].w + 0.14, 0.999), ca);\n        }\n        float pndl = max(dot(n, ldir), 0.0);\n        vec3 ph = normalize(ldir + v);\n        float pspec = pow(max(dot(n, ph), 0.0), 32.0) * 0.16 * uEnvSpec;\n        col += (c * pndl + vec3(pspec)) * uPtCol[li].rgb * att;\n      }\n    }\n  }\n  col *= uExposure;\n  if (uBloom.x > 0.001) { float blum = dot(col, vec3(0.2126, 0.7152, 0.0722)); float knee = smoothstep(uBloom.y * 0.75, uBloom.y + 0.65, blum); col += mix(col, vec3(blum), 0.35) * knee * uBloom.x * 0.20; }\n  vec3 mapped = clamp((col * (2.51 * col + 0.03)) / (col * (2.43 * col + 0.59) + 0.14), 0.0, 1.0); col = mix(clamp(col, 0.0, 1.0), mapped, 0.22);\n  if (uCCParams.w > 0.5) {\n    col = clamp(col + vec3(uCCParams.x), 0.0, 1.0);\n    col = clamp((col - 0.5) * (1.0 + uCCParams.y) + 0.5, 0.0, 1.0);\n    float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));\n    col = clamp(mix(vec3(luma), col, 1.0 + uCCParams.z) * uCCTint, 0.0, 1.0);\n  }\n  float dist = length(uCam - vW);\n  if (uDof.z > 0.001 || uDof.w > 0.001) {\n    float coc = max(0.0, (dist - (uDof.x + uDof.y)) / max(uDof.y + 12.0, 1.0)) * uDof.z + max(0.0, ((uDof.x - uDof.y) - dist) / max(uDof.x, 1.0)) * uDof.w;\n    col = mix(col, mix(uHorizon, uFogColor, 0.5), clamp(coc * 0.42, 0.0, 0.55));\n  }\n  float fog;\n  if (uFog.z > 1.5) fog = (1.0 - exp(-dist * uFog.x)) * uFog.y;\n  else if (uFog.z > 0.5) fog = clamp((dist - uFog.x) / max(uFog.y - uFog.x, 1.0), 0.0, 1.0);\n  else fog = smoothstep(140.0, 950.0, dist) * 0.88;\n  vec3 mieFog = uFogColor + uSun * pow(max(dot(normalize(vW - uCam), uLight), 0.0), 6.0) * 0.20;\n  gl_FragColor = vec4(mix(col, mieFog, fog), a);\n}");
-        for (String n : CollectionsKt.listOf(new String[]{"uVP", "uShadowVP", "uLight", "uSun", "uAmbient", "uCam", "uFogColor", "uFog", "uExposure", "uShadowOn", "uShadowTexel", "uHorizon", "uZenith", "uShadow", "uTex", "uHasTex", "uShadowSoft", "uShiftBot", "uEnvSpec", "uPtCount", "uPtPos", "uPtCol", "uPtDir", "uCCParams", "uCCTint", "uBloom", "uDof", "uAmbRgb", "uPbrFlags", "uPbrEmis"})) {
+        int p = program("#define BATCH 1\n" + MESH_VS, "#define BATCH 1\n" + MESH_FS);
+        for (String n : CollectionsKt.listOf(new String[]{"uVP", "uShadowVP", "uLight", "uSun", "uAmbient", "uCam", "uFogColor", "uFog", "uExposure", "uShadowOn", "uShadowTexel", "uHorizon", "uZenith", "uShadow", "uTex", "uHasTex", "uShadowSoft", "uShiftBot", "uEnvSpec", "uPtCount", "uPtPos", "uPtCol", "uPtDir", "uCCParams", "uCCTint", "uBloom", "uDof", "uAmbRgb", "uPbrFlags", "uPbrEmis", "uLightingFlags", "uIndoorAmb", "uAtmo", "uAtmoDecay"})) {
             this.mb.put(n, Integer.valueOf(GLES20.glGetUniformLocation(p, n)));
         }
         for (String n2 : CollectionsKt.listOf(new String[]{"aPos", "aNrm", "aUv", "aCol"})) {
@@ -838,6 +885,10 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         GLES20.glUniform4f(useMeshBatch$u$8(this, "uBloom"), this.bloomInt, this.bloomThresh, this.bloomSize, 0.0f);
         GLES20.glUniform4f(useMeshBatch$u$8(this, "uDof"), this.dofFocus, this.dofRadius, Math.max(this.dofFar, this.blurAmt), Math.max(this.dofNear, this.blurAmt));
         GLES20.glUniform3fv(useMeshBatch$u$8(this, "uAmbRgb"), 1, this.ambRgb, 0);
+        GLES20.glUniform4f(useMeshBatch$u$8(this, "uLightingFlags"), (float) this.effectiveTech, this.retroTonemap, this.envSpec, this.directSpecEnable);
+        GLES20.glUniform3fv(useMeshBatch$u$8(this, "uIndoorAmb"), 1, this.indoorAmb, 0);
+        GLES20.glUniform4f(useMeshBatch$u$8(this, "uAtmo"), this.atmoHaze, this.atmoGlare, this.atmoOffset, this.hasAtmo);
+        GLES20.glUniform3fv(useMeshBatch$u$8(this, "uAtmoDecay"), 1, this.atmoDecay, 0);
         GLES20.glUniform4f(useMeshBatch$u$8(this, "uPbrFlags"), 0.0f, 0.0f, 0.0f, 0.0f);
         GLES20.glUniform4f(useMeshBatch$u$8(this, "uPbrEmis"), 0.0f, 0.0f, 0.0f, 0.0f);
         GLES20.glUniform1i(useMeshBatch$u$8(this, "uPtCount"), this.ptCount);
@@ -1332,6 +1383,9 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         this.sSunRays = GLES20.glGetUniformLocation(this.skyProg, "uSunRays");
         this.sCCParams = GLES20.glGetUniformLocation(this.skyProg, "uCCParams");
         this.sCCTint = GLES20.glGetUniformLocation(this.skyProg, "uCCTint");
+        this.sAtmo = GLES20.glGetUniformLocation(this.skyProg, "uAtmo");
+        this.sAtmoColor = GLES20.glGetUniformLocation(this.skyProg, "uAtmoColor");
+        this.sAtmoDecay = GLES20.glGetUniformLocation(this.skyProg, "uAtmoDecay");
         this.saPos = GLES20.glGetAttribLocation(this.skyProg, "aPos");
         this.cVP = GLES20.glGetUniformLocation(this.decalProg, "uVP");
         this.cModel = GLES20.glGetUniformLocation(this.decalProg, "uModel");
@@ -1399,7 +1453,33 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
     private final void setupShadowMap() {
         int[] max = new int[1];
         GLES20.glGetIntegerv(3379, max, 0);
-        this.shadowSize = 512;
+        this.maxTexSize = max[0] > 0 ? Math.min(max[0], 1024) : 1024;
+        this.shadowFbo = 0;
+        this.shadowTex = 0;
+        this.shadowDepth = 0;
+        this.shadowSize = 0;
+        this.shadowOk = false;
+        ensureShadowMap(768);
+    }
+
+    private final void ensureShadowMap(int targetSize) {
+        int sz = RangesKt.coerceIn(targetSize, 256, this.maxTexSize);
+        if (this.shadowOk && this.shadowFbo != 0 && this.shadowSize == sz) {
+            return;
+        }
+        if (this.shadowFbo != 0) {
+            GLES20.glDeleteFramebuffers(1, new int[]{this.shadowFbo}, 0);
+            this.shadowFbo = 0;
+        }
+        if (this.shadowTex != 0) {
+            GLES20.glDeleteTextures(1, new int[]{this.shadowTex}, 0);
+            this.shadowTex = 0;
+        }
+        if (this.shadowDepth != 0) {
+            GLES20.glDeleteRenderbuffers(1, new int[]{this.shadowDepth}, 0);
+            this.shadowDepth = 0;
+        }
+        this.shadowSize = sz;
         int[] ids = new int[1];
         GLES20.glGenTextures(1, ids, 0);
         this.shadowTex = ids[0];
@@ -1410,15 +1490,16 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         GLES20.glTexParameteri(3553, 10242, 33071);
         GLES20.glTexParameteri(3553, 10243, 33071);
         GLES20.glGenRenderbuffers(1, ids, 0);
-        int depth = ids[0];
-        GLES20.glBindRenderbuffer(36161, depth);
+        this.shadowDepth = ids[0];
+        GLES20.glBindRenderbuffer(36161, this.shadowDepth);
         GLES20.glRenderbufferStorage(36161, 33189, this.shadowSize, this.shadowSize);
         GLES20.glGenFramebuffers(1, ids, 0);
         this.shadowFbo = ids[0];
         GLES20.glBindFramebuffer(36160, this.shadowFbo);
         GLES20.glFramebufferTexture2D(36160, 36064, 3553, this.shadowTex, 0);
-        GLES20.glFramebufferRenderbuffer(36160, 36096, 36161, depth);
+        GLES20.glFramebufferRenderbuffer(36160, 36096, 36161, this.shadowDepth);
         this.shadowOk = GLES20.glCheckFramebufferStatus(36160) == 36053;
+        this.shadowValid = false;
         GLES20.glBindFramebuffer(36160, 0);
         GLES20.glBindTexture(3553, 0);
         if (!this.shadowOk) {
@@ -1438,6 +1519,18 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
             this.postExtProg = program(POST_VS, BLOOM_EXT_FS);
             this.postBlurProg = program(POST_VS, GAUSS_FS);
             this.postCompProg = program(POST_VS, POST_COMP_FS);
+            this.p1Pos = GLES20.glGetAttribLocation(this.postExtProg, "aPos");
+            this.p1Tex = GLES20.glGetUniformLocation(this.postExtProg, "uTex");
+            this.p1Thresh = GLES20.glGetUniformLocation(this.postExtProg, "uThresh");
+            this.p1BlurOnly = GLES20.glGetUniformLocation(this.postExtProg, "uBlurOnly");
+            this.p2Pos = GLES20.glGetAttribLocation(this.postBlurProg, "aPos");
+            this.p2Tex = GLES20.glGetUniformLocation(this.postBlurProg, "uTex");
+            this.p2Dir = GLES20.glGetUniformLocation(this.postBlurProg, "uDir");
+            this.p4Pos = GLES20.glGetAttribLocation(this.postCompProg, "aPos");
+            this.p4Scene = GLES20.glGetUniformLocation(this.postCompProg, "uScene");
+            this.p4BloomTex = GLES20.glGetUniformLocation(this.postCompProg, "uBloomTex");
+            this.p4BloomInt = GLES20.glGetUniformLocation(this.postCompProg, "uBloomInt");
+            this.p4BlurMix = GLES20.glGetUniformLocation(this.postCompProg, "uBlurMix");
         }
         if (this.postSceneFbo != 0) {
             GLES20.glDeleteFramebuffers(3, new int[]{this.postSceneFbo, this.postFboA, this.postFboB}, 0);
@@ -1505,31 +1598,31 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         GLES20.glBindFramebuffer(36160, this.postFboA);
         GLES20.glViewport(0, 0, bw, bh);
         GLES20.glUseProgram(this.postExtProg);
-        int p1Pos = GLES20.glGetAttribLocation(this.postExtProg, "aPos");
+        int p1Pos = this.p1Pos;
         GLES20.glEnableVertexAttribArray(p1Pos);
         GLES20.glVertexAttribPointer(p1Pos, 2, 5126, false, 8, 0);
         GLES20.glActiveTexture(33984);
         GLES20.glBindTexture(3553, this.postSceneTex);
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(this.postExtProg, "uTex"), 0);
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(this.postExtProg, "uThresh"), Math.min(this.bloomThresh, 1.0f) * 0.78f);
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(this.postExtProg, "uBlurOnly"), blurOnly ? 1.0f : 0.0f);
+        GLES20.glUniform1i(this.p1Tex, 0);
+        GLES20.glUniform1f(this.p1Thresh, Math.min(this.bloomThresh, 1.0f) * 0.78f);
+        GLES20.glUniform1f(this.p1BlurOnly, blurOnly ? 1.0f : 0.0f);
         GLES20.glDrawArrays(4, 0, quad.getCount());
 
         // Pass 2: Horizontal 9-tap Gaussian blur -> postFboB
         GLES20.glBindFramebuffer(36160, this.postFboB);
         GLES20.glUseProgram(this.postBlurProg);
-        int p2Pos = GLES20.glGetAttribLocation(this.postBlurProg, "aPos");
+        int p2Pos = this.p2Pos;
         GLES20.glEnableVertexAttribArray(p2Pos);
         GLES20.glVertexAttribPointer(p2Pos, 2, 5126, false, 8, 0);
         GLES20.glBindTexture(3553, this.postTexA);
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(this.postBlurProg, "uTex"), 0);
-        GLES20.glUniform2f(GLES20.glGetUniformLocation(this.postBlurProg, "uDir"), spread / ((float) bw), 0.0f);
+        GLES20.glUniform1i(this.p2Tex, 0);
+        GLES20.glUniform2f(this.p2Dir, spread / ((float) bw), 0.0f);
         GLES20.glDrawArrays(4, 0, quad.getCount());
 
         // Pass 3: Vertical 9-tap Gaussian blur -> postFboA
         GLES20.glBindFramebuffer(36160, this.postFboA);
         GLES20.glBindTexture(3553, this.postTexB);
-        GLES20.glUniform2f(GLES20.glGetUniformLocation(this.postBlurProg, "uDir"), 0.0f, spread / ((float) bh));
+        GLES20.glUniform2f(this.p2Dir, 0.0f, spread / ((float) bh));
         GLES20.glDrawArrays(4, 0, quad.getCount());
 
         }
@@ -1537,18 +1630,18 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         GLES20.glBindFramebuffer(36160, 0);
         GLES20.glViewport(0, 0, this.surfW, this.surfH);
         GLES20.glUseProgram(this.postCompProg);
-        int p4Pos = GLES20.glGetAttribLocation(this.postCompProg, "aPos");
+        int p4Pos = this.p4Pos;
         GLES20.glEnableVertexAttribArray(p4Pos);
         GLES20.glVertexAttribPointer(p4Pos, 2, 5126, false, 8, 0);
         GLES20.glActiveTexture(33984);
         GLES20.glBindTexture(3553, this.postSceneTex);
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(this.postCompProg, "uScene"), 0);
+        GLES20.glUniform1i(this.p4Scene, 0);
         GLES20.glActiveTexture(33985);
         GLES20.glBindTexture(3553, this.postTexA);
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(this.postCompProg, "uBloomTex"), 1);
+        GLES20.glUniform1i(this.p4BloomTex, 1);
         GLES20.glActiveTexture(33984);
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(this.postCompProg, "uBloomInt"), (!applyFx || blurOnly) ? 0.0f : (this.bloomInt * 0.55f));
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(this.postCompProg, "uBlurMix"), (applyFx && blurOnly) ? RangesKt.coerceIn(this.blurAmt * 1.4f, 0.0f, 1.0f) : 0.0f);
+        GLES20.glUniform1f(this.p4BloomInt, (!applyFx || blurOnly) ? 0.0f : (this.bloomInt * 0.55f));
+        GLES20.glUniform1f(this.p4BlurMix, (applyFx && blurOnly) ? RangesKt.coerceIn(this.blurAmt * 1.4f, 0.0f, 1.0f) : 0.0f);
         GLES20.glDrawArrays(4, 0, quad.getCount());
 
         GLES20.glEnable(2884);
@@ -1594,9 +1687,18 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                         this.studio.getView().update(camera.getPos(), camera.getPos().plus(camera.getForward()), camera.getFov(), this.studio.getView().getWidth(), this.studio.getView().getHeight(), this.nearPlane);
                         updateLighting();
                         boolean isPlayMode = this.studio.isPlaying();
-                        int curGfx = isPlayMode ? Settings.INSTANCE.getGraphicsQuality() : Settings.INSTANCE.getEditorGraphicsQuality();
-                        boolean shPrefOn = isPlayMode ? (curGfx >= 4) : (!"Off".equals(Settings.INSTANCE.getShadowQuality()) && curGfx >= 3 && this.studio.getShadowsEnabled());
-                        boolean z = this.shadowsOn && this.shadowOk && shPrefOn && this.dayFactor > 0.05f;
+                        int curGfx = RangesKt.coerceIn(isPlayMode ? Settings.INSTANCE.getGraphicsQuality() : Settings.INSTANCE.getEditorGraphicsQuality(), 1, 10);
+                        String shQual = Settings.INSTANCE.getShadowQuality();
+                        boolean shPrefOn = isPlayMode ? (curGfx >= 4) : (!"Off".equals(shQual) && curGfx >= 3 && this.studio.getShadowsEnabled());
+                        if (this.shadowsOn && shPrefOn && this.effectiveTech >= 3) {
+                            int targetShSz = curGfx <= 5 ? 512 : (curGfx <= 7 ? 768 : 1024);
+                            if (!isPlayMode) {
+                                int capSz = "Low".equals(shQual) ? 512 : ("High".equals(shQual) ? 1024 : 768);
+                                targetShSz = Math.min(targetShSz, capSz);
+                            }
+                            ensureShadowMap(targetShSz);
+                        }
+                        boolean z = this.shadowsOn && this.shadowOk && shPrefOn && this.effectiveTech >= 3 && this.sunDir.getY() > 0.05f;
                         Vector3 first = null;
                         Pair<Vector3, Float> pairShadowFocus = z ? shadowFocus() : null;
                         long jNanoTime = System.nanoTime();
@@ -1620,7 +1722,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                         long jNanoTime3 = System.nanoTime();
                         try {
                             int resScale = Settings.INSTANCE.getRenderScale();
-                            boolean wantFx = Settings.INSTANCE.getPostProcessing() && curGfx >= 5 && (this.bloomInt > 0.001f || this.blurAmt > 0.02f);
+                            boolean wantFx = Settings.INSTANCE.getPostProcessing() && ((curGfx >= 5 && this.bloomInt > 0.001f) || (curGfx >= 3 && this.blurAmt > 0.02f));
                             int targetW = Math.max(64, (this.surfW * resScale) / 100);
                             int targetH = Math.max(64, (this.surfH * resScale) / 100);
                             boolean usePost = (wantFx || resScale < 100) && ensurePostFbos(targetW, targetH);
@@ -1628,7 +1730,6 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                             GLES20.glViewport(0, 0, usePost ? this.postW : this.surfW, usePost ? this.postH : this.surfH);
                             GLES20.glClearColor(this.horizon[0], this.horizon[1], this.horizon[2], 1.0f);
                             GLES20.glClear(16640);
-                            drawSky();
                             drawParts(z);
                             drawSelection();
                             drawHandles();
@@ -1676,7 +1777,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                                     this.tShadow = 0.0f;
                                     this.tDraw = 0.0f;
                                 }
-
+                                this.slowAvg = (this.slowAvg * 0.9f) + (dt * 0.1f);
                             } catch (Throwable th) {
                                 throw th;
                             }
@@ -1760,33 +1861,51 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
             dir = new Vector3(-dir.getX(), -dir.getY(), -dir.getZ());
         }
         this.sunDir = new Vector3(dir.getX(), Math.max(dir.getY(), 0.08f), dir.getZ()).getUnit();
-        float[] dayZ = {0.23f, 0.50f, 0.90f};
-        float[] dayH = {0.68f, 0.81f, 0.95f};
-        float[] nightZ = {0.007f, 0.012f, 0.035f};
-        float[] nightH = {0.018f, 0.030f, 0.072f};
-        float[] dusk = {0.96f, 0.52f, 0.28f};
-        mix(nightZ, dayZ, this.dayFactor, this.zenith);
-        mix(nightH, dayH, this.dayFactor, this.horizon);
+        mix(NIGHT_Z, DAY_Z, this.dayFactor, this.zenith);
+        mix(NIGHT_H, DAY_H, this.dayFactor, this.horizon);
         float sunset = smooth(0.35f, 0.0f, Math.abs(sunUp)) * smooth(-0.18f, 0.06f, sunUp);
-        mix(this.horizon, dusk, sunset * 0.68f, this.horizon);
+        mix(this.horizon, DUSK_C, sunset * 0.68f, this.horizon);
+        int curGfx = RangesKt.coerceIn(this.studio.isPlaying() ? Settings.INSTANCE.getGraphicsQuality() : Settings.INSTANCE.getEditorGraphicsQuality(), 1, 10);
+        Object styleObj = l != null ? l.get("LightingStyle") : null;
+        int requestedTech;
+        if (styleObj != null) {
+            int style = (styleObj instanceof EnumValue) ? ((EnumValue) styleObj).getValue() : ((styleObj instanceof Number) ? ((Number) styleObj).intValue() : 0);
+            boolean prioritize = l != null && Intrinsics.areEqual(l.get("PrioritizeLightingQuality"), Boolean.TRUE);
+            requestedTech = (style == 1) ? (prioritize ? 4 : 3) : (prioritize ? 3 : 1);
+        } else {
+            Object techObj = l != null ? l.get("Technology") : null;
+            if (techObj instanceof EnumValue) {
+                requestedTech = ((EnumValue) techObj).getValue();
+            } else if (techObj instanceof Number) {
+                requestedTech = ((Number) techObj).intValue();
+            } else {
+                requestedTech = 3;
+            }
+        }
+        this.lightTech = requestedTech;
+        int techCeiling = curGfx <= 2 ? 1 : (curGfx <= 7 ? 3 : 4);
+        this.effectiveTech = (requestedTech == 2) ? 2 : Math.min(requestedTech, techCeiling);
+
         Object obj4 = l != null ? l.get("Brightness") : null;
         Number number3 = obj4 instanceof Number ? (Number) obj4 : null;
         float brightness = RangesKt.coerceIn(number3 != null ? number3.floatValue() : 2.0f, 0.0f, 10.0f);
+        float brightScale = RangesKt.coerceIn(brightness * 0.44f, 0.0f, 3.0f);
         Color3 cst = c3(l != null ? l.get("ColorShift_Top") : null);
-        float sunStrength = RangesKt.coerceAtMost((brightness * 0.22f) + 0.42f, 1.18f) * ((this.dayFactor * 0.88f) + 0.12f);
-        float[] warm = {1.0f, 0.97f - (sunset * 0.24f), 0.93f - (0.42f * sunset)};
+        float sunStrength = brightScale * ((this.dayFactor * 0.88f) + 0.12f);
+        float[] warm = this.warmTmp; warm[0] = 1.0f; warm[1] = 0.97f - (sunset * 0.24f); warm[2] = 0.93f - (0.42f * sunset);
         if (cst != null && (cst.getR() > 0.01f || cst.getG() > 0.01f || cst.getB() > 0.01f)) {
-            warm[0] = warm[0] * 0.70f + cst.getR() * 0.30f;
-            warm[1] = warm[1] * 0.70f + cst.getG() * 0.30f;
-            warm[2] = warm[2] * 0.70f + cst.getB() * 0.30f;
+            warm[0] = warm[0] * 0.55f + cst.getR() * 0.45f;
+            warm[1] = warm[1] * 0.55f + cst.getG() * 0.45f;
+            warm[2] = warm[2] * 0.55f + cst.getB() * 0.45f;
         }
         for (int i = 0; i < 3; i++) {
             this.sunColor[i] = warm[i] * sunStrength;
         }
         if (this.dayFactor < 0.08f) {
-            this.sunColor[0] = 0.13f;
-            this.sunColor[1] = 0.17f;
-            this.sunColor[2] = 0.28f;
+            float moonMul = RangesKt.coerceIn(brightness * 0.5f, 0.0f, 1.5f);
+            this.sunColor[0] = 0.13f * moonMul;
+            this.sunColor[1] = 0.17f * moonMul;
+            this.sunColor[2] = 0.28f * moonMul;
         }
         Color3 oa = c3(l != null ? l.get("OutdoorAmbient") : null);
         if (oa == null) {
@@ -1797,48 +1916,53 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
             am = Color3.INSTANCE.fromRGB(70, 70, 70);
         }
         boolean gShad = !(l != null ? Intrinsics.areEqual(l.get("GlobalShadows"), (Object) false) : false);
-        float effAmbR = gShad ? Math.max(oa.getR(), am.getR()) : am.getR();
-        float effAmbG = gShad ? Math.max(oa.getG(), am.getG()) : am.getG();
-        float effAmbB = gShad ? Math.max(oa.getB(), am.getB()) : am.getB();
-        float effAmbLuma = (effAmbR * 0.299f) + (effAmbG * 0.587f) + (effAmbB * 0.114f);
-        float maxC = Math.max(Math.max(effAmbR, effAmbG), Math.max(effAmbB, 0.05f));
-        this.ambRgb[0] = 0.55f + (0.45f * (effAmbR / maxC));
-        this.ambRgb[1] = 0.55f + (0.45f * (effAmbG / maxC));
-        this.ambRgb[2] = 0.55f + (0.45f * (effAmbB / maxC));
+        this.shadowsOn = gShad;
         Object edsObj = l != null ? l.get("EnvironmentDiffuseScale") : null;
-        float envDiff = (edsObj instanceof Number) ? RangesKt.coerceIn(((Number) edsObj).floatValue(), 0.0f, 1.0f) : 0.75f;
-        this.ambient = RangesKt.coerceIn((effAmbLuma * 0.36f) + (envDiff * 0.14f) + 0.18f, 0.20f, 0.56f) * ((this.dayFactor * 0.65f) + 0.35f);
+        float envDiff = (edsObj instanceof Number) ? RangesKt.coerceIn(((Number) edsObj).floatValue(), 0.0f, 1.0f) : 0.0f;
+        float dayAmbScale = (this.dayFactor * 0.65f) + 0.35f;
+        float envDiffBoost = envDiff * 0.22f * dayAmbScale;
+        this.indoorAmb[0] = am.getR();
+        this.indoorAmb[1] = am.getG();
+        this.indoorAmb[2] = am.getB();
+        float outR = gShad ? Math.max(oa.getR(), am.getR()) : am.getR();
+        float outG = gShad ? Math.max(oa.getG(), am.getG()) : am.getG();
+        float outB = gShad ? Math.max(oa.getB(), am.getB()) : am.getB();
+        this.ambRgb[0] = RangesKt.coerceIn((outR * dayAmbScale) + (this.horizon[0] * envDiffBoost), 0.0f, 1.5f);
+        this.ambRgb[1] = RangesKt.coerceIn((outG * dayAmbScale) + (this.horizon[1] * envDiffBoost), 0.0f, 1.5f);
+        this.ambRgb[2] = RangesKt.coerceIn((outB * dayAmbScale) + (this.horizon[2] * envDiffBoost), 0.0f, 1.5f);
+        if (curGfx <= 4) {
+            this.ambRgb[0] = RangesKt.coerceIn(this.ambRgb[0] * 1.10f, 0.0f, 1.5f);
+            this.ambRgb[1] = RangesKt.coerceIn(this.ambRgb[1] * 1.10f, 0.0f, 1.5f);
+            this.ambRgb[2] = RangesKt.coerceIn(this.ambRgb[2] * 1.10f, 0.0f, 1.5f);
+        }
+        this.ambient = gShad ? 1.0f : 0.0f;
+        this.decalAmbient = RangesKt.coerceIn((this.ambRgb[0] * 0.299f) + (this.ambRgb[1] * 0.587f) + (this.ambRgb[2] * 0.114f), 0.20f, 0.85f);
         Object obj5 = l != null ? l.get("ExposureCompensation") : null;
         Number number4 = obj5 instanceof Number ? (Number) obj5 : null;
-        this.exposure = (float) Math.pow(2.0d, RangesKt.coerceIn(number4 != null ? number4.doubleValue() : 0.0d, -3.0d, 3.0d));
-        this.shadowsOn = !(l != null ? Intrinsics.areEqual(l.get("GlobalShadows"), (Object) false) : false);
+        this.exposure = (float) Math.pow(2.0d, RangesKt.coerceIn(number4 != null ? number4.doubleValue() : 0.0d, -5.0d, 5.0d));
         Object ssObj = l != null ? l.get("ShadowSoftness") : null;
-        this.shadowSoftness = (ssObj instanceof Number) ? RangesKt.coerceIn(((Number) ssObj).floatValue(), 0.0f, 1.0f) : 0.2f;
+        this.shadowSoftness = this.effectiveTech < 3 ? 0.0f : ((ssObj instanceof Number) ? RangesKt.coerceIn(((Number) ssObj).floatValue(), 0.0f, 1.0f) : 0.2f);
         Color3 csb = c3(l != null ? l.get("ColorShift_Bottom") : null);
+        float csbScale = brightScale * (0.25f + (0.75f * this.dayFactor));
         if (csb != null) {
-            this.shiftBottom[0] = csb.getR();
-            this.shiftBottom[1] = csb.getG();
-            this.shiftBottom[2] = csb.getB();
+            this.shiftBottom[0] = csb.getR() * csbScale;
+            this.shiftBottom[1] = csb.getG() * csbScale;
+            this.shiftBottom[2] = csb.getB() * csbScale;
         } else {
             this.shiftBottom[0] = 0.0f;
             this.shiftBottom[1] = 0.0f;
             this.shiftBottom[2] = 0.0f;
         }
         Object essObj = l != null ? l.get("EnvironmentSpecularScale") : null;
-        this.envSpec = (essObj instanceof Number) ? RangesKt.coerceIn(((Number) essObj).floatValue(), 0.0f, 1.0f) : 1.0f;
-        Object techObj = l != null ? l.get("Technology") : null;
-        if (techObj instanceof EnumValue) {
-            this.lightTech = ((EnumValue) techObj).getValue();
-        } else if (techObj instanceof Number) {
-            this.lightTech = ((Number) techObj).intValue();
-        } else {
-            this.lightTech = 3;
-        }
-        if (this.lightTech >= 4) {
+        float rawEnvSpec = (essObj instanceof Number) ? RangesKt.coerceIn(((Number) essObj).floatValue(), 0.0f, 1.0f) : 0.0f;
+        float gfxEnvSpecMul = curGfx <= 2 ? 0.0f : (curGfx <= 4 ? 0.35f : (curGfx <= 7 ? 0.75f : 1.0f));
+        this.envSpec = rawEnvSpec * gfxEnvSpecMul;
+        if (this.effectiveTech >= 4) {
             this.envSpec = RangesKt.coerceIn(this.envSpec * 1.25f, 0.0f, 1.5f);
-        } else if (this.lightTech == 1 || this.lightTech == 2) {
+        } else if (this.effectiveTech == 1 || this.effectiveTech == 2 || this.effectiveTech == 0) {
             this.envSpec *= 0.65f;
         }
+        this.directSpecEnable = curGfx >= 3 ? 1.0f : 0.0f;
         collectLocalLights();
         this.ccBright = 0.0f;
         this.ccContrast = 0.0f;
@@ -1851,12 +1975,17 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         this.bloomSize = 24.0f;
         this.sunRaysInt = 0.0f;
         this.sunRaysSpread = 0.1f;
+        this.atmoHaze = 0.0f;
         this.atmoGlare = 0.0f;
+        this.atmoOffset = 0.25f;
+        this.hasAtmo = 0.0f;
         this.dofFocus = 10.0f;
         this.dofRadius = 30.0f;
         this.dofFar = 0.0f;
         this.dofNear = 0.0f;
         this.blurAmt = 0.0f;
+        int tonemapPreset = 0;
+        boolean postFxOn = Settings.INSTANCE.getPostProcessing();
         atmo = null;
         ArrayList<Instance> fxRoots = new ArrayList<>();
         if (l != null) {
@@ -1874,6 +2003,13 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                 String lcn = li.getClassName();
                 if (atmo == null && "Atmosphere".equals(lcn)) {
                     atmo = li;
+                } else if ("ColorGradingEffect".equals(lcn) && fxRoot == l && !Intrinsics.areEqual(li.get("Enabled"), (Object) false)) {
+                    Object tpObj = li.get("TonemapperPreset");
+                    if (tpObj instanceof EnumValue) {
+                        tonemapPreset = ((EnumValue) tpObj).getValue();
+                    } else if (tpObj instanceof Number) {
+                        tonemapPreset = ((Number) tpObj).intValue();
+                    }
                 } else if ("ColorCorrectionEffect".equals(lcn) && !Intrinsics.areEqual(li.get("Enabled"), (Object) false)) {
                     Object ccB = li.get("Brightness");
                     if (ccB instanceof Number) {
@@ -1893,7 +2029,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                         this.ccTint[1] *= tc.getG();
                         this.ccTint[2] *= tc.getB();
                     }
-                } else if ("BloomEffect".equals(lcn) && !Intrinsics.areEqual(li.get("Enabled"), (Object) false)) {
+                } else if (postFxOn && curGfx >= 5 && "BloomEffect".equals(lcn) && !Intrinsics.areEqual(li.get("Enabled"), (Object) false)) {
                     Object bI = li.get("Intensity");
                     float bi = (bI instanceof Number) ? RangesKt.coerceIn(((Number) bI).floatValue(), 0.0f, 4.0f) : 1.0f;
                     Object bT = li.get("Threshold");
@@ -1905,7 +2041,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                         this.bloomThresh = bt;
                         this.bloomSize = bs;
                     }
-                } else if ("SunRaysEffect".equals(lcn) && !Intrinsics.areEqual(li.get("Enabled"), (Object) false)) {
+                } else if (postFxOn && curGfx >= 6 && "SunRaysEffect".equals(lcn) && !Intrinsics.areEqual(li.get("Enabled"), (Object) false)) {
                     Object sI = li.get("Intensity");
                     float si = (sI instanceof Number) ? RangesKt.coerceIn(((Number) sI).floatValue(), 0.0f, 1.0f) : 0.25f;
                     Object sSp = li.get("Spread");
@@ -1914,7 +2050,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                         this.sunRaysInt = si;
                         this.sunRaysSpread = ssp;
                     }
-                } else if ("DepthOfFieldEffect".equals(lcn) && !Intrinsics.areEqual(li.get("Enabled"), (Object) false)) {
+                } else if (postFxOn && curGfx >= 7 && "DepthOfFieldEffect".equals(lcn) && !Intrinsics.areEqual(li.get("Enabled"), (Object) false)) {
                     Object fd = li.get("FocusDistance");
                     Object ir = li.get("InFocusRadius");
                     Object fi = li.get("FarIntensity");
@@ -1923,7 +2059,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                     this.dofRadius = (ir instanceof Number) ? Math.max(((Number) ir).floatValue(), 0.0f) : 30.0f;
                     this.dofFar = (fi instanceof Number) ? RangesKt.coerceIn(((Number) fi).floatValue(), 0.0f, 1.0f) : 0.1f;
                     this.dofNear = (ni instanceof Number) ? RangesKt.coerceIn(((Number) ni).floatValue(), 0.0f, 1.0f) : 0.75f;
-                } else if ("BlurEffect".equals(lcn) && !Intrinsics.areEqual(li.get("Enabled"), (Object) false)) {
+                } else if (postFxOn && curGfx >= 3 && "BlurEffect".equals(lcn) && !Intrinsics.areEqual(li.get("Enabled"), (Object) false)) {
                     Object bs = li.get("Size");
                     float bsz = (bs instanceof Number) ? RangesKt.coerceIn(((Number) bs).floatValue(), 0.0f, 56.0f) : 24.0f;
                     float normB = bsz / 56.0f;
@@ -1933,6 +2069,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                 }
             }
         }
+        this.retroTonemap = (tonemapPreset == 1 || this.effectiveTech == 2 || this.effectiveTech == 0) ? 1.0f : 0.0f;
         Object obj6 = l != null ? l.get("FogEnd") : null;
         Number number5 = obj6 instanceof Number ? (Number) obj6 : null;
         float fe = number5 != null ? number5.floatValue() : 100000.0f;
@@ -1946,24 +2083,28 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                 ac = Color3.INSTANCE.fromRGB(199, 170, 107);
             }
             Color3 dc = c3(atmo.get("Decay"));
+            if (dc == null) {
+                dc = Color3.INSTANCE.fromRGB(106, 112, 125);
+            }
             Object obj8 = atmo.get("Haze");
             float haze2 = (obj8 instanceof Number) ? RangesKt.coerceIn(((Number) obj8).floatValue(), 0.0f, 10.0f) : 0.0f;
             Object glareObj = atmo.get("Glare");
             float glareVal = (glareObj instanceof Number) ? RangesKt.coerceIn(((Number) glareObj).floatValue(), 0.0f, 10.0f) : 0.0f;
-            this.atmoGlare = haze2 > 0.01f ? RangesKt.coerceIn((glareVal * 0.12f) * Math.min(haze2, 2.0f), 0.0f, 1.2f) : 0.0f;
+            this.atmoHaze = haze2;
+            this.atmoGlare = glareVal;
+            this.atmoOffset = offset;
+            this.hasAtmo = 1.0f;
+            float nightScale = 0.10f + (0.90f * this.dayFactor);
+            this.atmoColor[0] = ac.getR() * nightScale;
+            this.atmoColor[1] = ac.getG() * nightScale;
+            this.atmoColor[2] = ac.getB() * nightScale;
+            this.atmoDecay[0] = dc.getR() * nightScale;
+            this.atmoDecay[1] = dc.getG() * nightScale;
+            this.atmoDecay[2] = dc.getB() * nightScale;
             this.fogMode = 2.0f;
             this.fogStart = ((7.5E-4f * haze2) + 0.0038f) * density;
             this.fogEnd = RangesKt.coerceIn(0.92f - (offset * 0.45f), 0.30f, 0.92f);
-            float[] mixC = {ac.getR(), ac.getG(), ac.getB()};
-            if (dc != null && haze2 > 0.01f) {
-                mixC[0] = mixC[0] * 0.72f + dc.getR() * 0.28f;
-                mixC[1] = mixC[1] * 0.72f + dc.getG() * 0.28f;
-                mixC[2] = mixC[2] * 0.72f + dc.getB() * 0.28f;
-            }
-            float nightScale = 0.10f + (0.90f * this.dayFactor);
-            mixC[0] *= nightScale;
-            mixC[1] *= nightScale;
-            mixC[2] *= nightScale;
+            float[] mixC = {this.atmoColor[0], this.atmoColor[1], this.atmoColor[2]};
             float tintAmt = RangesKt.coerceIn(0.22f + haze2 * 0.07f, 0.22f, 0.80f) * (0.25f + 0.75f * this.dayFactor);
             mix(this.horizon, mixC, tintAmt, this.fogColor);
             mix(this.horizon, this.fogColor, 0.40f * this.dayFactor, this.horizon);
@@ -2596,10 +2737,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         Matrix.multiplyMM(this.lightVP, 0, this.lightProj, 0, this.lightView, 0);
         long change = Instance.changeCount;
         this.shadowAge++;
-        if (this.shadowValid && this.studio.isPlaying() && this.frames % 2 == 1) {
-            ArraysKt.copyInto(this.lastLightVP, this.lightVP, 0, 0, this.lightVP.length);
-            return;
-        }
+        // Real-time texel-snapped shadows every frame in Playtest (no trailing shadow lag)
         if (this.shadowValid && change == this.lastShadowChange && MeshLoader.INSTANCE.getEpoch() == this.lastShadowMeshEpoch && this.shadowAge < 45 && Arrays.equals(this.lightVP, this.lastLightVP)) {
             return;
         }
@@ -2701,6 +2839,12 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         this.kRot = setupSkybox$u$47(this, "uRot");
         this.kTex = setupSkybox$u$47(this, "uTex");
         this.kTint = setupSkybox$u$47(this, "uTint");
+        this.kAtmo = setupSkybox$u$47(this, "uAtmo");
+        this.kAtmoColor = setupSkybox$u$47(this, "uAtmoColor");
+        this.kAtmoDecay = setupSkybox$u$47(this, "uAtmoDecay");
+        this.kSunDir = setupSkybox$u$47(this, "uSunDir");
+        this.kSunColor = setupSkybox$u$47(this, "uSunColor");
+        this.kDay = setupSkybox$u$47(this, "uDay");
         this.kaPos = GLES20.glGetAttribLocation(this.skyboxProg, "aPos");
         this.kaUv = GLES20.glGetAttribLocation(this.skyboxProg, "aUv");
         int i = 6;
@@ -2797,7 +2941,8 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                         if (z) {
                             return false;
                         }
-                        GLES20.glDisable(2929);
+                        GLES20.glEnable(2929);
+                        GLES20.glDepthFunc(515);
                         GLES20.glDepthMask(false);
                         GLES20.glDisable(2884);
                         GLES20.glUseProgram(this.skyboxProg);
@@ -2814,6 +2959,12 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                         GLES20.glUniformMatrix3fv(this.kRot, 1, false, m, 0);
                         float k = (this.dayFactor * 0.84f) + 0.16f;
                         GLES20.glUniform3f(this.kTint, k, k, k);
+                        GLES20.glUniform4f(this.kAtmo, this.atmoHaze, this.atmoGlare, this.atmoOffset, this.hasAtmo);
+                        GLES20.glUniform3fv(this.kAtmoColor, 1, this.atmoColor, 0);
+                        GLES20.glUniform3fv(this.kAtmoDecay, 1, this.atmoDecay, 0);
+                        GLES20.glUniform3f(this.kSunDir, this.sunDir.getX(), this.sunDir.getY(), this.sunDir.getZ());
+                        GLES20.glUniform3fv(this.kSunColor, 1, this.sunColor, 0);
+                        GLES20.glUniform1f(this.kDay, this.dayFactor);
                         GLES20.glUniform1i(this.kTex, 0);
                         GLES20.glActiveTexture(33984);
                         Mesh mesh2 = this.skyboxMesh;
@@ -2834,8 +2985,10 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                         GLES20.glDisableVertexAttribArray(this.kaUv);
                         GLES20.glBindTexture(3553, this.shadowTex);
                         GLES20.glEnable(2884);
+                        GLES20.glDepthFunc(513);
                         GLES20.glDepthMask(true);
                         GLES20.glEnable(2929);
+                        this.activeLit = null;
                         return true;
                     }
                     Object obj2 = sky.get(this.SKY_FACES[i]);
@@ -2858,7 +3011,8 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         if (drawSkybox()) {
             return;
         }
-        GLES20.glDisable(2929);
+        GLES20.glEnable(2929);
+        GLES20.glDepthFunc(515);
         GLES20.glDepthMask(false);
         GLES20.glUseProgram(this.skyProg);
         GLES20.glUniformMatrix4fv(this.sInvVP, 1, false, this.studio.getView().getInvVp(), 0);
@@ -2870,9 +3024,12 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         GLES20.glUniform3f(this.sSunColor, 1.0f, 0.95f, 0.85f);
         GLES20.glUniform1f(this.sTime, this.time);
         GLES20.glUniform1f(this.sDay, this.dayFactor);
-        GLES20.glUniform2f(this.sSunRays, Math.max(this.sunRaysInt, this.atmoGlare * 0.75f), this.sunRaysInt > 0.001f ? this.sunRaysSpread : 0.55f);
+        GLES20.glUniform2f(this.sSunRays, this.sunRaysInt, this.sunRaysInt > 0.001f ? this.sunRaysSpread : 0.55f);
         GLES20.glUniform4f(this.sCCParams, this.ccBright, this.ccContrast, this.ccSat, (this.ccBright != 0.0f || this.ccContrast != 0.0f || this.ccSat != 0.0f || this.ccTint[0] < 0.999f || this.ccTint[1] < 0.999f || this.ccTint[2] < 0.999f) ? 1.0f : 0.0f);
         GLES20.glUniform3fv(this.sCCTint, 1, this.ccTint, 0);
+        GLES20.glUniform4f(this.sAtmo, this.atmoHaze, this.atmoGlare, this.atmoOffset, this.hasAtmo);
+        GLES20.glUniform3fv(this.sAtmoColor, 1, this.atmoColor, 0);
+        GLES20.glUniform3fv(this.sAtmoDecay, 1, this.atmoDecay, 0);
         Mesh mesh = this.screen;
         Mesh mesh2 = null;
         if (mesh == null) {
@@ -2889,8 +3046,11 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
             mesh2 = mesh3;
         }
         GLES20.glDrawArrays(4, 0, mesh2.getCount());
+        GLES20.glDisableVertexAttribArray(this.saPos);
+        GLES20.glDepthFunc(513);
         GLES20.glDepthMask(true);
         GLES20.glEnable(2929);
+        this.activeLit = null;
     }
 
     private final float[] material(int m) {
@@ -3081,10 +3241,10 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         useLit(litLocs2);
         setLitFrameUniforms(shadows);
         Vector3 cp = this.studio.getView().getCamPos();
-        ArrayList transparent = new ArrayList();
-        ArrayList advanced = new ArrayList();
-        ArrayList textured = new ArrayList();
-        ArrayList fileMeshes = new ArrayList();
+        ArrayList transparent = this.scratchTransparent; transparent.clear();
+        ArrayList advanced = this.scratchAdvanced; advanced.clear();
+        ArrayList textured = this.scratchTextured; textured.clear();
+        ArrayList fileMeshes = this.scratchFileMeshes; fileMeshes.clear();
         PlaySession play2 = this.studio.getPlay();
         if (this.meshEpoch != MeshLoader.INSTANCE.getEpoch()) {
             this.meshEpoch = MeshLoader.INSTANCE.getEpoch();
@@ -3260,6 +3420,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         }
         long m2 = System.nanoTime();
         this.tL += (m2 - m1) / 1000000.0f;
+        drawSky();
         drawDecals();
         drawConstraints();
         drawBeams();
@@ -3290,75 +3451,16 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                 Object next4 = it6.next();
                 Intrinsics.checkNotNullExpressionValue(next4, str6);
                 Draw d = (Draw) next4;
+                int mat = PartData.INSTANCE.material(d.getPart());
                 float a = f2 - PartData.INSTANCE.transparency(d.getPart());
-                switch (PartData.INSTANCE.material(d.getPart())) {
+                switch (mat) {
                     case 1568:
-                        f = 0.45f;
+                        a = Math.min(a, 0.45f);
                         break;
                     case 1584:
-                        f = 0.5f;
-                        break;
-                    default:
-                        negate = Intrinsics.areEqual(d.getPart().getClassName(), str4);
-                        if (negate) {
-                            a = Math.min(a, 0.42f);
-                        }
-                        g = geometry(d.getPart());
-                        if (g.getKind() == 2) {
-                            drawFileMesh(d.getPart(), g, a);
-                            this.activeLit = adv2;
-                            meshDrawPart = null;
-                            f2 = 1.0f;
-                        } else {
-                            if (texProg3 == null || negate) {
-                                texBindTexturesFor = null;
-                            } else {
-                                texBindTexturesFor = texturesFor(d.getPart(), PartData.INSTANCE.material(d.getPart()));
-                            }
-                            tb = texBindTexturesFor;
-                            if (needsAdvanced(PartData.INSTANCE.material(d.getPart()))) {
-                                litLocs = this.litAdv;
-                            } else {
-                                litLocs = null;
-                            }
-                            adv = litLocs;
-                            if (tb != null) {
-                                Intrinsics.checkNotNull(texProg3);
-                                want = texProg3;
-                            } else if (adv == null) {
-                                want = this.litBasic;
-                                Intrinsics.checkNotNull(want);
-                            } else {
-                                want = adv;
-                            }
-                            mesh = meshDrawPart;
-                            current = this.activeLit;
-                            if (current != want) {
-                                switchLit(want);
-                                mesh2 = null;
-                            } else {
-                                mesh2 = mesh;
-                            }
-                            if (tb != null) {
-                                bindTextures(tb);
-                            }
-                            Iterator it7 = it6;
-                            float a2 = a;
-                            Mesh mesh6 = mesh2;
-                            Instance part = d.getPart();
-                            if (negate) {
-                                color3 = NEGATE_COLOR;
-                            } else {
-                                color3 = null;
-                            }
-                            meshDrawPart = drawPart(part, a2, mesh6, g, color3);
-                            it6 = it7;
-                            f2 = 1.0f;
-                            adv2 = null;
-                        }
+                        a = Math.min(a, 0.5f);
                         break;
                 }
-                a = Math.min(a, f);
                 negate = Intrinsics.areEqual(d.getPart().getClassName(), str4);
                 if (negate) {
                     a = Math.min(a, 0.42f);
@@ -3370,13 +3472,13 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                     meshDrawPart = null;
                     f2 = 1.0f;
                 } else {
-                    if (texProg3 != null) {
+                    if (texProg3 == null || negate) {
                         texBindTexturesFor = null;
                     } else {
-                        texBindTexturesFor = null;
+                        texBindTexturesFor = texturesFor(d.getPart(), mat);
                     }
                     tb = texBindTexturesFor;
-                    if (needsAdvanced(PartData.INSTANCE.material(d.getPart()))) {
+                    if (needsAdvanced(mat)) {
                         litLocs = this.litAdv;
                     } else {
                         litLocs = null;
@@ -3402,17 +3504,8 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                     if (tb != null) {
                         bindTextures(tb);
                     }
-                    Iterator it8 = it6;
-                    float a3 = a;
-                    Mesh mesh7 = mesh2;
-                    Instance part2 = d.getPart();
-                    if (negate) {
-                        color3 = NEGATE_COLOR;
-                    } else {
-                        color3 = null;
-                    }
-                    meshDrawPart = drawPart(part2, a3, mesh7, g, color3);
-                    it6 = it8;
+                    color3 = negate ? NEGATE_COLOR : null;
+                    meshDrawPart = drawPart(d.getPart(), a, mesh2, g, color3);
                     f2 = 1.0f;
                     adv2 = null;
                 }
@@ -3452,6 +3545,10 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         GLES20.glUniform4f(this.uBloom, this.bloomInt, this.bloomThresh, this.bloomSize, 0.0f);
         GLES20.glUniform4f(this.uDof, this.dofFocus, this.dofRadius, Math.max(this.dofFar, this.blurAmt), Math.max(this.dofNear, this.blurAmt));
         GLES20.glUniform3fv(this.uAmbRgb, 1, this.ambRgb, 0);
+        GLES20.glUniform4f(this.uLightingFlags, (float) this.effectiveTech, this.retroTonemap, this.envSpec, this.directSpecEnable);
+        GLES20.glUniform3fv(this.uIndoorAmb, 1, this.indoorAmb, 0);
+        GLES20.glUniform4f(this.uAtmo, this.atmoHaze, this.atmoGlare, this.atmoOffset, this.hasAtmo);
+        GLES20.glUniform3fv(this.uAtmoDecay, 1, this.atmoDecay, 0);
         GLES20.glUniform1i(this.uPtCount, this.ptCount);
         if (this.ptCount > 0) {
             GLES20.glUniform4fv(this.uPtPos, this.ptCount, this.ptPos, 0);
@@ -3606,6 +3703,10 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         this.mBloom = setupMeshProgram$u$56(this, "uBloom");
         this.mDof = setupMeshProgram$u$56(this, "uDof");
         this.mAmbRgb = setupMeshProgram$u$56(this, "uAmbRgb");
+        this.mLightingFlags = setupMeshProgram$u$56(this, "uLightingFlags");
+        this.mIndoorAmb = setupMeshProgram$u$56(this, "uIndoorAmb");
+        this.mAtmo = setupMeshProgram$u$56(this, "uAtmo");
+        this.mAtmoDecay = setupMeshProgram$u$56(this, "uAtmoDecay");
         this.mPbrNrm = setupMeshProgram$u$56(this, "uPbrNrm");
         this.mPbrRough = setupMeshProgram$u$56(this, "uPbrRough");
         this.mPbrMetal = setupMeshProgram$u$56(this, "uPbrMetal");
@@ -3719,6 +3820,10 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
             GLES20.glUniform4f(this.mBloom, this.bloomInt, this.bloomThresh, this.bloomSize, 0.0f);
             GLES20.glUniform4f(this.mDof, this.dofFocus, this.dofRadius, Math.max(this.dofFar, this.blurAmt), Math.max(this.dofNear, this.blurAmt));
             GLES20.glUniform3fv(this.mAmbRgb, 1, this.ambRgb, 0);
+            GLES20.glUniform4f(this.mLightingFlags, (float) this.effectiveTech, this.retroTonemap, this.envSpec, this.directSpecEnable);
+            GLES20.glUniform3fv(this.mIndoorAmb, 1, this.indoorAmb, 0);
+            GLES20.glUniform4f(this.mAtmo, this.atmoHaze, this.atmoGlare, this.atmoOffset, this.hasAtmo);
+            GLES20.glUniform3fv(this.mAtmoDecay, 1, this.atmoDecay, 0);
         }
         GLES20.glActiveTexture(33984);
         GLES20.glBindTexture(3553, this.shadowTex);
@@ -3789,8 +3894,10 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
             return;
         }
         Vector3 cam = this.studio.getView().getCamPos();
+        int gfxL = RangesKt.coerceIn(this.studio.isPlaying() ? Settings.INSTANCE.getGraphicsQuality() : Settings.INSTANCE.getEditorGraphicsQuality(), 1, 10);
+        int maxPts = gfxL <= 2 ? 2 : (gfxL <= 4 ? 4 : (gfxL <= 7 ? 6 : 8));
         int n = 0;
-        float[] dists = new float[8];
+        float[] dists = this.lightDistsTmp;
         for (int i = 0; i < lights.size(); i++) {
             Instance li = lights.get(i);
             if (Intrinsics.areEqual(li.get("Enabled"), (Object) false)) {
@@ -3802,63 +3909,44 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
             }
             Vector3 pos;
             CFrame baseCf;
+            Instance hostPart;
             if (Intrinsics.areEqual(parent.getClassName(), "Attachment")) {
                 pos = attachmentWorld(parent);
                 Instance pp = parent.getParent();
                 if (pos == null || pp == null || !pp.isA("BasePart")) {
                     continue;
                 }
+                hostPart = pp;
                 baseCf = PartData.INSTANCE.cframe(pp);
                 Object acf = parent.get("CFrame");
                 if (acf instanceof CFrame) {
                     baseCf = baseCf.times((CFrame) acf);
                 }
             } else if (parent.isA("BasePart")) {
+                hostPart = parent;
                 baseCf = PartData.INSTANCE.cframe(parent);
                 pos = baseCf.getPosition();
             } else {
                 continue;
             }
             Object rObj = li.get("Range");
-            float range = (rObj instanceof Number) ? RangesKt.coerceIn(((Number) rObj).floatValue(), 0.1f, 60.0f) : 16.0f;
+            float range = (rObj instanceof Number) ? RangesKt.coerceIn(((Number) rObj).floatValue(), 0.1f, 120.0f) : 16.0f;
             Object bObj = li.get("Brightness");
             float br = (bObj instanceof Number) ? RangesKt.coerceIn(((Number) bObj).floatValue(), 0.0f, 40.0f) : 1.0f;
+            if (this.effectiveTech == 2 || this.effectiveTech == 0) {
+                br = Math.min(br, 1.5f);
+            }
             if (br <= 0.001f) {
                 continue;
             }
-            Color3 col = c3(li.get("Color"));
-            float cr = (col != null ? col.getR() : 1.0f) * br;
-            float cg = (col != null ? col.getG() : 1.0f) * br;
-            float cb = (col != null ? col.getB() : 1.0f) * br;
-            float dx = pos.getX() - cam.getX();
-            float dy = pos.getY() - cam.getY();
-            float dz = pos.getZ() - cam.getZ();
-            float d2 = (dx * dx) + (dy * dy) + (dz * dz);
-            int slot;
-            if (n < 8) {
-                slot = n;
-                n++;
-            } else {
-                int worst = 0;
-                float worstD = dists[0];
-                for (int k = 1; k < 8; k++) {
-                    if (dists[k] > worstD) {
-                        worstD = dists[k];
-                        worst = k;
-                    }
-                }
-                if (d2 >= worstD) {
-                    continue;
-                }
-                slot = worst;
-            }
-            dists[slot] = d2;
             String cn = li.getClassName();
-            boolean directional = Intrinsics.areEqual(cn, "SpotLight") || Intrinsics.areEqual(cn, "SurfaceLight");
+            boolean isSurface = Intrinsics.areEqual(cn, "SurfaceLight");
+            boolean directional = Intrinsics.areEqual(cn, "SpotLight") || isSurface;
             float cosHalf = -2.0f;
             float dirX = 0.0f;
             float dirY = -1.0f;
             float dirZ = 0.0f;
+            float dirW = 0.0f;
             if (directional) {
                 Object aObj = li.get("Angle");
                 float ang = (aObj instanceof Number) ? RangesKt.coerceIn(((Number) aObj).floatValue(), 1.0f, 180.0f) : 90.0f;
@@ -3883,7 +3971,53 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                 dirX = wDir.getX();
                 dirY = wDir.getY();
                 dirZ = wDir.getZ();
+                dirW = 1.0f;
+                if (isSurface) {
+                    Vector3 psz = PartData.INSTANCE.size(hostPart);
+                    float halfN;
+                    float faceSpan;
+                    if (face == 0 || face == 3) {
+                        halfN = psz.getX() * 0.5f;
+                        faceSpan = Math.max(psz.getY(), psz.getZ());
+                    } else if (face == 1 || face == 4) {
+                        halfN = psz.getY() * 0.5f;
+                        faceSpan = Math.max(psz.getX(), psz.getZ());
+                    } else {
+                        halfN = psz.getZ() * 0.5f;
+                        faceSpan = Math.max(psz.getX(), psz.getY());
+                    }
+                    pos = baseCf.getPosition().plus(wDir.times(halfN + 0.05f));
+                    range = Math.min(range + Math.min(faceSpan * 0.35f, 16.0f), 120.0f);
+                    dirW = 2.0f + Math.min(faceSpan * 0.5f, 24.0f);
+                }
             }
+            Color3 col = c3(li.get("Color"));
+            float cr = (col != null ? col.getR() : 1.0f) * br;
+            float cg = (col != null ? col.getG() : 1.0f) * br;
+            float cb = (col != null ? col.getB() : 1.0f) * br;
+            float dx = pos.getX() - cam.getX();
+            float dy = pos.getY() - cam.getY();
+            float dz = pos.getZ() - cam.getZ();
+            float d2 = (dx * dx) + (dy * dy) + (dz * dz);
+            int slot;
+            if (n < maxPts) {
+                slot = n;
+                n++;
+            } else {
+                int worst = 0;
+                float worstD = dists[0];
+                for (int k = 1; k < maxPts; k++) {
+                    if (dists[k] > worstD) {
+                        worstD = dists[k];
+                        worst = k;
+                    }
+                }
+                if (d2 >= worstD) {
+                    continue;
+                }
+                slot = worst;
+            }
+            dists[slot] = d2;
             int o = slot * 4;
             this.ptPos[o] = pos.getX();
             this.ptPos[o + 1] = pos.getY();
@@ -3896,7 +4030,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
             this.ptDir[o] = dirX;
             this.ptDir[o + 1] = dirY;
             this.ptDir[o + 2] = dirZ;
-            this.ptDir[o + 3] = directional ? 1.0f : 0.0f;
+            this.ptDir[o + 3] = dirW;
         }
         this.ptCount = n;
     }
@@ -5071,24 +5205,30 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
             }
         }
         Intrinsics.checkNotNull(src);
-        int[] ids = new int[1];
-        GLES20.glGenTextures(1, ids, 0);
-        GLES20.glBindTexture(3553, ids[0]);
-        GLUtils.texImage2D(3553, 0, src, 0);
-        int wrap = repeat ? 10497 : 33071;
-        GLES20.glTexParameteri(3553, 10242, wrap);
-        GLES20.glTexParameteri(3553, 10243, wrap);
-        GLES20.glTexParameteri(3553, 10240, 9729);
-        if (repeat) {
-            GLES20.glGenerateMipmap(3553);
-            GLES20.glTexParameteri(3553, 10241, 9987);
-            if (this.aniso > 1.0f) {
-                GLES20.glTexParameterf(3553, GL_TEXTURE_MAX_ANISOTROPY, this.aniso);
+        try {
+            int[] ids = new int[1];
+            GLES20.glGenTextures(1, ids, 0);
+            GLES20.glBindTexture(3553, ids[0]);
+            GLUtils.texImage2D(3553, 0, src, 0);
+            int wrap = repeat ? 10497 : 33071;
+            GLES20.glTexParameteri(3553, 10242, wrap);
+            GLES20.glTexParameteri(3553, 10243, wrap);
+            GLES20.glTexParameteri(3553, 10240, 9729);
+            if (repeat) {
+                GLES20.glGenerateMipmap(3553);
+                GLES20.glTexParameteri(3553, 10241, 9987);
+                if (this.aniso > 1.0f) {
+                    GLES20.glTexParameterf(3553, GL_TEXTURE_MAX_ANISOTROPY, this.aniso);
+                }
+            } else {
+                GLES20.glTexParameteri(3553, 10241, 9729);
             }
-        } else {
-            GLES20.glTexParameteri(3553, 10241, 9729);
+            return ids[0];
+        } finally {
+            if (src != bmp && !src.isRecycled()) {
+                src.recycle();
+            }
         }
-        return ids[0];
     }
 
     private static final int upload$pot(int n) {
@@ -5264,30 +5404,10 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
     private final void drawSurfaceGuis() {
         int i;
         int i2;
-        Geo g;
-        float dist;
-        Object obj;
-        Number number;
-        float fFloatValue;
-        float maxD = 0.0f;
-        Object obj2;
-        EnumValue enumValue;
-        int value;
-        FaceQuad fq;
-        Bitmap bitmap = null;
-        boolean z = false;
-        Bitmap bitmapCreateBitmap;
-        int renders;
-        int i3;
-        int tex;
-        int tex2;
-        int bw;
-        Bitmap bitmap2;
-        Function4<? super Instance, ? super Float, ? super Float, ? super Bitmap, Unit> function4 = this.surfacePainter;
-        if (function4 == null) {
+        Function4<? super Instance, ? super Float, ? super Float, ? super Bitmap, Unit> function5 = this.surfacePainter;
+        if (function5 == null) {
             return;
         }
-        Function4<? super Instance, ? super Float, ? super Float, ? super Bitmap, Unit> function5 = function4;
         List<Instance> listRenderSurfaceGuis = this.studio.renderSurfaceGuis();
         if (listRenderSurfaceGuis.isEmpty() && this.surfaceTex.isEmpty()) {
             return;
@@ -5298,301 +5418,128 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         int renders2 = 0;
         while (it.hasNext()) {
             Instance sg = it.next();
-            if (sg.getParent() != null && !Intrinsics.areEqual(sg.get("Enabled"), (Object) false)) {
-                Object obj3 = sg.get("Adornee");
-                Instance parent = obj3 instanceof Instance ? (Instance) obj3 : null;
-                if (parent == null) {
-                    parent = sg.getParent();
-                    if (parent == null || !parent.isA("BasePart")) {
-                        parent = null;
-                    }
-                    if (parent != null) {
-                        Instance part = parent;
-                        g = this.geometry(part);
-                        if (this.visible(g.getCf(), g.getScale(), cp, fwd)) {
-                            dist = g.getCf().getPosition().minus(cp).getMagnitude();
-                            obj = sg.get("MaxDistance");
-                            if (obj instanceof Number) {
-                                number = (Number) obj;
-                            } else {
-                                number = null;
-                            }
-                            if (number != null) {
-                                fFloatValue = number.floatValue();
-                            } else {
-                                fFloatValue = 0.0f;
-                            }
-                            maxD = fFloatValue > 0.0f ? Math.min(fFloatValue, 450.0f) : 450.0f;
-                            if (dist <= g.getScale().getMagnitude() + maxD) {
-                                obj2 = sg.get("Face");
-                                if (obj2 instanceof EnumValue) {
-                                    enumValue = (EnumValue) obj2;
-                                } else {
-                                    enumValue = null;
-                                }
-                                if (enumValue != null) {
-                                    value = enumValue.getValue();
-                                } else {
-                                    value = 5;
-                                }
-                                fq = this.faceQuad(g, value, 0.004f);
-                                if (fq.getW() <= 0.01f && fq.getH() > 0.01f) {
-                                    Object obj4 = sg.get("PixelsPerStud");
-                                    Number number2 = obj4 instanceof Number ? (Number) obj4 : null;
-                                    float pps = RangesKt.coerceAtLeast(number2 != null ? number2.floatValue() : 50.0f, 1.0f);
-                                    Object obj5 = sg.get("CanvasSize");
-                                    Vector2 cs = obj5 instanceof Vector2 ? (Vector2) obj5 : null;
-                                    if (cs == null) {
-                                        cs = new Vector2(800.0f, 600.0f);
-                                    }
-                                    Object obj6 = sg.get("SizingMode");
-                                    EnumValue enumValue2 = obj6 instanceof EnumValue ? (EnumValue) obj6 : null;
-                                    boolean fixed = (enumValue2 != null ? enumValue2.getValue() : 0) == 0 && sg.getProps().containsKey("CanvasSize");
-                                    float cw = fixed ? RangesKt.coerceAtLeast(cs.getX(), 1.0f) : fq.getW() * pps;
-                                    float ch = fixed ? RangesKt.coerceAtLeast(cs.getY(), 1.0f) : fq.getH() * pps;
-                                    float k = Math.min(1.0f, 384.0f / Math.max(cw, ch));
-                                    Vector3 cp2 = cp;
-                                    Vector3 fwd2 = fwd;
-                                    int bw2 = RangesKt.coerceIn((int) (cw * k), 8, 1024);
-                                    int bh = RangesKt.coerceIn((int) (ch * k), 8, 1024);
-                                    SurfaceTex e = this.surfaceTex.get(sg);
-                                    Iterator<Instance> it2 = it;
-                                    if (e == null || (this.time - e.getChecked() > 0.5f && renders2 < 4)) {
-                                        long sig = (this.signature(sg) * 31) + ((long) (bw2 * 7)) + ((long) bh);
-                                        if (e != null && sig == e.getSig()) {
-                                            e.setChecked(this.time);
-                                        } else if (renders2 < 4 || e == null) {
-                                            Bitmap bitmap3 = this.scratch;
-                                            try {
-                                                if (bitmap3 != null) {
-                                                    bitmap = bitmap3;
-                                                    if (bitmap3.getWidth() == bw2 && bitmap3.getHeight() == bh) {
-                                                        z = true;
-                                                    }
-                                                    if (z) {
-                                                        bitmapCreateBitmap = bitmap;
-                                                    } else {
-                                                        bitmapCreateBitmap = null;
-                                                    }
-                                                    if (bitmapCreateBitmap == null) {
-                                                        bitmapCreateBitmap = Bitmap.createBitmap(bw2, bh, Bitmap.Config.ARGB_8888);
-                                                        bitmap2 = this.scratch;
-                                                        if (bitmap2 != null) {
-                                                            bitmap2.recycle();
-                                                        }
-                                                        this.scratch = bitmapCreateBitmap;
-                                                        Intrinsics.checkNotNullExpressionValue(bitmapCreateBitmap, "also(...)");
-                                                    }
-                                                    Bitmap bmp = bitmapCreateBitmap;
-                                                    function5.invoke(sg, Float.valueOf(cw), Float.valueOf(ch), bitmap);
-                                                    renders = renders2 + 1;
-                                                    this.nSgRender++;
-                                                    if (e != null) {
-                                                        tex = e.getTex();
-                                                        i3 = 0;
-                                                    } else {
-                                                        int[] iArr = new int[1];
-                                                        i3 = 0;
-                                                        GLES20.glGenTextures(1, iArr, 0);
-                                                        tex = iArr[0];
-                                                    }
-                                                    tex2 = tex;
-                                                    GLES20.glBindTexture(3553, tex2);
-                                                    GLUtils.texImage2D(3553, i3, bmp, i3);
-                                                    GLES20.glTexParameteri(3553, 10241, 9729);
-                                                    GLES20.glTexParameteri(3553, 10240, 9729);
-                                                    GLES20.glTexParameteri(3553, 10242, 33071);
-                                                    GLES20.glTexParameteri(3553, 10243, 33071);
-                                                    if (e == null) {
-                                                        bw = bw2;
-                                                        e = new SurfaceTex(tex2, bw2, bh, sig, this.time, this.time);
-                                                        this.surfaceTex.put(sg, e);
-                                                        renders2 = renders;
-                                                    } else {
-                                                        bw = bw2;
-                                                        e.setW(bw);
-                                                        e.setH(bh);
-                                                        e.setSig(sig);
-                                                        e.setChecked(this.time);
-                                                        renders2 = renders;
-                                                    }
-                                                } else {
-                                                    bitmap = bitmap3;
-                                                }
-                                                function5.invoke(sg, Float.valueOf(cw), Float.valueOf(ch), bitmap);
-                                            } catch (Exception ex) {
-                                                OutputLog.INSTANCE.warn("SurfaceGui " + sg.getName() + ": " + ex.getMessage());
-                                            }
-                                            z = false;
-                                            if (z) {
-                                                bitmapCreateBitmap = bitmap;
-                                            } else {
-                                                bitmapCreateBitmap = null;
-                                            }
-                                            if (bitmapCreateBitmap == null) {
-                                                bitmapCreateBitmap = Bitmap.createBitmap(bw2, bh, Bitmap.Config.ARGB_8888);
-                                                bitmap2 = this.scratch;
-                                                if (bitmap2 != null) {
-                                                    bitmap2.recycle();
-                                                }
-                                                this.scratch = bitmapCreateBitmap;
-                                                Intrinsics.checkNotNullExpressionValue(bitmapCreateBitmap, "also(...)");
-                                            }
-                                            Bitmap bmp2 = bitmapCreateBitmap;
-                                            renders = renders2 + 1;
-                                            this.nSgRender++;
-                                            if (e != null) {
-                                                tex = e.getTex();
-                                                i3 = 0;
-                                            } else {
-                                                int[] iArr2 = new int[1];
-                                                i3 = 0;
-                                                GLES20.glGenTextures(1, iArr2, 0);
-                                                tex = iArr2[0];
-                                            }
-                                            tex2 = tex;
-                                            GLES20.glBindTexture(3553, tex2);
-                                            GLUtils.texImage2D(3553, i3, bmp2, i3);
-                                            GLES20.glTexParameteri(3553, 10241, 9729);
-                                            GLES20.glTexParameteri(3553, 10240, 9729);
-                                            GLES20.glTexParameteri(3553, 10242, 33071);
-                                            GLES20.glTexParameteri(3553, 10243, 33071);
-                                            if (e == null) {
-                                                bw = bw2;
-                                                e = new SurfaceTex(tex2, bw2, bh, sig, this.time, this.time);
-                                                this.surfaceTex.put(sg, e);
-                                                renders2 = renders;
-                                            } else {
-                                                bw = bw2;
-                                                e.setW(bw);
-                                                e.setH(bh);
-                                                e.setSig(sig);
-                                                e.setChecked(this.time);
-                                                renders2 = renders;
-                                            }
-                                        } else {
-                                            e.setChecked(this.time);
-                                        }
-                                        bw = bw2;
-                                    } else {
-                                        bw = bw2;
-                                    }
-                                    SurfaceTex entry = e;
-                                    entry.setUsed(this.time);
-                                    GLES20.glBindTexture(3553, entry.getTex());
-                                    Object obj7 = sg.get("LightInfluence");
-                                    Number number3 = obj7 instanceof Number ? (Number) obj7 : null;
-                                    float influence = RangesKt.coerceIn(number3 != null ? number3.floatValue() : 1.0f, 0.0f, 1.0f);
-                                    Object obj8 = sg.get("Brightness");
-                                    Number number4 = obj8 instanceof Number ? (Number) obj8 : null;
-                                    float bright = RangesKt.coerceIn(number4 != null ? number4.floatValue() : 1.0f, 0.0f, 5.0f);
-                                    GLES20.glUniform1f(this.cAmbient, ((this.ambient * influence) + (1.0f - influence)) * bright);
-                                    GLES20.glUniform3f(this.cSun, this.sunColor[0] * influence * bright, this.sunColor[1] * influence * bright, this.sunColor[2] * influence * bright);
-                                    GLES20.glUniform4f(this.cTint, 1.0f, 1.0f, 1.0f, 1.0f);
-                                    this.setModel(g.getCf().times(fq.getLocal()), new Vector3(fq.getW(), fq.getH(), 1.0f));
-                                    GLES20.glUniformMatrix4fv(this.cModel, 1, false, this.model, 0);
-                                    GLES20.glUniform3f(this.cNormal, fq.getNormal().getX(), fq.getNormal().getY(), fq.getNormal().getZ());
-                                    GLES20.glUniform4f(this.cUv, 1.0f, 1.0f, 0.0f, 0.0f);
-                                    boolean onTop = Intrinsics.areEqual(sg.get("AlwaysOnTop"), (Object) true);
-                                    if (onTop) {
-                                        GLES20.glDisable(2929);
-                                    }
-                                    Mesh mesh = this.quad;
-                                    if (mesh == null) {
-                                        Intrinsics.throwUninitializedPropertyAccessException("quad");
-                                        mesh = null;
-                                    }
-                                    this.drawUvMesh(mesh);
-                                    if (onTop) {
-                                        GLES20.glEnable(2929);
-                                    }
-                                    cp = cp2;
-                                    fwd = fwd2;
-                                    it = it2;
-                                }
-                            }
+            if (sg.getParent() == null || Intrinsics.areEqual(sg.get("Enabled"), (Object) false)) {
+                continue;
+            }
+            Object obj3 = sg.get("Adornee");
+            Instance part = obj3 instanceof Instance ? (Instance) obj3 : null;
+            if (part == null || !part.isA("BasePart")) {
+                Instance parent = sg.getParent();
+                part = (parent != null && parent.isA("BasePart")) ? parent : null;
+            }
+            if (part == null) {
+                continue;
+            }
+            Geo g = this.geometry(part);
+            if (!this.visible(g.getCf(), g.getScale(), cp, fwd)) {
+                continue;
+            }
+            float dist = g.getCf().getPosition().minus(cp).getMagnitude();
+            Object obj = sg.get("MaxDistance");
+            Number number = obj instanceof Number ? (Number) obj : null;
+            float fFloatValue = number != null ? number.floatValue() : 0.0f;
+            float maxD = fFloatValue > 0.0f ? Math.min(fFloatValue, 450.0f) : 450.0f;
+            if (dist > g.getScale().getMagnitude() + maxD) {
+                continue;
+            }
+            Object obj2 = sg.get("Face");
+            EnumValue enumValue = obj2 instanceof EnumValue ? (EnumValue) obj2 : null;
+            int value = enumValue != null ? enumValue.getValue() : 5;
+            FaceQuad fq = this.faceQuad(g, value, 0.004f);
+            if (fq.getW() <= 0.01f || fq.getH() <= 0.01f) {
+                continue;
+            }
+            Object obj4 = sg.get("PixelsPerStud");
+            Number number2 = obj4 instanceof Number ? (Number) obj4 : null;
+            float pps = RangesKt.coerceAtLeast(number2 != null ? number2.floatValue() : 50.0f, 1.0f);
+            Object obj5 = sg.get("CanvasSize");
+            Vector2 cs = obj5 instanceof Vector2 ? (Vector2) obj5 : null;
+            if (cs == null) {
+                cs = new Vector2(800.0f, 600.0f);
+            }
+            Object obj6 = sg.get("SizingMode");
+            EnumValue enumValue2 = obj6 instanceof EnumValue ? (EnumValue) obj6 : null;
+            boolean fixed = (enumValue2 != null ? enumValue2.getValue() : 0) == 0 && sg.getProps().containsKey("CanvasSize");
+            float cw = fixed ? RangesKt.coerceAtLeast(cs.getX(), 1.0f) : fq.getW() * pps;
+            float ch = fixed ? RangesKt.coerceAtLeast(cs.getY(), 1.0f) : fq.getH() * pps;
+            float k = Math.min(1.0f, 384.0f / Math.max(cw, ch));
+            int bw2 = RangesKt.coerceIn((int) (cw * k), 8, 1024);
+            int bh = RangesKt.coerceIn((int) (ch * k), 8, 1024);
+            SurfaceTex e = this.surfaceTex.get(sg);
+            if (e == null || (this.time - e.getChecked() > 0.5f && renders2 < 4)) {
+                long sig = (this.signature(sg) * 31) + ((long) (bw2 * 7)) + ((long) bh);
+                if (e != null && sig == e.getSig()) {
+                    e.setChecked(this.time);
+                } else if (renders2 < 4 || e == null) {
+                    Bitmap bmp = this.scratch;
+                    if (bmp == null || bmp.isRecycled() || bmp.getWidth() != bw2 || bmp.getHeight() != bh) {
+                        bmp = Bitmap.createBitmap(bw2, bh, Bitmap.Config.ARGB_8888);
+                        Bitmap oldScratch = this.scratch;
+                        if (oldScratch != null && !oldScratch.isRecycled()) {
+                            oldScratch.recycle();
                         }
+                        this.scratch = bmp;
                     }
-                } else {
-                    if (!parent.isA("BasePart")) {
-                        parent = null;
+                    try {
+                        function5.invoke(sg, Float.valueOf(cw), Float.valueOf(ch), bmp);
+                    } catch (Exception ex) {
+                        OutputLog.INSTANCE.warn("SurfaceGui " + sg.getName() + ": " + ex.getMessage());
                     }
-                    if (parent == null) {
-                        parent = sg.getParent();
-                        parent = parent != null ? null : null;
-                        if (parent == null) {
-                            Instance part2 = parent;
-                            g = this.geometry(part2);
-                            if (this.visible(g.getCf(), g.getScale(), cp, fwd)) {
-                                dist = g.getCf().getPosition().minus(cp).getMagnitude();
-                                obj = sg.get("MaxDistance");
-                                if (obj instanceof Number) {
-                                    number = (Number) obj;
-                                } else {
-                                    number = null;
-                                }
-                                if (number != null) {
-                                    fFloatValue = number.floatValue();
-                                } else {
-                                    fFloatValue = 0.0f;
-                                }
-                                if (fFloatValue > 0.0f) {
-                                }
-                                if (dist <= g.getScale().getMagnitude() + maxD) {
-                                    obj2 = sg.get("Face");
-                                    if (obj2 instanceof EnumValue) {
-                                        enumValue = (EnumValue) obj2;
-                                    } else {
-                                        enumValue = null;
-                                    }
-                                    if (enumValue != null) {
-                                        value = enumValue.getValue();
-                                    } else {
-                                        value = 5;
-                                    }
-                                    fq = this.faceQuad(g, value, 0.004f);
-                                    if (fq.getW() <= 0.01f) {
-                                    }
-                                }
-                            }
-                        }
+                    renders2++;
+                    this.nSgRender++;
+                    int tex2;
+                    if (e != null) {
+                        tex2 = e.getTex();
                     } else {
-                        Instance part3 = parent;
-                        g = this.geometry(part3);
-                        if (this.visible(g.getCf(), g.getScale(), cp, fwd)) {
-                            dist = g.getCf().getPosition().minus(cp).getMagnitude();
-                            obj = sg.get("MaxDistance");
-                            if (obj instanceof Number) {
-                                number = (Number) obj;
-                            } else {
-                                number = null;
-                            }
-                            if (number != null) {
-                                fFloatValue = number.floatValue();
-                            } else {
-                                fFloatValue = 0.0f;
-                            }
-                            if (fFloatValue > 0.0f) {
-                            }
-                            if (dist <= g.getScale().getMagnitude() + maxD) {
-                                obj2 = sg.get("Face");
-                                if (obj2 instanceof EnumValue) {
-                                    enumValue = (EnumValue) obj2;
-                                } else {
-                                    enumValue = null;
-                                }
-                                if (enumValue != null) {
-                                    value = enumValue.getValue();
-                                } else {
-                                    value = 5;
-                                }
-                                fq = this.faceQuad(g, value, 0.004f);
-                                if (fq.getW() <= 0.01f) {
-                                }
-                            }
-                        }
+                        int[] iArr = new int[1];
+                        GLES20.glGenTextures(1, iArr, 0);
+                        tex2 = iArr[0];
+                    }
+                    GLES20.glBindTexture(3553, tex2);
+                    GLUtils.texImage2D(3553, 0, bmp, 0);
+                    GLES20.glTexParameteri(3553, 10241, 9729);
+                    GLES20.glTexParameteri(3553, 10240, 9729);
+                    GLES20.glTexParameteri(3553, 10242, 33071);
+                    GLES20.glTexParameteri(3553, 10243, 33071);
+                    if (e == null) {
+                        e = new SurfaceTex(tex2, bw2, bh, sig, this.time, this.time);
+                        this.surfaceTex.put(sg, e);
+                    } else {
+                        e.setW(bw2);
+                        e.setH(bh);
+                        e.setSig(sig);
+                        e.setChecked(this.time);
                     }
                 }
+            }
+            SurfaceTex entry = e;
+            entry.setUsed(this.time);
+            GLES20.glBindTexture(3553, entry.getTex());
+            Object obj7 = sg.get("LightInfluence");
+            Number number3 = obj7 instanceof Number ? (Number) obj7 : null;
+            float influence = RangesKt.coerceIn(number3 != null ? number3.floatValue() : 1.0f, 0.0f, 1.0f);
+            Object obj8 = sg.get("Brightness");
+            Number number4 = obj8 instanceof Number ? (Number) obj8 : null;
+            float bright = RangesKt.coerceIn(number4 != null ? number4.floatValue() : 1.0f, 0.0f, 5.0f);
+            GLES20.glUniform1f(this.cAmbient, ((this.decalAmbient * influence) + (1.0f - influence)) * bright);
+            GLES20.glUniform3f(this.cSun, this.sunColor[0] * influence * bright, this.sunColor[1] * influence * bright, this.sunColor[2] * influence * bright);
+            GLES20.glUniform4f(this.cTint, 1.0f, 1.0f, 1.0f, 1.0f);
+            this.setModel(g.getCf().times(fq.getLocal()), new Vector3(fq.getW(), fq.getH(), 1.0f));
+            GLES20.glUniformMatrix4fv(this.cModel, 1, false, this.model, 0);
+            GLES20.glUniform3f(this.cNormal, fq.getNormal().getX(), fq.getNormal().getY(), fq.getNormal().getZ());
+            GLES20.glUniform4f(this.cUv, 1.0f, 1.0f, 0.0f, 0.0f);
+            boolean onTop = Intrinsics.areEqual(sg.get("AlwaysOnTop"), (Object) true);
+            if (onTop) {
+                GLES20.glDisable(2929);
+            }
+            Mesh mesh = this.quad;
+            if (mesh == null) {
+                Intrinsics.throwUninitializedPropertyAccessException("quad");
+                mesh = null;
+            }
+            this.drawUvMesh(mesh);
+            if (onTop) {
+                GLES20.glEnable(2929);
             }
         }
         if (this.surfaceTex.isEmpty()) {
@@ -5615,7 +5562,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
             i2 = 0;
         }
         GLES20.glUniform3fv(this.cSun, i, this.sunColor, i2);
-        GLES20.glUniform1f(this.cAmbient, this.ambient);
+        GLES20.glUniform1f(this.cAmbient, this.decalAmbient);
     }
 
     /* JADX INFO: compiled from: SceneRenderer.kt */
@@ -6329,7 +6276,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         GLES20.glUniformMatrix4fv(this.cVP, 1, false, this.studio.getView().getVp(), 0);
         GLES20.glUniform3f(this.cLight, this.sunDir.getX(), this.sunDir.getY(), this.sunDir.getZ());
         GLES20.glUniform3fv(this.cSun, 1, this.sunColor, 0);
-        GLES20.glUniform1f(this.cAmbient, this.ambient);
+        GLES20.glUniform1f(this.cAmbient, this.decalAmbient);
         GLES20.glUniform1i(this.cTex, 0);
         int i = 33984;
         GLES20.glActiveTexture(33984);

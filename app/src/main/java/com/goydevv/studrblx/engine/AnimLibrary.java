@@ -21,7 +21,7 @@ public final class AnimLibrary {
     private static final ConcurrentHashMap<Long, AnimClip> clips = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap.KeySetView<Long, Boolean> failed = ConcurrentHashMap.newKeySet();
     private static final ConcurrentHashMap.KeySetView<Long, Boolean> pending = ConcurrentHashMap.newKeySet();
-    private static final ExecutorService pool = Executors.newFixedThreadPool(4);
+    private static final ExecutorService pool = Executors.newFixedThreadPool(1);
 
     private AnimLibrary() {
     }
@@ -79,6 +79,13 @@ public final class AnimLibrary {
             }
         } finally {
             pending.remove(Long.valueOf($id));
+        }
+    }
+
+    public final void trimMemory(int level) {
+        if (level >= 40) {
+            clips.clear();
+            failed.clear();
         }
     }
 

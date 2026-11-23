@@ -1124,7 +1124,7 @@ public final class LuaRuntime {
                 }
             }
         }
-        if (!this.deferred.isEmpty()) {
+        for (int pass = 0; pass < 2 && !this.deferred.isEmpty(); pass++) {
             List<? extends Pair<?, ?>> d = CollectionsKt.toList(this.deferred);
             this.deferred.clear();
             for (Pair<?, ?> pair : d) {

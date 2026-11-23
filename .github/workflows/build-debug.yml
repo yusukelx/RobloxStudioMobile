@@ -2,7 +2,7 @@ name: Build Debug APK
 
 on:
   push:
-    branches: [ main, master, luau-env ]
+    branches: [ main, master, luau-env, luau-env-2 ]
   pull_request:
     branches: [ main, master, luau-env ]
   workflow_dispatch:

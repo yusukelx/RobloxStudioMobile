@@ -16,7 +16,7 @@ import java.util.concurrent.Executors;
 
 public final class RobloxTextures {
     private static final String BASE = "https://raw.githubusercontent.com/MaximumADHD/Roblox-Client-Tracker/roblox/textures/";
-    private static final LruCache<String, Bitmap> cache = new LruCache<String, Bitmap>(4194304) {
+    private static final LruCache<String, Bitmap> cache = new LruCache<String, Bitmap>(2097152) {
         @Override
         protected int sizeOf(String key, Bitmap value) {
             return value.getByteCount();

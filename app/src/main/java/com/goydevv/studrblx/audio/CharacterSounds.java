@@ -30,6 +30,7 @@ public final class CharacterSounds {
     private static volatile boolean started;
     private static volatile boolean muted;
     private static long nextRunStepNs;
+    private static int runStreamId;
 
     private CharacterSounds() {
     }
@@ -147,7 +148,11 @@ public final class CharacterSounds {
                     OutputLog.INSTANCE.warn("Couldn't load " + f + ": " + t.getMessage());
                 }
             }
-            pool = p;
+            synchronized (CharacterSounds.class) {
+                runStreamId = 0;
+                nextRunStepNs = 0L;
+                pool = p;
+            }
         } catch (Throwable t) {
             OutputLog.INSTANCE.warn("Character sound player unavailable: " + t.getMessage());
         }
@@ -180,7 +185,7 @@ public final class CharacterSounds {
 
     public static synchronized void running(boolean on, float speed, float volume) {
         if (!on || muted) {
-            nextRunStepNs = 0L;
+            stopRun();
             return;
         }
         SoundPool p = pool;
@@ -192,7 +197,8 @@ public final class CharacterSounds {
             if (nextRunStepNs == 0L || now >= nextRunStepNs) {
                 float rate = Math.max(0.5f, Math.min(2.0f, speed / 16.0f));
                 float v = Math.max(0.0f, Math.min(1.0f, volume));
-                p.play(id, v, v, 1, 0, rate);
+                if (runStreamId != 0) p.stop(runStreamId);
+                runStreamId = p.play(id, v, v, 1, 0, rate);
                 float cadence = Math.max(0.24f, Math.min(0.58f, 0.38f * 16.0f / Math.max(8.0f, speed)));
                 nextRunStepNs = now + (long) (cadence * 1.0E9f);
             }
@@ -202,5 +208,13 @@ public final class CharacterSounds {
 
     public static synchronized void stopRun() {
         nextRunStepNs = 0L;
+        SoundPool p = pool;
+        if (p != null && runStreamId != 0) {
+            try {
+                p.stop(runStreamId);
+            } catch (Throwable ignored) {
+            }
+        }
+        runStreamId = 0;
     }
 }

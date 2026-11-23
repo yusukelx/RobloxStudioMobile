@@ -1054,15 +1054,26 @@ public final class PlayHud extends FrameLayout {
             }
             TextView textView = (TextView) obj;
             textView.setTextColor(i == i2 ? -1 : -1711276033);
-            if (i == i2) {
-                GradientDrawable gradientDrawable2 = new GradientDrawable();
-                gradientDrawable2.setColor(654311423);
-                gradientDrawable2.setCornerRadius(this$0.dp(8.0f));
-                gradientDrawable = gradientDrawable2;
-            } else {
-                gradientDrawable = null;
-            }
-            textView.setBackground(gradientDrawable);
+            final int barH = this$0.dp(3.0f);
+            textView.setBackground(i == i2 ? new android.graphics.drawable.Drawable() {
+                private final android.graphics.Paint bp = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+                @Override
+                public void draw(android.graphics.Canvas c) {
+                    android.graphics.Rect r = getBounds();
+                    bp.setColor(-1);
+                    c.drawRoundRect(new android.graphics.RectF(r.left + barH * 2, r.bottom - barH, r.right - barH * 2, r.bottom), barH / 2f, barH / 2f, bp);
+                }
+                @Override
+                public void setAlpha(int a) {
+                }
+                @Override
+                public void setColorFilter(android.graphics.ColorFilter cf) {
+                }
+                @Override
+                public int getOpacity() {
+                    return android.graphics.PixelFormat.TRANSLUCENT;
+                }
+            } : null);
             i2 = i3;
         }
         content.removeAllViews();

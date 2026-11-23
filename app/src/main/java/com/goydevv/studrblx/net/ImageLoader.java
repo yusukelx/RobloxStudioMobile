@@ -53,7 +53,7 @@ public final class ImageLoader {
 
     /* JADX WARN: Type inference failed for: r1v0, types: [com.goydevv.studrblx.net.ImageLoader$mem$1] */
     static {
-        final int iMin = (int) Math.min(16777216L, Runtime.getRuntime().maxMemory() / 20);
+        final int iMin = (int) Math.min(6291456L, Runtime.getRuntime().maxMemory() / 32);
         mem = new LruCache<String, Bitmap>(iMin) { // from class: com.goydevv.studrblx.net.ImageLoader$mem$1
             /* JADX INFO: Access modifiers changed from: protected */
             @Override // android.util.LruCache

@@ -713,6 +713,9 @@ public final class PlaySession implements TreeListener {
             }
         }
         runScriptsUnder(ps);
+        for (Instance script : Instance.descendants$default(this.dm, null, 1, null)) {
+            if (Intrinsics.areEqual(script.getClassName(), "Script")) maybeRunScript(script);
+        }
         spawnCharacter();
         systemMessage("Chat '/?' or '/help' for a list of chat commands.", -4934476);
     }
@@ -918,7 +921,7 @@ public final class PlaySession implements TreeListener {
             case 1:
                 return isRunnable$under(s, "Workspace") || isRunnable$under(s, "ServerScriptService") || isRunnable$under(s, "ReplicatedStorage") || inBackpack;
             case 2:
-                return clientPlaces || isRunnable$under(s, "Workspace") || isRunnable$under(s, "ReplicatedStorage");
+                return p != null && (clientPlaces || isRunnable$under(s, "Workspace") || isRunnable$under(s, "ReplicatedStorage"));
             default:
                 return false;
         }

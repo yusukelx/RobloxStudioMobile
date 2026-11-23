@@ -185,6 +185,7 @@ public final class TextChat {
                 LuaTable bubbleMsg = new LuaTable();
                 bubbleMsg.set("Text", msg.get("Text"));
                 LuaValue bp = callback(rt, tcs, "OnBubbleAdded", msg, rt.wrap(head));
+                if (bp.isuserdata() && bp.touserdata() instanceof Instance) msg.set("BubbleChatMessageProperties", bp);
                 applyProps(rt, bubbleMsg, bp, new String[]{"Text"});
                 ps.bubble(head, com.goydevv.studrblx.ui.RichText.INSTANCE.parse(bubbleMsg.get("Text").optjstring("")).toString());
                 PlaySession.Bubble b = ps.lastBubble();

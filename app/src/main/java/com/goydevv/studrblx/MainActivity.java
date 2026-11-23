@@ -948,6 +948,21 @@ public final class MainActivity extends AppCompatActivity implements MainActions
         }
     }
 
+    @Override
+    public void onTrimMemory(int level) {
+        super.onTrimMemory(level);
+        if (level < 40) return;
+        ImageLoader.INSTANCE.trimMemory(level);
+        AssetFetcher.INSTANCE.trimMemory(level);
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        ImageLoader.INSTANCE.trimMemory(80);
+        AssetFetcher.INSTANCE.trimMemory(80);
+    }
+
     static final Unit webAsker$lambda$33(final MainActivity this$0, final String host, final String who, final Function1 answer) {
         Intrinsics.checkNotNullParameter(host, "host");
         Intrinsics.checkNotNullParameter(who, "who");

@@ -70,6 +70,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.recyclerview)
+    implementation("androidx.emoji2:emoji2-bundled:1.5.0")
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
     implementation("com.github.luben:zstd-jni:1.5.6-3@aar")

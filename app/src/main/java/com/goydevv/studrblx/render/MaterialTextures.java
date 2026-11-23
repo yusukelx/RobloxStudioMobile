@@ -68,6 +68,16 @@ public final class MaterialTextures {
         return epoch;
     }
 
+    public final void trimMemory(int level) {
+        if (level >= 40) {
+            ready.clear();
+            failed.clear();
+            surfaces = null;
+            surfacesTried = false;
+            epoch++;
+        }
+    }
+
     public final void init(Context ctx) {
         Intrinsics.checkNotNullParameter(ctx, "ctx");
         if (app == null) {

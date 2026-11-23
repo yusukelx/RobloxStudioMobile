@@ -936,7 +936,9 @@ public final class MainActivity extends AppCompatActivity implements MainActions
                 StudioApp.logBreadcrumb("Recovery snapshot saved (" + bytes.length + " bytes)");
             } catch (Throwable error) {
                 atomic.failWrite(stream);
-                throw error;
+                if (error instanceof RuntimeException) throw (RuntimeException) error;
+                if (error instanceof Error) throw (Error) error;
+                throw new RuntimeException(error);
             }
         } catch (OutOfMemoryError error) {
             ImageLoader.INSTANCE.trimMemory(80);

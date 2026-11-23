@@ -482,6 +482,7 @@ public final class PlayHud extends FrameLayout {
     /* JADX INFO: compiled from: PlayHud.kt */
     private final class ChatLog extends View {
         private int lastW;
+        private int emojiLoadState = -1;
         private List<? extends StaticLayout> layouts;
         private List<PlaySession.ChatLine> lines;
         private final TextPaint shadow;
@@ -570,6 +571,16 @@ public final class PlayHud extends FrameLayout {
         @Override // android.view.View
         protected void onDraw(Canvas c) {
             Intrinsics.checkNotNullParameter(c, "c");
+            int loadState;
+            try {
+                loadState = EmojiCompat.get().getLoadState();
+            } catch (IllegalStateException ignored) {
+                loadState = EmojiCompat.LOAD_STATE_DEFAULT;
+            }
+            if (loadState != this.emojiLoadState) {
+                this.emojiLoadState = loadState;
+                build();
+            }
             if (getWidth() != this.lastW) {
                 build();
             }

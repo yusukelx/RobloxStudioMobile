@@ -646,7 +646,7 @@ public final class PlaySession implements TreeListener {
             }
         }
         p.setName(uname);
-        p.set("UserId", Long.valueOf(signedIn ? RobloxApi.INSTANCE.userId(ctx) : 1L), false);
+        p.set("UserId", Long.valueOf(signedIn ? RobloxApi.INSTANCE.userId(ctx) : 0L), false);
         p.getPropTypes().put("UserId", 27);
         if (signedIn) {
             String strDisplayName = RobloxApi.INSTANCE.displayName(ctx);

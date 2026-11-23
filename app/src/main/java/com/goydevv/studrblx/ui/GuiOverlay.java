@@ -672,7 +672,12 @@ public final class GuiOverlay extends View {
     }
 
     private final CharSequence content(String text, boolean rich) {
-        return rich ? RichText.INSTANCE.parse(text) : text;
+        if (rich) return RichText.INSTANCE.parse(text);
+        try {
+            return EmojiCompat.get().process(text);
+        } catch (IllegalStateException ignored) {
+            return text;
+        }
     }
 
     private final StaticLayout layoutFor(TKey k) {

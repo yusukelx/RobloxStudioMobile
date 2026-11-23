@@ -1280,6 +1280,22 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
 
     @Override // android.opengl.GLSurfaceView.Renderer
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+        this.postOk = false;
+        this.postExtProg = 0;
+        this.postBlurProg = 0;
+        this.postCompProg = 0;
+        this.postSceneFbo = 0;
+        this.postSceneTex = 0;
+        this.postSceneDepth = 0;
+        this.postFboA = 0;
+        this.postTexA = 0;
+        this.postFboB = 0;
+        this.postTexB = 0;
+        this.postW = 0;
+        this.postH = 0;
+        this.shadowTex = 0;
+        this.shadowFbo = 0;
+        this.shadowOk = false;
         int iUpload;
         LitLocs litLocs = litLocs(program(LIT_VS, LIT_FS));
         useLit(litLocs);
@@ -1647,14 +1663,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                                     this.tShadow = 0.0f;
                                     this.tDraw = 0.0f;
                                 }
-                                this.slowAvg = (this.slowAvg * 0.9f) + (dt * 0.1f);
-                                if (this.slowAvg > 0.045f) {
-                                    GLES20.glFinish();
-                                    try {
-                                        Thread.sleep(RangesKt.coerceIn((long) (this.slowAvg * 1000.0f * 0.35f), 8L, 40L));
-                                    } catch (Exception e3) {
-                                    }
-                                }
+
                             } catch (Throwable th) {
                                 throw th;
                             }

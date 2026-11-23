@@ -1403,7 +1403,8 @@ public final class InstanceApi {
             newIndex(inst, strContentAlias, luaStringValueOf);
             return;
         }
-        if (Intrinsics.areEqual(key, "OnServerInvoke") || Intrinsics.areEqual(key, "OnClientInvoke") || Intrinsics.areEqual(key, "OnInvoke") || (v.isfunction() && !inst.getProps().containsKey(key))) {
+        boolean textChatCallback = inst.isA("TextChatService") && (Intrinsics.areEqual(key, "OnIncomingMessage") || Intrinsics.areEqual(key, "OnBubbleAdded") || Intrinsics.areEqual(key, "OnChatWindowAdded"));
+        if (Intrinsics.areEqual(key, "OnServerInvoke") || Intrinsics.areEqual(key, "OnClientInvoke") || Intrinsics.areEqual(key, "OnInvoke") || textChatCallback || (v.isfunction() && !inst.getProps().containsKey(key))) {
             Map callbacks = this.rt.getCallbacks();
             HashMap<String, LuaValue> map2 = (HashMap<String, LuaValue>) callbacks.get(inst);
             if (map2 == null) {
@@ -1412,7 +1413,13 @@ public final class InstanceApi {
             } else {
                 map = map2;
             }
-            map.put(key, v);
+            if (textChatCallback && v.isnil()) {
+                map.remove(key);
+            } else if (v.isfunction()) {
+                map.put(key, v);
+            } else {
+                throw new LuaError(key + " must be a function or nil");
+            }
             return;
         }
         if (Intrinsics.areEqual(key, "Source") && inst.isA("LuaSourceContainer")) {

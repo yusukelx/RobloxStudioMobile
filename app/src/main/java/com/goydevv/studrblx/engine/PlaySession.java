@@ -3941,6 +3941,7 @@ public final class PlaySession implements TreeListener {
         float magnitude2 = this.vel.getMagnitude() * dt;
         int iCoerceIn = RangesKt.coerceIn((int) Math.ceil(magnitude2 / 0.6f), 1, 12);
         float f5 = dt / iCoerceIn;
+        float impactVelocity = this.vel.getY();
         boolean z4 = this.grounded;
         this.grounded = false;
         int i = 0;
@@ -3953,7 +3954,7 @@ public final class PlaySession implements TreeListener {
             this.grounded = false;
         }
         if (!z4 && this.grounded) {
-            playDefaultCharSound("Landing", com.goydevv.studrblx.audio.CharacterSounds.LAND, 0.65f);
+            if (impactVelocity < -5.0f) playDefaultCharSound("Landing", com.goydevv.studrblx.audio.CharacterSounds.LAND, Math.min(0.35f, Math.max(0.12f, -impactVelocity * 0.007f)));
             setState("Landed", 7);
             setState("Running", 8);
         } else if (z4 && !this.grounded && !this.climbing && this.vel.getY() <= 0.0f) {

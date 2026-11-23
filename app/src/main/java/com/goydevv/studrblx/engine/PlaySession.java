@@ -763,7 +763,7 @@ public final class PlaySession implements TreeListener {
                 return PlaySession.installBridge$lambda$14(PlaySession.this, (Varargs) obj);
             }
         }));
-        this.rt.getGlobals().set("__MobileStudioPlayer", b);
+        this.rt.setGlobal("__MobileStudioPlayer", b);
     }
 
     static final Varargs installBridge$lambda$11(PlaySession this$0, Varargs a) {

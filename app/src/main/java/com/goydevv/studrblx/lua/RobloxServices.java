@@ -33,7 +33,9 @@ import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaNumber;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaTable;
-import org.luaj.vm2.LuaThread;
+import com.goydevv.studrblx.lua.luau.LuauState;
+import com.goydevv.studrblx.lua.luau.LuauYield;
+import com.goydevv.studrblx.lua.luau.ScriptThread;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
 
@@ -987,7 +989,7 @@ public final class RobloxServices {
     }
 
     private final LuaValue productInfo(final LuaRuntime rt, final long id, String infoType) {
-        final LuaThread co = rt.currentCoroutine();
+        final ScriptThread co = rt.currentCoroutine();
         if (co == null) {
             return productInfo$placeholder(id);
         }
@@ -1000,12 +1002,15 @@ public final class RobloxServices {
                 RobloxServices.productInfo$lambda$32(id, rt, co);
             }
         }).start();
-        LuaValue luaValueArg1 = rt.getGlobals().yield(LuaValue.NONE).arg1();
-        Intrinsics.checkNotNullExpressionValue(luaValueArg1, "arg1(...)");
-        return luaValueArg1;
+        throw new LuauYield(new LuauState.Continuation() {
+            @Override
+            public Varargs resume(Varargs r) {
+                return r.arg1();
+            }
+        });
     }
 
-    static final void productInfo$lambda$32(final long $id, final LuaRuntime $rt, final LuaThread $co) {
+    static final void productInfo$lambda$32(final long $id, final LuaRuntime $rt, final ScriptThread $co) {
         String str;
         try {
             str = new String(Http.get$default(Http.INSTANCE, "https://economy.roblox.com/v2/assets/" + $id + "/details", null, 0, 6, null), Charsets.UTF_8);
@@ -1021,7 +1026,7 @@ public final class RobloxServices {
         });
     }
 
-    static final Unit productInfo$lambda$32$lambda$31(String $json, LuaRuntime $rt, LuaThread $co, long $id) {
+    static final Unit productInfo$lambda$32$lambda$31(String $json, LuaRuntime $rt, ScriptThread $co, long $id) {
         LuaValue v = null;
         if ($json != null) {
             try {
@@ -1031,34 +1036,6 @@ public final class RobloxServices {
         }
         $rt.resume($co, (v == null || !v.istable()) ? productInfo$placeholder($id) : v);
         return Unit.INSTANCE;
-    }
-
-    private final LuaValue awaitCallback(LuaRuntime rt, Instance inst, String name) {
-        LuaValue luaValue;
-        LuaValue luaValue2;
-        HashMap<String, LuaValue> map = rt.getCallbacks().get(inst);
-        if (map != null && (luaValue2 = map.get(name)) != null) {
-            return luaValue2;
-        }
-        if (rt.currentCoroutine() == null) {
-            throw new LuaError(name + " callback is not set");
-        }
-        double waited = 0.0d;
-        while (waited < 30.0d) {
-            rt.yieldFor(0.05d);
-            waited += 0.05d;
-            HashMap<String, LuaValue> map2 = rt.getCallbacks().get(inst);
-            if (map2 != null && (luaValue = map2.get(name)) != null) {
-                return luaValue;
-            }
-            if (inst.getDestroyed()) {
-                break;
-            }
-            if (waited > 5.0d && waited < 5.06d) {
-                OutputLog.INSTANCE.warn("Waiting for " + inst.fullName() + "." + name + " to be set…");
-            }
-        }
-        throw new LuaError(name + " callback is not set");
     }
 
     private final LuaValue tweenValue(final LuaRuntime rt, final Tween tw) {
@@ -1422,7 +1399,7 @@ public final class RobloxServices {
         if (!Intrinsics.areEqual(svc.get("HttpEnabled"), (Object) true)) {
             throw new LuaError("Http requests are not enabled. Enable via game settings (set HttpService.HttpEnabled = true)");
         }
-        final LuaThread co = rt.currentCoroutine();
+        final ScriptThread co = rt.currentCoroutine();
         if (co == null) {
             throw new LuaError("HTTP requests must be made from a yieldable thread");
         }
@@ -1468,19 +1445,21 @@ public final class RobloxServices {
                 RobloxServices.http$lambda$58(url, method, url2, rt, who, headers, name, co);
             }
         }).start();
-        Varargs r = rt.getGlobals().yield(LuaValue.NONE);
-        if (!r.arg1().toboolean()) {
-            throw new LuaError(r.arg(2).tojstring());
-        }
-        LuaValue luaValueArg = r.arg(2);
-        Intrinsics.checkNotNullExpressionValue(luaValueArg, "arg(...)");
-        return luaValueArg;
+        throw new LuauYield(new LuauState.Continuation() {
+            @Override
+            public Varargs resume(Varargs r) {
+                if (!r.arg1().toboolean()) {
+                    throw new LuaError(r.arg(2).tojstring());
+                }
+                return r.arg(2);
+            }
+        });
     }
 
     /* JADX WARN: Code duplicated, block: B:101:0x020a  */
     /* JADX WARN: Code duplicated, block: B:87:0x01bd  */
     /* JADX WARN: Multi-variable type inference failed */
-    static final void http$lambda$58(String str, String str2, String str3, final LuaRuntime luaRuntime, String str4, HashMap map, final String str5, final LuaThread luaThread) {
+    static final void http$lambda$58(String str, String str2, String str3, final LuaRuntime luaRuntime, String str4, HashMap map, final String str5, final ScriptThread luaThread) {
         String message;
         String string;
         String lowerCase;
@@ -1639,7 +1618,7 @@ public final class RobloxServices {
     }
 
     /* JADX WARN: Multi-variable type inference failed */
-    static final Unit http$lambda$58$lambda$57(Ref.ObjectRef $err, String $name, Ref.IntRef $code, Ref.ObjectRef $text, LuaRuntime $rt, LuaThread $co) {
+    static final Unit http$lambda$58$lambda$57(Ref.ObjectRef $err, String $name, Ref.IntRef $code, Ref.ObjectRef $text, LuaRuntime $rt, ScriptThread $co) {
         Varargs result;
         if ($err.element != null) {
             result = LuaValue.varargsOf(LuaValue.FALSE, LuaValue.valueOf("HttpError: " + $err.element));

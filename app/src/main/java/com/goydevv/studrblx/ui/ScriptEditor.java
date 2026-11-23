@@ -29,7 +29,7 @@ import androidx.core.view.GravityCompat;
 import com.goydevv.studrblx.core.Settings;
 import com.goydevv.studrblx.core.Studio;
 import com.goydevv.studrblx.core.Theme;
-import com.goydevv.studrblx.lua.LuauTranspiler;
+import com.goydevv.studrblx.lua.luau.LuauState;
 import com.goydevv.studrblx.model.Instance;
 import java.util.Iterator;
 import java.util.List;
@@ -55,16 +55,12 @@ import kotlin.text.MatchResult;
 import kotlin.text.Regex;
 import kotlin.text.StringsKt;
 import kotlin.text.Typography;
-import org.luaj.vm2.Globals;
-import org.luaj.vm2.LuaError;
-import org.luaj.vm2.lib.jse.JsePlatform;
 
 /* JADX INFO: compiled from: ScriptEditor.kt */
 /* JADX INFO: loaded from: classes5.dex */
 public final class ScriptEditor extends LinearLayout {
     private static final Set<String> builtins;
     private static final Map<Character, Character> pairs;
-    private static final Lazy<Globals> syntaxCheck$delegate;
     private int autoClosedAt;
     private final Runnable commitRunnable;
     private final Runnable completeRunnable;
@@ -300,23 +296,11 @@ String str;
         private Companion() {
         }
 
-        /* JADX INFO: Access modifiers changed from: private */
-        public final Globals getSyntaxCheck() {
-            Object value = ScriptEditor.syntaxCheck$delegate.getValue();
-            Intrinsics.checkNotNullExpressionValue(value, "getValue(...)");
-            return (Globals) value;
-        }
     }
 
     static {
         Character chValueOf = Character.valueOf(Typography.quote);
         builtins = SetsKt.setOf(new String[]{"game", "workspace", "script", "plugin", "Instance", "Vector3", "Vector2", "CFrame", "Color3", "BrickColor", "UDim", "UDim2", "Enum", "TweenInfo", "Ray", "task", "wait", "print", "warn", "error", "pairs", "ipairs", "math", "string", "table", "require", "typeof", "type", "tostring", "tonumber", "pcall", "xpcall", "spawn", "delay", "tick", "time", "os", "coroutine", "setmetatable", "getmetatable", "rawget", "rawset", "select", "next", "unpack", "assert", "shared", "_G", "NumberRange", "NumberSequence", "ColorSequence", "Random", "RaycastParams", "OverlapParams", "utf8", "bit32", "debug", "buffer", "DateTime"});
-        syntaxCheck$delegate = LazyKt.lazy(new Function0() { // from class: com.goydevv.studrblx.ui.ScriptEditor$$ExternalSyntheticLambda0
-            @Override // kotlin.jvm.functions.Function0
-            public final Object invoke() {
-                return JsePlatform.standardGlobals();
-            }
-        });
         pairs = MapsKt.mapOf(TuplesKt.to('(', ')'), TuplesKt.to('[', ']'), TuplesKt.to('{', '}'), TuplesKt.to(chValueOf, chValueOf), TuplesKt.to('\'', '\''));
     }
 
@@ -1095,32 +1079,27 @@ String str;
     }
 
     private final void checkSyntax() {
-        List<String> groupValues;
-        String str;
-        Integer intOrNull;
         commit();
-        try {
-            INSTANCE.getSyntaxCheck().load(LuauTranspiler.transpile$default(LuauTranspiler.INSTANCE, this.editor.getText().toString(), false, 2, null), "=" + this.script.getName());
-            this.status.setText("No syntax errors");
-            this.status.setTextColor(-13726889);
-        } catch (LuaError e) {
-            TextView textView = this.status;
-            String message = e.getMessage();
-            if (message == null) {
-                message = "Syntax error";
+        List<LuauState.SyntaxError> errors = LuauState.parseErrors(this.editor.getText().toString());
+        if (errors.isEmpty()) {
+            String compileError = LuauState.compileError(this.editor.getText().toString());
+            if (compileError == null) {
+                this.status.setText("No syntax errors");
+                this.status.setTextColor(-13726889);
+                return;
             }
-            textView.setText(message);
+            this.status.setText(this.script.getName() + compileError);
             this.status.setTextColor(Ui.ERROR);
-            Regex regex = new Regex(":(\\d+):");
-            String message2 = e.getMessage();
-            if (message2 == null) {
-                message2 = "";
-            }
-            MatchResult matchResultFind$default = (regex).find(message2, 0);
-            if (matchResultFind$default != null && (groupValues = matchResultFind$default.getGroupValues()) != null && (str = groupValues.get(1)) != null && (intOrNull = StringsKt.toIntOrNull(str)) != null) {
-                goToLine(intOrNull.intValue());
-            }
+            return;
         }
+        LuauState.SyntaxError first = errors.get(0);
+        String text = this.script.getName() + ":" + first.line + ": " + first.message;
+        if (errors.size() > 1) {
+            text = text + " (+" + (errors.size() - 1) + " more)";
+        }
+        this.status.setText(text);
+        this.status.setTextColor(Ui.ERROR);
+        goToLine(first.line);
     }
 
     private final void goToLine(int line) {

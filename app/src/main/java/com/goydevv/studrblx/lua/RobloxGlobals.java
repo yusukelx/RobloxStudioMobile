@@ -21,18 +21,15 @@ import kotlin.text.Charsets;
 import kotlin.text.StringsKt;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaBoolean;
-import org.luaj.vm2.LuaClosure;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaNumber;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaTable;
-import org.luaj.vm2.LuaThread;
+import com.goydevv.studrblx.lua.luau.ScriptThread;
 import org.luaj.vm2.LuaUserdata;
 import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.UpValue;
-import org.luaj.vm2.Upvaldesc;
 import org.luaj.vm2.Varargs;
 
 /* JADX INFO: compiled from: RobloxGlobals.kt */
@@ -206,18 +203,6 @@ public final class RobloxGlobals {
                 }
             }));
         }
-        g.set("print", LuaTypesKt.fnv(new Function1() { // from class: com.goydevv.studrblx.lua.RobloxGlobals$$ExternalSyntheticLambda35
-            @Override // kotlin.jvm.functions.Function1
-            public final Object invoke(Object obj) {
-                return RobloxGlobals.install$lambda$6(g, (Varargs) obj);
-            }
-        }));
-        g.set("warn", LuaTypesKt.fnv(new Function1() { // from class: com.goydevv.studrblx.lua.RobloxGlobals$$ExternalSyntheticLambda46
-            @Override // kotlin.jvm.functions.Function1
-            public final Object invoke(Object obj) {
-                return RobloxGlobals.install$lambda$7(g, (Varargs) obj);
-            }
-        }));
         g.set("wait", LuaTypesKt.fnv(new Function1() { // from class: com.goydevv.studrblx.lua.RobloxGlobals$$ExternalSyntheticLambda49
             @Override // kotlin.jvm.functions.Function1
             public final Object invoke(Object obj) {
@@ -255,53 +240,14 @@ public final class RobloxGlobals {
                 return RobloxGlobals.install$lambda$13(start, (Varargs) obj);
             }
         }));
-        g.set("typeof", LuaTypesKt.fn1(new Function1() { // from class: com.goydevv.studrblx.lua.RobloxGlobals$$ExternalSyntheticLambda4
-            @Override // kotlin.jvm.functions.Function1
-            public final Object invoke(Object obj) {
-                return RobloxGlobals.install$lambda$14((LuaValue) obj);
-            }
-        }));
         g.set("game", rt.wrap(rt.getDm()));
         g.set("Game", rt.wrap(rt.getDm()));
         g.set("workspace", rt.wrap(rt.getDm().getWorkspace()));
         g.set("Workspace", rt.wrap(rt.getDm().getWorkspace()));
-        g.set("shared", rt.getSharedTable());
-        g.set("__iter", LuaTypesKt.fnv(new Function1() { // from class: com.goydevv.studrblx.lua.RobloxGlobals$$ExternalSyntheticLambda5
-            @Override // kotlin.jvm.functions.Function1
-            public final Object invoke(Object obj) {
-                return RobloxGlobals.install$lambda$15(g, (Varargs) obj);
-            }
-        }));
-        g.set("unpack", g.get("table").get("unpack"));
-        g.set("ypcall", g.get("pcall"));
         g.set("require", LuaTypesKt.fn1(new Function1() { // from class: com.goydevv.studrblx.lua.RobloxGlobals$$ExternalSyntheticLambda6
             @Override // kotlin.jvm.functions.Function1
             public final Object invoke(Object obj) {
                 return RobloxGlobals.install$lambda$16(rt, (LuaValue) obj);
-            }
-        }));
-        g.set("getfenv", LuaTypesKt.fnv(new Function1() { // from class: com.goydevv.studrblx.lua.RobloxGlobals$$ExternalSyntheticLambda7
-            @Override // kotlin.jvm.functions.Function1
-            public final Object invoke(Object obj) {
-                return RobloxGlobals.install$lambda$19(rt, g, (Varargs) obj);
-            }
-        }));
-        g.set("setfenv", LuaTypesKt.fnv(new Function1() { // from class: com.goydevv.studrblx.lua.RobloxGlobals$$ExternalSyntheticLambda8
-            @Override // kotlin.jvm.functions.Function1
-            public final Object invoke(Object obj) {
-                return RobloxGlobals.install$lambda$20(rt, (Varargs) obj);
-            }
-        }));
-        g.set("newproxy", LuaTypesKt.fnv(new Function1() { // from class: com.goydevv.studrblx.lua.RobloxGlobals$$ExternalSyntheticLambda9
-            @Override // kotlin.jvm.functions.Function1
-            public final Object invoke(Object obj) {
-                return RobloxGlobals.install$lambda$21((Varargs) obj);
-            }
-        }));
-        g.set("loadstring", LuaTypesKt.fnv(new Function1() { // from class: com.goydevv.studrblx.lua.RobloxGlobals$$ExternalSyntheticLambda10
-            @Override // kotlin.jvm.functions.Function1
-            public final Object invoke(Object obj) {
-                return RobloxGlobals.install$lambda$22(g, rt, (Varargs) obj);
             }
         }));
         final LuaTable settingsRoot = StudioSettings.INSTANCE.create(rt);
@@ -337,12 +283,6 @@ public final class RobloxGlobals {
             @Override // kotlin.jvm.functions.Function1
             public final Object invoke(Object obj) {
                 return RobloxGlobals.install$lambda$28((Varargs) obj);
-            }
-        }));
-        g.set("gcinfo", LuaTypesKt.fnv(new Function1() { // from class: com.goydevv.studrblx.lua.RobloxGlobals$$ExternalSyntheticLambda16
-            @Override // kotlin.jvm.functions.Function1
-            public final Object invoke(Object obj) {
-                return RobloxGlobals.install$lambda$29((Varargs) obj);
             }
         }));
         LuaTable task = new LuaTable();
@@ -1267,28 +1207,6 @@ public final class RobloxGlobals {
         g.set("DateTime", dt);
     }
 
-    private static final String install$joinArgs(Globals g, Varargs a) {
-        StringBuilder sb = new StringBuilder();
-        LuaValue tostring = g.get("tostring");
-        int i = 1;
-        int iNarg = a.narg();
-        if (1 <= iNarg) {
-            while (true) {
-                if (i > 1) {
-                    sb.append(' ');
-                }
-                sb.append(tostring.call(a.arg(i)).tojstring());
-                if (i == iNarg) {
-                    break;
-                }
-                i++;
-            }
-        }
-        String string = sb.toString();
-        Intrinsics.checkNotNullExpressionValue(string, "toString(...)");
-        return string;
-    }
-
     static final Varargs install$lambda$5$lambda$2(Varargs a) {
         Intrinsics.checkNotNullParameter(a, "a");
         LuaInteger luaIntegerValueOf = LuaValue.valueOf(Integer.numberOfLeadingZeros((int) a.arg(1).checklong()));
@@ -1310,22 +1228,6 @@ public final class RobloxGlobals {
         return luaNumberValueOf;
     }
 
-    static final Varargs install$lambda$6(Globals $g, Varargs a) {
-        Intrinsics.checkNotNullParameter(a, "a");
-        OutputLog.INSTANCE.print(install$joinArgs($g, a));
-        LuaValue NONE = LuaValue.NONE;
-        Intrinsics.checkNotNullExpressionValue(NONE, "NONE");
-        return NONE;
-    }
-
-    static final Varargs install$lambda$7(Globals $g, Varargs a) {
-        Intrinsics.checkNotNullParameter(a, "a");
-        OutputLog.INSTANCE.warn(install$joinArgs($g, a));
-        LuaValue NONE = LuaValue.NONE;
-        Intrinsics.checkNotNullExpressionValue(NONE, "NONE");
-        return NONE;
-    }
-
     static final Varargs install$lambda$8(LuaRuntime $rt, Varargs a) {
         Intrinsics.checkNotNullParameter(a, "a");
         return $rt.yieldFor(RangesKt.coerceAtLeast(a.arg(1).optdouble(0.03d), 0.029d));
@@ -1335,7 +1237,7 @@ public final class RobloxGlobals {
         Intrinsics.checkNotNullParameter(a, "a");
         LuaFunction luaFunctionCheckfunction = a.arg(2).checkfunction();
         Intrinsics.checkNotNullExpressionValue(luaFunctionCheckfunction, "checkfunction(...)");
-        LuaThread co = $rt.newThread(luaFunctionCheckfunction);
+        ScriptThread co = $rt.newThread(luaFunctionCheckfunction);
         $rt.delay(a.arg(1).optdouble(0.0d), co);
         LuaValue NONE = LuaValue.NONE;
         Intrinsics.checkNotNullExpressionValue(NONE, "NONE");
@@ -1346,7 +1248,7 @@ public final class RobloxGlobals {
         Intrinsics.checkNotNullParameter(a, "a");
         LuaFunction luaFunctionCheckfunction = a.arg(1).checkfunction();
         Intrinsics.checkNotNullExpressionValue(luaFunctionCheckfunction, "checkfunction(...)");
-        LuaThread co = $rt.newThread(luaFunctionCheckfunction);
+        ScriptThread co = $rt.newThread(luaFunctionCheckfunction);
         $rt.delay(0.0d, co);
         LuaValue NONE = LuaValue.NONE;
         Intrinsics.checkNotNullExpressionValue(NONE, "NONE");
@@ -1374,13 +1276,6 @@ public final class RobloxGlobals {
         return luaNumberValueOf;
     }
 
-    static final LuaValue install$lambda$14(LuaValue v) {
-        Intrinsics.checkNotNullParameter(v, "v");
-        LuaString luaStringValueOf = LuaValue.valueOf(LuaTypes.INSTANCE.typeOf(v));
-        Intrinsics.checkNotNullExpressionValue(luaStringValueOf, "valueOf(...)");
-        return luaStringValueOf;
-    }
-
     /* JADX WARN: Code restructure failed: missing block: B:27:0x006f, code lost:
     
         if (((r1 == null || (r1 = r1.get(org.luaj.vm2.LuaValue.CALL)) == null || !r1.isfunction()) ? false : true) != false) goto L28;
@@ -1389,197 +1284,33 @@ public final class RobloxGlobals {
         Code decompiled incorrectly, please refer to instructions dump.
         To view partially-correct add '--show-bad-code' argument
     */
-    static final org.luaj.vm2.Varargs install$lambda$15(org.luaj.vm2.Globals r7, org.luaj.vm2.Varargs r8) {
-        Intrinsics.checkNotNullParameter(r8, "a");
-        LuaValue v = r8.arg1();
-        if (v.isfunction()) {
-            return r8;
-        }
-        if (v.istable()) {
-            LuaValue mt = v.getmetatable();
-            LuaValue iter = mt != null ? mt.get("__iter") : null;
-            if (iter != null && iter.isfunction()) {
-                return iter.invoke(v);
-            }
-            return LuaValue.varargsOf(new LuaValue[]{r7.get("next"), v, LuaValue.NIL});
-        }
-        if (v.isuserdata()) {
-            LuaValue mt = v.getmetatable();
-            LuaValue call = mt != null ? mt.get(LuaValue.CALL) : null;
-            if (call != null && call.isfunction()) {
-                return r8;
-            }
-        }
-        throw new LuaError("attempt to iterate over a " + LuaTypes.INSTANCE.typeOf(v) + " value");
-    }
-
-    private static final UpValue install$envSlot(LuaValue f) {
-        Upvaldesc[] ups;
-        LuaClosure c = f instanceof LuaClosure ? (LuaClosure) f : null;
-        if (c == null || (ups = c.p.upvalues) == null) {
-            return null;
-        }
-        int length = ups.length;
-        for (int i = 0; i < length; i++) {
-            LuaString luaString = ups[i].name;
-            if (Intrinsics.areEqual(luaString != null ? luaString.tojstring() : null, "_ENV")) {
-                UpValue[] upValues = c.upValues;
-                Intrinsics.checkNotNullExpressionValue(upValues, "upValues");
-                return (UpValue) ArraysKt.getOrNull(upValues, i);
-            }
-        }
-        return null;
-    }
-
-    private static final LuaValue install$funcAt(LuaRuntime $rt, int level) {
-        try {
-            LuaValue luaValue = $rt.getDebugGetinfo().call(LuaValue.valueOf(level), LuaValue.valueOf("f")).get("func");
-            Intrinsics.checkNotNull(luaValue);
-            return luaValue;
-        } catch (Exception e) {
-            LuaValue luaValue2 = LuaValue.NIL;
-            Intrinsics.checkNotNull(luaValue2);
-            return luaValue2;
-        }
-    }
-
     static final LuaValue install$lambda$16(LuaRuntime $rt, LuaValue m) {
-        LuaValue luaValue;
         Intrinsics.checkNotNullParameter(m, "m");
         Object obj = m.isuserdata() ? m.touserdata() : null;
-        if (!(obj instanceof Instance)) {
-            obj = null;
-        }
-        Instance inst = (Instance) obj;
+        Instance inst = obj instanceof Instance ? (Instance) obj : null;
         if (inst == null) {
             if (m.isnumber()) {
                 throw new LuaError("require(assetId) is not supported offline");
             }
             if (m.isstring()) {
-                UpValue upValueInstall$envSlot = install$envSlot(install$funcAt($rt, 1));
-                LuaValue value = upValueInstall$envSlot != null ? upValueInstall$envSlot.getValue() : null;
-                LuaTable luaTable = value instanceof LuaTable ? (LuaTable) value : null;
-                if (luaTable != null && (luaValue = luaTable.get("script")) != null) {
-                    Object obj2 = luaValue.isuserdata() ? luaValue.touserdata() : null;
-                    Instance caller = (Instance) (obj2 instanceof Instance ? obj2 : null);
-                    if (caller != null) {
-                        RobloxGlobals robloxGlobals = INSTANCE;
-                        String str = m.tojstring();
-                        Intrinsics.checkNotNullExpressionValue(str, "tojstring(...)");
-                        inst = robloxGlobals.resolveRequirePath(caller, str);
-                    }
+                LuaValue scriptValue = $rt.getLuau().callerEnvGet("script");
+                Object obj2 = scriptValue.isuserdata() ? scriptValue.touserdata() : null;
+                Instance caller = obj2 instanceof Instance ? (Instance) obj2 : null;
+                if (caller == null) {
+                    throw new LuaError("require(\"" + m.tojstring() + "\") needs to be called from a script");
                 }
-                throw new LuaError("require(\"" + m.tojstring() + "\") needs to be called from a script");
-            }
-            throw new LuaError("Attempted to call require with invalid argument(s).");
-        }
-        try { return $rt.require(inst); } catch (Throwable _ktEx) { throw com.goydevv.studrblx.util.KtCompat.sneakyThrow(_ktEx); }
-    }
-
-    static final Varargs install$lambda$19(LuaRuntime $rt, Globals $g, Varargs a) {
-        LuaValue f;
-        Object value;
-        LuaValue value2;
-        Intrinsics.checkNotNullParameter(a, "a");
-        LuaValue x = a.arg1();
-        if (x.isfunction()) {
-            f = x;
-        } else if (x.isnil()) {
-            f = install$funcAt($rt, 1);
-        } else {
-            if (!x.isnumber()) {
-                throw new LuaError("bad argument #1 to 'getfenv' (number expected)");
-            }
-            if (x.toint() == 0) {
-                LuaTable luaTableLoadingModuleEnv = $rt.loadingModuleEnv();
-                if (luaTableLoadingModuleEnv != null) {
-                    return luaTableLoadingModuleEnv;
+                inst = INSTANCE.resolveRequirePath(caller, m.tojstring());
+                if (inst == null) {
+                    throw new LuaError("Could not resolve require path \"" + m.tojstring() + "\"");
                 }
-                Object bottom = null;
-                for (int lvl = 1; lvl < 251; lvl++) {
-                    LuaValue f2 = install$funcAt($rt, lvl);
-                    if (f2.isnil()) {
-                        break;
-                    }
-                    UpValue upValueInstall$envSlot = install$envSlot(f2);
-                    if (upValueInstall$envSlot != null && (value = upValueInstall$envSlot.getValue()) != null) {
-                        bottom = value;
-                    }
-                }
-                return bottom != null ? (Varargs) bottom : $g;
+            } else {
+                throw new LuaError("Attempted to call require with invalid argument(s).");
             }
-            f = install$funcAt($rt, x.toint());
         }
-        Intrinsics.checkNotNull(f);
-        UpValue upValueInstall$envSlot2 = install$envSlot(f);
-        return (upValueInstall$envSlot2 == null || (value2 = upValueInstall$envSlot2.getValue()) == null) ? $g : value2;
-    }
-
-    static final Varargs install$lambda$20(LuaRuntime $rt, Varargs a) {
-        LuaValue f;
-        Intrinsics.checkNotNullParameter(a, "a");
-        LuaValue x = a.arg1();
-        LuaTable t = a.arg(2).checktable();
-        if (x.isfunction()) {
-            f = x;
-        } else {
-            f = install$funcAt($rt, x.isnil() ? 1 : x.checkint());
-        }
-        Intrinsics.checkNotNull(f);
-        UpValue upValueInstall$envSlot = install$envSlot(f);
-        if (upValueInstall$envSlot == null) {
-            throw new LuaError("'setfenv' cannot change environment of given object");
-        }
-        upValueInstall$envSlot.setValue(t);
-        return f;
-    }
-
-    static final Varargs install$lambda$21(Varargs a) {
-        LuaValue mt;
-        Intrinsics.checkNotNullParameter(a, "a");
-        LuaValue x = a.arg1();
-        if (x.isuserdata()) {
-            mt = x.getmetatable();
-        } else {
-            mt = x.toboolean() ? new LuaTable() : null;
-        }
-        return new LuaUserdata(new Object(), mt);
-    }
-
-    static final Varargs install$lambda$22(Globals $g, LuaRuntime $rt, Varargs a) {
-        Intrinsics.checkNotNullParameter(a, "a");
-        LuaSandbox luaSandbox = LuaSandbox.INSTANCE;
-        LuaValue luaValueArg1 = a.arg1();
-        Intrinsics.checkNotNullExpressionValue(luaValueArg1, "arg1(...)");
-        if (luaSandbox.isBytecode(luaValueArg1)) {
-            Varargs varargsVarargsOf = LuaValue.varargsOf(LuaValue.NIL, LuaValue.valueOf("bytecode is not allowed"));
-            Intrinsics.checkNotNullExpressionValue(varargsVarargsOf, "varargsOf(...)");
-            return varargsVarargsOf;
-        }
-        String src = a.arg1().checkjstring();
-        String name = a.arg(2).optjstring("loadstring");
         try {
-            UpValue upValueInstall$envSlot = install$envSlot(install$funcAt($rt, 1));
-            LuaValue value = upValueInstall$envSlot != null ? upValueInstall$envSlot.getValue() : null;
-            LuaTable env = value instanceof LuaTable ? (LuaTable) value : null;
-            if (env == null) {
-                env = $g;
-            }
-            Globals globals = $rt.getGlobals();
-            LuauTranspiler luauTranspiler = LuauTranspiler.INSTANCE;
-            Intrinsics.checkNotNull(src);
-            LuaValue luaValueLoad = globals.load(LuauTranspiler.transpile$default(luauTranspiler, src, false, 2, null), "=" + name, env);
-            Intrinsics.checkNotNull(luaValueLoad);
-            return luaValueLoad;
-        } catch (LuaError e) {
-            LuaValue luaValue = LuaValue.NIL;
-            String message = e.getMessage();
-            if (message == null) {
-                message = "syntax error";
-            }
-            Varargs varargsVarargsOf2 = LuaValue.varargsOf(luaValue, LuaValue.valueOf($rt.cleanError(message)));
-            Intrinsics.checkNotNull(varargsVarargsOf2);
-            return varargsVarargsOf2;
+            return $rt.require(inst);
+        } catch (Throwable _ktEx) {
+            throw com.goydevv.studrblx.util.KtCompat.sneakyThrow(_ktEx);
         }
     }
 
@@ -1608,27 +1339,18 @@ public final class RobloxGlobals {
         return NONE;
     }
 
-    static final Varargs install$lambda$29(Varargs it) {
-        Intrinsics.checkNotNullParameter(it, "it");
-        LuaNumber luaNumberValueOf = LuaValue.valueOf((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1024.0d);
-        Intrinsics.checkNotNullExpressionValue(luaNumberValueOf, "valueOf(...)");
-        return luaNumberValueOf;
-    }
-
     static final Varargs install$lambda$31(LuaRuntime $rt, Varargs a) {
         Intrinsics.checkNotNullParameter(a, "a");
-        Varargs varargsVarargsOf = LuaValue.varargsOf($rt.yieldFor(a.arg(1).optdouble(0.0d)).arg1(), LuaValue.NONE);
-        Intrinsics.checkNotNullExpressionValue(varargsVarargsOf, "let(...)");
-        return varargsVarargsOf;
+        return $rt.yieldForElapsed(a.arg(1).optdouble(0.0d));
     }
 
     static final Varargs install$lambda$32(LuaRuntime $rt, Varargs a) {
-        LuaThread co;
+        ScriptThread co;
         Intrinsics.checkNotNullParameter(a, "a");
         LuaValue f = a.arg(1);
         if (f.isthread()) {
-            Intrinsics.checkNotNull(f, "null cannot be cast to non-null type org.luaj.vm2.LuaThread");
-            co = (LuaThread) f;
+            Intrinsics.checkNotNull(f, "null cannot be cast to non-null type ScriptThread");
+            co = (ScriptThread) f;
         } else {
             LuaFunction luaFunctionCheckfunction = f.checkfunction();
             Intrinsics.checkNotNullExpressionValue(luaFunctionCheckfunction, "checkfunction(...)");
@@ -1641,12 +1363,12 @@ public final class RobloxGlobals {
     }
 
     static final Varargs install$lambda$33(LuaRuntime $rt, Varargs a) {
-        LuaThread co;
+        ScriptThread co;
         Intrinsics.checkNotNullParameter(a, "a");
         LuaValue f = a.arg(1);
         if (f.isthread()) {
-            Intrinsics.checkNotNull(f, "null cannot be cast to non-null type org.luaj.vm2.LuaThread");
-            co = (LuaThread) f;
+            Intrinsics.checkNotNull(f, "null cannot be cast to non-null type ScriptThread");
+            co = (ScriptThread) f;
         } else {
             LuaFunction luaFunctionCheckfunction = f.checkfunction();
             Intrinsics.checkNotNullExpressionValue(luaFunctionCheckfunction, "checkfunction(...)");
@@ -1659,12 +1381,12 @@ public final class RobloxGlobals {
     }
 
     static final Varargs install$lambda$35(final LuaRuntime $rt, Varargs a) {
-        final LuaThread co;
+        final ScriptThread co;
         Intrinsics.checkNotNullParameter(a, "a");
         LuaValue f = a.arg(2);
         if (f.isthread()) {
-            Intrinsics.checkNotNull(f, "null cannot be cast to non-null type org.luaj.vm2.LuaThread");
-            co = (LuaThread) f;
+            Intrinsics.checkNotNull(f, "null cannot be cast to non-null type ScriptThread");
+            co = (ScriptThread) f;
         } else {
             LuaFunction luaFunctionCheckfunction = f.checkfunction();
             Intrinsics.checkNotNullExpressionValue(luaFunctionCheckfunction, "checkfunction(...)");
@@ -1680,7 +1402,7 @@ public final class RobloxGlobals {
         return co;
     }
 
-    static final Unit install$lambda$35$lambda$34(LuaRuntime $rt, LuaThread $co, Varargs $args) {
+    static final Unit install$lambda$35$lambda$34(LuaRuntime $rt, ScriptThread $co, Varargs $args) {
         Intrinsics.checkNotNull($args);
         $rt.resume($co, $args);
         return Unit.INSTANCE;
@@ -1689,7 +1411,7 @@ public final class RobloxGlobals {
     static final Varargs install$lambda$37(LuaRuntime $rt, Varargs a) {
         Intrinsics.checkNotNullParameter(a, "a");
         LuaValue luaValueArg = a.arg(1);
-        LuaThread luaThread = luaValueArg instanceof LuaThread ? (LuaThread) luaValueArg : null;
+        ScriptThread luaThread = luaValueArg instanceof ScriptThread ? (ScriptThread) luaValueArg : null;
         if (luaThread != null) {
             $rt.cancel(luaThread);
         }

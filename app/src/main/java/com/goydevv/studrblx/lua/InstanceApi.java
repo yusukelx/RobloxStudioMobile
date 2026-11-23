@@ -2145,16 +2145,7 @@ public final class InstanceApi {
             }
             case "WaitForChild": {
                 String n = args.checkjstring(2);
-                Instance f = inst.findFirstChild(n, false);
-                if (f != null) return this.rt.wrap(f);
-                double timeout = args.optdouble(3, 5.0d);
-                double waited = 0.0d;
-                while (f == null && waited < timeout && !this.rt.getStopped()) {
-                    try { this.rt.yieldFor(0.05d); } catch (Exception ignored) { break; }
-                    waited += 0.05d;
-                    f = inst.findFirstChild(n, false);
-                }
-                return f != null ? this.rt.wrap(f) : LuaValue.NIL;
+                return this.rt.waitForChild(inst, n, args.isnoneornil(3) ? null : Double.valueOf(args.checkdouble(3)));
             }
             case "GetChildren": {
                 LuaTable tbl = new LuaTable();

@@ -18,7 +18,8 @@ import kotlin.jvm.functions.Function3;
 import kotlin.jvm.internal.Intrinsics;
 import org.luaj.vm2.LuaBoolean;
 import org.luaj.vm2.LuaTable;
-import org.luaj.vm2.LuaThread;
+import com.goydevv.studrblx.lua.luau.LuauYield;
+import com.goydevv.studrblx.lua.luau.ScriptThread;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
 
@@ -544,7 +545,7 @@ public final class PluginApi {
 
     static final Varargs menu$lambda$26(final LuaRuntime $rt, ArrayList $items, final Studio $studio, final String $title, Varargs varargs) {
         Intrinsics.checkNotNullParameter(varargs, "<unused var>");
-        final LuaThread co = $rt.currentCoroutine();
+        final ScriptThread co = $rt.currentCoroutine();
         if (co == null) {
             LuaValue NIL = LuaValue.NIL;
             Intrinsics.checkNotNullExpressionValue(NIL, "NIL");
@@ -579,12 +580,10 @@ public final class PluginApi {
                 PluginApi.menu$lambda$26$lambda$25($studio, $title, labels, $rt, co, acts);
             }
         });
-        Varargs varargsYield = $rt.getGlobals().yield(LuaValue.NONE);
-        Intrinsics.checkNotNullExpressionValue(varargsYield, "yield(...)");
-        return varargsYield;
+        throw new LuauYield();
     }
 
-    static final void menu$lambda$26$lambda$25(final Studio $studio, String $title, List $labels, final LuaRuntime $rt, final LuaThread $co, final List $acts) {
+    static final void menu$lambda$26$lambda$25(final Studio $studio, String $title, List $labels, final LuaRuntime $rt, final ScriptThread $co, final List $acts) {
         Function3<? super String, ? super List<String>, ? super Function1<? super Integer, Unit>, Unit> pluginMenuHandler = $studio.getPluginMenuHandler();
         if (pluginMenuHandler == null) {
             synchronized ($studio.getLock()) {
@@ -607,7 +606,7 @@ public final class PluginApi {
     /* JADX WARN: Code duplicated, block: B:12:0x001e A[Catch: all -> 0x0040, TryCatch #0 {, blocks: (B:6:0x0009, B:11:0x0017, B:13:0x0020, B:15:0x0026, B:16:0x0030, B:12:0x001e), top: B:23:0x0009 }] */
     /* JADX WARN: Code duplicated, block: B:15:0x0026 A[Catch: all -> 0x0040, TryCatch #0 {, blocks: (B:6:0x0009, B:11:0x0017, B:13:0x0020, B:15:0x0026, B:16:0x0030, B:12:0x001e), top: B:23:0x0009 }] */
     /* JADX WARN: Code duplicated, block: B:9:0x0014  */
-    static final Unit menu$lambda$26$lambda$25$lambda$24(Studio $studio, List $acts, LuaRuntime $rt, LuaThread $co, int idx) {
+    static final Unit menu$lambda$26$lambda$25$lambda$24(Studio $studio, List $acts, LuaRuntime $rt, ScriptThread $co, int idx) {
         boolean z;
         LuaValue luaValue;
         synchronized ($studio.getLock()) {

@@ -21,15 +21,14 @@ import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public final class SpecialProps {
     public static final Object NONE = new Object();
     private static final ConcurrentHashMap<Long, long[]> creators = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Long, Thread> fetching = new ConcurrentHashMap<>();
-    private static final Pattern CREATOR = Pattern.compile("\"creator\"\\s*:\\s*\\{([^}]*)\\}");
-    private static final Pattern ID = Pattern.compile("\"id\"\\s*:\\s*(\\d+)");
-    private static final Pattern TYPE = Pattern.compile("\"type\"\\s*:\\s*\"(\\w+)\"");
-    private static final Pattern TAG = Pattern.compile("<[^>]*>");
+        private static final Pattern TAG = Pattern.compile("<[^>]*>");
     private static final HashMap<Instance, String> jobIds = new HashMap<>();
 
     private static final HashMap<String, java.util.HashSet<String>> KEYS = new HashMap<>();
@@ -75,16 +74,14 @@ public final class SpecialProps {
         t = new Thread(() -> {
             try {
                 byte[] b = Http.INSTANCE.get("https://games.roblox.com/v1/games?universeIds=" + universe, new HashMap<>(), 262144);
-                String s = new String(b, StandardCharsets.UTF_8);
-                Matcher m = CREATOR.matcher(s);
-                if (m.find()) {
-                    Matcher mi = ID.matcher(m.group(1));
-                    Matcher mt = TYPE.matcher(m.group(1));
-                    if (mi.find()) {
-                        long id = Long.parseLong(mi.group(1));
-                        long type = (mt.find() && "Group".equalsIgnoreCase(mt.group(1))) ? 1L : 0L;
-                        creators.put(universe, new long[]{id, type});
-                    }
+                JSONObject response = new JSONObject(new String(b, StandardCharsets.UTF_8));
+                JSONArray data = response.optJSONArray("data");
+                JSONObject game = data == null ? null : data.optJSONObject(0);
+                JSONObject creator = game == null ? null : game.optJSONObject("creator");
+                if (creator != null) {
+                    long id = creator.optLong("id", creator.optLong("creatorTargetId", 0L));
+                    String creatorType = creator.optString("type", creator.optString("creatorType", "User"));
+                    if (id > 0L) creators.put(universe, new long[]{id, "Group".equalsIgnoreCase(creatorType) ? 1L : 0L});
                 }
             } catch (Throwable ignored) {
             } finally {

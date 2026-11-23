@@ -9,6 +9,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.text.Layout;
 import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import androidx.emoji2.text.EmojiCompat;
@@ -552,10 +553,20 @@ public final class PlayHud extends FrameLayout {
                 r14 = 0;
                 if (chatLine.getFrom() != null && !chatLine.getFrom().isEmpty()) {
                     CharSequence pre = RichText.INSTANCE.parse(chatLine.getFrom());
+                    int prefixStart = spannableStringBuilder.length();
                     spannableStringBuilder.append(pre);
+                    int prefixEnd = spannableStringBuilder.length();
                     if (!chatLine.getSystem()) {
-                        spannableStringBuilder.setSpan(new ForegroundColorSpan(chatLine.getColor()), 0, spannableStringBuilder.length(), 33 | (255 << 16));
-                        spannableStringBuilder.setSpan(new StyleSpan(1), 0, spannableStringBuilder.length(), 33 | (255 << 16));
+                        spannableStringBuilder.setSpan(new ForegroundColorSpan(chatLine.getColor()), prefixStart, prefixEnd, 33);
+                        if (pre instanceof Spanned) {
+                            Spanned richPrefix = (Spanned) pre;
+                            for (ForegroundColorSpan span : richPrefix.getSpans(0, pre.length(), ForegroundColorSpan.class)) {
+                                int start = prefixStart + richPrefix.getSpanStart(span);
+                                int end = prefixStart + richPrefix.getSpanEnd(span);
+                                spannableStringBuilder.setSpan(new ForegroundColorSpan(span.getForegroundColor()), start, end, 33 | (255 << 16));
+                            }
+                        }
+                        spannableStringBuilder.setSpan(new StyleSpan(1), prefixStart, prefixEnd, 33 | (255 << 16));
                     }
                     spannableStringBuilder.append(' ');
                 }

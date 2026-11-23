@@ -1532,8 +1532,6 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
     public void onDrawFrame(GL10 gl) {
         try {
             long now = System.nanoTime();
-            if (this.lastRenderNs != 0L && now - this.lastRenderNs < 16666667L) return;
-            this.lastRenderNs = now;
             float dt = RangesKt.coerceIn((now - this.lastNs) / 1.0E9f, 0.0f, 0.1f);
             this.lastNs = now;
             this.time += dt;

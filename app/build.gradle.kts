@@ -8,7 +8,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.goydevv.studrblx"
+        applicationId = "com.robloxstudio.client"
         minSdk = 24
         targetSdk = 35
         versionCode = 2

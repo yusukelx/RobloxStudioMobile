@@ -421,7 +421,7 @@ public final class MainActivity extends AppCompatActivity implements MainActions
         if (app != null && !app.getStarted()) {
             app.setStarted(true);
             firstLaunch = true;
-            OutputLog.INSTANCE.info("Mobile Studio ready. Open a .rbxl/.rbxm file or one of your Roblox games, or start building!");
+            OutputLog.INSTANCE.info("Roblox Studio ready. Open a .rbxl/.rbxm file or one of your Roblox games, or start building!");
             Studio studio8 = this.studio;
             if (studio8 == null) {
                 Intrinsics.throwUninitializedPropertyAccessException("studio");

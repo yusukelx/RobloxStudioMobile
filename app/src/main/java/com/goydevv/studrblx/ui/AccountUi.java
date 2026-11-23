@@ -532,7 +532,7 @@ public final class AccountUi {
         }
         Accounts.INSTANCE.useGuest($act);
         Avatar.INSTANCE.refresh($act);
-        INSTANCE.toast($act, "Using Mobile Studio as a guest");
+        INSTANCE.toast($act, "Using Roblox Studio as a guest");
         return Unit.INSTANCE;
     }
 

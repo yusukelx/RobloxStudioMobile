@@ -636,7 +636,7 @@ public final class ApiExtras {
                     case "PromptProductPurchase":
                     case "PromptBundlePurchase":
                     case "PromptPremiumPurchase":
-                        warnOnce("mps-prompt", "MarketplaceService:" + name + " has no purchase dialog in MobileStudio; no purchase was made");
+                        warnOnce("mps-prompt", "MarketplaceService:" + name + " has no purchase dialog in this app; no purchase was made");
                         return LuaValue.NONE;
                     case "PlayerOwnsAsset":
                     case "UserOwnsGamePassAsync":
@@ -661,7 +661,7 @@ public final class ApiExtras {
             }
             case "InsertService": {
                 if ("LoadAsset".equals(name) || "LoadAssetVersion".equals(name)) {
-                    throw new LuaError("InsertService:" + name + "() is not supported in MobileStudio; import the asset from the Toolbox instead");
+                    throw new LuaError("InsertService:" + name + "() is not supported in this app; import the asset from the Toolbox instead");
                 }
                 return null;
             }

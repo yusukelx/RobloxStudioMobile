@@ -75,6 +75,7 @@ public final class Icons {
             studioDir = new File(ctx.getFilesDir(), "studioicons");
         }
         fetchStudioIcons(ctx.getApplicationContext(), false);
+        RobloxTextures.init(ctx.getApplicationContext());
     }
 
     public final boolean getStudioIconsInstalled() {

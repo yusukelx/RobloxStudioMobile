@@ -149,17 +149,16 @@ public final class StartScreen extends LinearLayout {
         linearLayout.setBackgroundColor(Ui.INSTANCE.getTOPBAR());
         linearLayout.setPadding(dp(10.0f), dp(6.0f), dp(8.0f), dp(6.0f));
         ImageView imageView = new ImageView(this.act);
-        imageView.setImageDrawable(Icons.general$default(Icons.INSTANCE, this.act, "Place", null, 4, null));
-        imageView.setPadding(dp(4.0f), dp(4.0f), dp(4.0f), dp(4.0f));
+        imageView.setImageResource(com.goydevv.studrblx.R.mipmap.ic_launcher);
+        imageView.setPadding(0, 0, 0, 0);
         GradientDrawable gradientDrawable = new GradientDrawable();
         gradientDrawable.setColor(Ui.INSTANCE.blend(Ui.INSTANCE.getTOPBAR(), Ui.INSTANCE.getACCENT(), 0.3f));
         gradientDrawable.setCornerRadius(dp(8.0f));
-        imageView.setBackground(gradientDrawable);
         LinearLayout.LayoutParams layoutParamsLp$default = Ui.lp$default(Ui.INSTANCE, dp(30.0f), dp(30.0f), 0.0f, 4, null);
         layoutParamsLp$default.rightMargin = dp(10.0f);
         Unit unit = Unit.INSTANCE;
         linearLayout.addView(imageView, layoutParamsLp$default);
-        linearLayout.addView(Ui.INSTANCE.text(this.act, "Mobile Studio", 16.0f, Ui.INSTANCE.getTEXT(), true));
+        linearLayout.addView(Ui.INSTANCE.text(this.act, "Roblox Studio", 16.0f, Ui.INSTANCE.getTEXT(), true));
         TextView textViewText$default = Ui.text$default(Ui.INSTANCE, this.act, "v" + ((Object) AboutDialog.INSTANCE.version(this.act).getFirst()), 11.0f, Ui.INSTANCE.getDIM(), false, 16, null);
         textViewText$default.setPadding(dp(7.0f), dp(1.0f), dp(7.0f), dp(1.0f));
         GradientDrawable gradientDrawable2 = new GradientDrawable();
@@ -189,7 +188,7 @@ public final class StartScreen extends LinearLayout {
                 return StartScreen._init_$lambda$15(StartScreen.this, (View) obj);
             }
         }, 4, null);
-        imageViewIconButton$default.setContentDescription("About Mobile Studio");
+        imageViewIconButton$default.setContentDescription("About Roblox Studio");
         linearLayout.addView(imageViewIconButton$default);
         ImageView imageViewIconButton$default2 = Ui.iconButton$default(Ui.INSTANCE, this.act, Icons.general$default(Icons.INSTANCE, this.act, "Settings", null, 4, null), 0.0f, new Function1() { // from class: com.goydevv.studrblx.ui.StartScreen$$ExternalSyntheticLambda48
             @Override // kotlin.jvm.functions.Function1
@@ -1442,7 +1441,7 @@ public final class StartScreen extends LinearLayout {
             }
         });
         if (RobloxApi.INSTANCE.isGuest(this.act)) {
-            message$default(this, col, "You're using Mobile Studio as a guest. Sign in to see " + (mine ? "the experiences you own." : "the experiences shared with you."), "Sign in with Roblox", null, new Function0() { // from class: com.goydevv.studrblx.ui.StartScreen$$ExternalSyntheticLambda6
+            message$default(this, col, "You're using Roblox Studio as a guest. Sign in to see " + (mine ? "the experiences you own." : "the experiences shared with you."), "Sign in with Roblox", null, new Function0() { // from class: com.goydevv.studrblx.ui.StartScreen$$ExternalSyntheticLambda6
                 @Override // kotlin.jvm.functions.Function0
                 public final Object invoke() {
                     return StartScreen.games$lambda$122(StartScreen.this);
@@ -1587,7 +1586,7 @@ public final class StartScreen extends LinearLayout {
             }
         });
         if (RobloxApi.INSTANCE.isGuest(this.act)) {
-            message$default(this, col, "You're using Mobile Studio as a guest. Sign in to see the group experiences you can edit.", "Sign in with Roblox", null, new Function0() { // from class: com.goydevv.studrblx.ui.StartScreen$$ExternalSyntheticLambda40
+            message$default(this, col, "You're using Roblox Studio as a guest. Sign in to see the group experiences you can edit.", "Sign in with Roblox", null, new Function0() { // from class: com.goydevv.studrblx.ui.StartScreen$$ExternalSyntheticLambda40
                 @Override // kotlin.jvm.functions.Function0
                 public final Object invoke() {
                     return StartScreen.groupGames$lambda$133(StartScreen.this);

@@ -1233,7 +1233,7 @@ public final class PlayHud extends FrameLayout {
             linearLayout2.addView(linearLayout3);
             linearLayout.addView(linearLayout2);
         }
-        TextView textViewLabel$default = label$default(this, "Playtest in Mobile Studio: only you are in this server.", 13.0f, -1711276033, false, 8, null);
+        TextView textViewLabel$default = label$default(this, "Playtest in Roblox Studio: only you are in this server.", 13.0f, -1711276033, false, 8, null);
         textViewLabel$default.setPadding(dp(4.0f), dp(12.0f), dp(4.0f), 0);
         linearLayout.addView(textViewLabel$default);
         ScrollView scrollView = new ScrollView(getContext());

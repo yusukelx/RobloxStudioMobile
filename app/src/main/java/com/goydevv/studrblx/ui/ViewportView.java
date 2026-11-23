@@ -146,7 +146,7 @@ public final class ViewportView extends FrameLayout {
             if (this$0.gui.getHasContent() || this$0.studio.isPlaying() || !this$0.studio.getPluginWidgets().isEmpty() || this$0.gui.getSelectedGui() != null || core) {
                 this$0.gui.postInvalidate();
             }
-            if (this$0.studio.isPlaying() || this$0.controls.getBusy() || now - this$0.lastControls > 500) {
+            if (this$0.controls.getBusy() || now - this$0.lastControls > (this$0.studio.isPlaying() ? 33 : 500)) {
                 this$0.lastControls = now;
                 this$0.controls.postInvalidate();
             }

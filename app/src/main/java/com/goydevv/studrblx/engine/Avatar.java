@@ -1,5 +1,6 @@
 package com.goydevv.studrblx.engine;
 
+import com.goydevv.studrblx.util.BackgroundPool;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -81,7 +82,7 @@ public final class Avatar {
     private static float[] getAccMeta(byte[] key) {
         return key != null ? accMetaMap.get(key) : null;
     }
-    private static final ExecutorService pool = Executors.newSingleThreadExecutor();
+    private static final ExecutorService pool = BackgroundPool.create(1);
     private static final CopyOnWriteArrayList<Function0<Unit>> listeners = new CopyOnWriteArrayList<>();
     private static final List<String> PARTS = CollectionsKt.listOf(new String[]{"Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"});
     private static final Map<String, String> colorKeys = MapsKt.mapOf(TuplesKt.to("Head", "head"), TuplesKt.to("Torso", "torso"), TuplesKt.to("Left Arm", "leftArm"), TuplesKt.to("Right Arm", "rightArm"), TuplesKt.to("Left Leg", "leftLeg"), TuplesKt.to("Right Leg", "rightLeg"));
@@ -864,8 +865,6 @@ public final class Avatar {
     }
 
     public final List<Instance> applyTo(Instance model, Spec spec) {
-        Instance instanceFindFirstChild$default;
-        Instance instanceFindFirstChild$default2;
         Color3 color3;
         Intrinsics.checkNotNullParameter(model, "model");
         Intrinsics.checkNotNullParameter(spec, "spec");
@@ -936,8 +935,23 @@ public final class Avatar {
             Instance.setParent$default(instanceCreate3, model, 0, 2, null);
         }
         String face = spec.getFace();
-        if (face != null && (instanceFindFirstChild$default = Instance.findFirstChild$default(model, "Head", false, 2, null)) != null && (instanceFindFirstChild$default2 = Instance.findFirstChild$default(instanceFindFirstChild$default, "face", false, 2, null)) != null) {
-            Instance.set$default(instanceFindFirstChild$default2, "Texture", face, false, 4, null);
+        Instance faceHead = Instance.findFirstChild$default(model, "Head", false, 2, null);
+        if (faceHead != null) {
+            Instance faceDecal = null;
+            boolean dynamicHead = false;
+            for (Instance ch : faceHead.getChildren()) {
+                if ("Decal".equals(ch.getClassName()) && "face".equalsIgnoreCase(ch.getName())) faceDecal = ch;
+                if ("FaceControls".equals(ch.getClassName())) dynamicHead = true;
+            }
+            if (faceDecal == null && (face != null || !dynamicHead)) {
+                faceDecal = InstanceFactory.INSTANCE.create("Decal");
+                faceDecal.setName("face");
+                faceDecal.set("Face", new EnumValue(5), false);
+                Instance.setParent$default(faceDecal, faceHead, 0, 2, null);
+            }
+            if (faceDecal != null) {
+                faceDecal.set("Texture", face != null ? face : "rbxasset://textures/face.png", false);
+            }
         }
         for (Map.Entry<String, List<Pair<String, Vector3>>> entry : r6Attachments.entrySet()) {
             String partName = entry.getKey();

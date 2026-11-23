@@ -1,5 +1,6 @@
 package com.goydevv.studrblx.render;
 
+import com.goydevv.studrblx.util.BackgroundPool;
 import com.goydevv.studrblx.core.OutputLog;
 import com.goydevv.studrblx.format.RbxDocument;
 import com.goydevv.studrblx.format.RbxFile;
@@ -27,7 +28,7 @@ public final class MeshLoader {
     private static final ConcurrentHashMap<Long, MeshData> ready = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap.KeySetView<Long, Boolean> bad = ConcurrentHashMap.newKeySet();
     private static final ConcurrentHashMap.KeySetView<Long, Boolean> pending = ConcurrentHashMap.newKeySet();
-    private static final ExecutorService pool = Executors.newSingleThreadExecutor();
+    private static final ExecutorService pool = BackgroundPool.create(2);
     private static final CopyOnWriteArrayList<Function1<Long, Unit>> listeners = new CopyOnWriteArrayList<>();
 
     private MeshLoader() {

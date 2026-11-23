@@ -1,5 +1,6 @@
 package com.goydevv.studrblx.render;
 
+import com.goydevv.studrblx.util.BackgroundPool;
 import androidx.core.view.ViewCompat;
 import com.goydevv.studrblx.core.OutputLog;
 import com.goydevv.studrblx.format.CsgMesh;
@@ -44,7 +45,7 @@ public final class UnionMeshes {
     private static final ConcurrentHashMap<String, Data> ready = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap.KeySetView<String, Boolean> bad = ConcurrentHashMap.newKeySet();
     private static final ConcurrentHashMap.KeySetView<String, Boolean> pending = ConcurrentHashMap.newKeySet();
-    private static final ExecutorService pool = Executors.newSingleThreadExecutor();
+    private static final ExecutorService pool = BackgroundPool.create(1);
     private static final Map<Object, String> inlineKeys = Collections.synchronizedMap(new WeakHashMap());
 
     private UnionMeshes() {

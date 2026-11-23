@@ -1,5 +1,6 @@
 package com.goydevv.studrblx.render;
 
+import com.goydevv.studrblx.util.BackgroundPool;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -34,7 +35,7 @@ public final class MaterialTextures {
     private static final ConcurrentHashMap<String, MatTex> ready = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap.KeySetView<String, Boolean> pending = ConcurrentHashMap.newKeySet();
     private static final ConcurrentHashMap.KeySetView<String, Boolean> failed = ConcurrentHashMap.newKeySet();
-    private static final ExecutorService pool = Executors.newSingleThreadExecutor();
+    private static final ExecutorService pool = BackgroundPool.create(1);
 
     private MaterialTextures() {
     }

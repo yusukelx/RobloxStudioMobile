@@ -1,5 +1,6 @@
 package com.goydevv.studrblx.render;
 
+import com.goydevv.studrblx.util.BackgroundPool;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -496,7 +497,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
         this.leftLimbRegions = MapsKt.mapOf(TuplesKt.to(5, new Region(308.0f, f8, f6, f9, z3, i, defaultConstructorMarker)), TuplesKt.to(3, new Region(374.0f, f8, f6, f9, z3, i, defaultConstructorMarker)), TuplesKt.to(2, new Region(440.0f, f10, f11, f12, z4, i2, defaultConstructorMarker2)), TuplesKt.to(0, new Region(506.0f, f10, f11, f12, z4, i2, defaultConstructorMarker2)), TuplesKt.to(1, new Region(308.0f, 289.0f, 64.0f, 64.0f, true)), TuplesKt.to(4, new Region(308.0f, 485.0f, 64.0f, 64.0f, true)));
         this.r15Tex = new ConcurrentHashMap<>();
         this.r15Pending = ConcurrentHashMap.newKeySet();
-        this.r15Pool = Executors.newSingleThreadExecutor();
+        this.r15Pool = BackgroundPool.create(1);
         this.partTexOverride = MapsKt.emptyMap();
         this.nextOverride = new IdentityHashMap<>();
         this.variantIndex = MapsKt.emptyMap();

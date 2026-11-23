@@ -857,14 +857,21 @@ String str;
         int line = layout.getLineForOffset(cur);
         int[] loc = new int[2];
         this.editor.getLocationOnScreen(loc);
-        int x = loc[0] + this.editor.getTotalPaddingLeft() + ((int) layout.getPrimaryHorizontal(cur));
-        int below = loc[1] + this.editor.getTotalPaddingTop() + layout.getLineBottom(line);
-        int above = ((loc[1] + this.editor.getTotalPaddingTop()) + layout.getLineTop(line)) - popupH;
+        int x = loc[0] + this.editor.getTotalPaddingLeft() - this.editor.getScrollX() + ((int) layout.getPrimaryHorizontal(cur));
+        int top = loc[1] + this.editor.getTotalPaddingTop() - this.editor.getScrollY();
+        int below = top + layout.getLineBottom(line);
+        int above = top + layout.getLineTop(line) - popupH;
         Rect frame = new Rect();
         this.editor.getWindowVisibleDisplayFrame(frame);
+        int limit = frame.bottom;
+        androidx.core.view.WindowInsetsCompat insets = androidx.core.view.ViewCompat.getRootWindowInsets(this.editor);
+        if (insets != null && insets.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime())) {
+            limit = Math.min(limit, getResources().getDisplayMetrics().heightPixels - insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime()).bottom);
+        }
         int w = popupSize().component1().intValue();
         int cx = RangesKt.coerceIn(x, frame.left, Math.max(frame.left, frame.right - w));
-        int cy = (below + popupH <= frame.bottom || above <= frame.top) ? below : above;
+        boolean useBelow = below + popupH <= limit || (above < frame.top && limit - below >= above + popupH - frame.top);
+        int cy = RangesKt.coerceIn(useBelow ? below : above, frame.top, Math.max(frame.top, limit - popupH));
         return TuplesKt.to(Integer.valueOf(cx), Integer.valueOf(cy));
     }
 
@@ -1071,6 +1078,8 @@ String str;
             synchronized (this.studio.getLock()) {
                 if (!Intrinsics.areEqual(this.script.get("Source"), text)) {
                     Instance.set$default(this.script, "Source", text, false, 4, null);
+                    Instance mirror = this.studio.editCounterpart(this.script);
+                    if (mirror != null) Instance.set$default(mirror, "Source", text, false, 4, null);
                     this.studio.markDirty();
                 }
                 Unit unit = Unit.INSTANCE;

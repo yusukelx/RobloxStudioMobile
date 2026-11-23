@@ -256,6 +256,36 @@ public final class Studio {
         return dataModel == null ? this.editModel : dataModel;
     }
 
+    public final Instance editCounterpart(Instance inst) {
+        if (this.playModel == null) return null;
+        ArrayList<Instance> chain = new ArrayList<>();
+        Instance top = inst;
+        while (top.getParent() != null) {
+            chain.add(top);
+            top = top.getParent();
+        }
+        Instance cur = top == this.playModel ? this.editModel : (top.getIsService() ? this.editModel.findService(top.getClassName()) : null);
+        if (cur == null || chain.isEmpty()) return null;
+        for (int i = chain.size() - 1; i >= 0 && cur != null; i--) {
+            Instance step = chain.get(i);
+            int ordinal = 0;
+            for (Instance sib : step.getParent().getChildren()) {
+                if (sib == step) break;
+                if (sib.getName().equals(step.getName()) && sib.getClassName().equals(step.getClassName())) ordinal++;
+            }
+            Instance next = null;
+            int seen = 0;
+            for (Instance ch : cur.getChildren()) {
+                if (ch.getName().equals(step.getName()) && ch.getClassName().equals(step.getClassName()) && seen++ == ordinal) {
+                    next = ch;
+                    break;
+                }
+            }
+            cur = next;
+        }
+        return cur;
+    }
+
     public final boolean isPlaying() {
         return this.playModel != null;
     }

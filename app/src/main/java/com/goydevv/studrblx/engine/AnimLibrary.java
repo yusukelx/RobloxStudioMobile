@@ -1,5 +1,6 @@
 package com.goydevv.studrblx.engine;
 
+import com.goydevv.studrblx.util.BackgroundPool;
 import com.goydevv.studrblx.format.RbxDocument;
 import com.goydevv.studrblx.format.RbxFile;
 import com.goydevv.studrblx.model.Instance;
@@ -21,7 +22,7 @@ public final class AnimLibrary {
     private static final ConcurrentHashMap<Long, AnimClip> clips = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap.KeySetView<Long, Boolean> failed = ConcurrentHashMap.newKeySet();
     private static final ConcurrentHashMap.KeySetView<Long, Boolean> pending = ConcurrentHashMap.newKeySet();
-    private static final ExecutorService pool = Executors.newFixedThreadPool(1);
+    private static final ExecutorService pool = BackgroundPool.create(3);
 
     private AnimLibrary() {
     }

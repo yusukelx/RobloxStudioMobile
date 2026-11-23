@@ -1,5 +1,6 @@
 package com.goydevv.studrblx.net;
 
+import com.goydevv.studrblx.util.BackgroundPool;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -31,7 +32,7 @@ public final class AssetFetcher {
     private static final ConcurrentHashMap<Long, Long> imageFailed;
     private static final ConcurrentHashMap.KeySetView<Long, Boolean> imagePending;
     public static final AssetFetcher INSTANCE = new AssetFetcher();
-    private static final ExecutorService pool = Executors.newFixedThreadPool(2);
+    private static final ExecutorService pool = BackgroundPool.create(4);
     private static final ConcurrentHashMap.KeySetView<Long, Boolean> pending = ConcurrentHashMap.newKeySet();
     private static final ConcurrentHashMap<Long, Long> failed = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Long, String> errors = new ConcurrentHashMap<>();
@@ -42,7 +43,7 @@ public final class AssetFetcher {
 
     /* JADX WARN: Type inference failed for: r1v0, types: [com.goydevv.studrblx.net.AssetFetcher$bitmaps$1] */
     static {
-        final int iMin = (int) Math.min(4194304L, Runtime.getRuntime().maxMemory() / 32);
+        final int iMin = (int) Math.min(16777216L, Runtime.getRuntime().maxMemory() / 16);
         bitmaps = new LruCache<Long, Bitmap>(iMin) { // from class: com.goydevv.studrblx.net.AssetFetcher$bitmaps$1
             @Override // android.util.LruCache
             public /* bridge */ /* synthetic */ int sizeOf(Long l, Bitmap bitmap) {

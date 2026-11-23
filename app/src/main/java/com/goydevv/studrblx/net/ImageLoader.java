@@ -1,5 +1,6 @@
 package com.goydevv.studrblx.net;
 
+import com.goydevv.studrblx.util.BackgroundPool;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -53,7 +54,7 @@ public final class ImageLoader {
 
     /* JADX WARN: Type inference failed for: r1v0, types: [com.goydevv.studrblx.net.ImageLoader$mem$1] */
     static {
-        final int iMin = (int) Math.min(6291456L, Runtime.getRuntime().maxMemory() / 32);
+        final int iMin = (int) Math.min(25165824L, Runtime.getRuntime().maxMemory() / 12);
         mem = new LruCache<String, Bitmap>(iMin) { // from class: com.goydevv.studrblx.net.ImageLoader$mem$1
             /* JADX INFO: Access modifiers changed from: protected */
             @Override // android.util.LruCache
@@ -65,7 +66,7 @@ public final class ImageLoader {
         };
         pending = ConcurrentHashMap.newKeySet();
         failed = new ConcurrentHashMap<>();
-        pool = Executors.newFixedThreadPool(2);
+        pool = BackgroundPool.create(3);
         idQueue = ConcurrentHashMap.newKeySet();
         listeners = new CopyOnWriteArrayList<>();
         idRx = CollectionsKt.listOf(new Regex[]{new Regex("rbxassetid://(\\d+)", RegexOption.IGNORE_CASE), new Regex("[?&]id=(\\d+)", RegexOption.IGNORE_CASE), new Regex("^\\s*(\\d+)\\s*$"), new Regex("rbxthumb://.*id=(\\d+)", RegexOption.IGNORE_CASE)});

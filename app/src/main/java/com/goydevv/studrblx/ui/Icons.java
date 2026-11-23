@@ -51,6 +51,9 @@ import kotlin.text.StringsKt;
 /* JADX INFO: loaded from: classes5.dex */
 public final class Icons {
     private static File dir;
+    private static File studioDir;
+    private static volatile boolean studioFetching;
+    private static final String STUDIO_ICON_BASE = "https://raw.githubusercontent.com/MaximumADHD/Roblox-Client-Tracker/roblox/studio-svg-textures/Shared/InsertableObjects/";
     public static final Icons INSTANCE = new Icons();
     private static final HashMap<String, Bitmap> cache = new HashMap<>();
     private static final CopyOnWriteArrayList<Function0<Unit>> listeners = new CopyOnWriteArrayList<>();
@@ -67,6 +70,112 @@ public final class Icons {
         Intrinsics.checkNotNullParameter(ctx, "ctx");
         if (dir == null) {
             dir = new File(ctx.getFilesDir(), "iconpack");
+        }
+        if (studioDir == null) {
+            studioDir = new File(ctx.getFilesDir(), "studioicons");
+        }
+        fetchStudioIcons(ctx.getApplicationContext(), false);
+    }
+
+    public final boolean getStudioIconsInstalled() {
+        File d = studioDir;
+        return d != null && new File(d, ".complete").isFile();
+    }
+
+    public final void fetchStudioIcons(final Context ctx, boolean force) {
+        final File d = studioDir;
+        if (d == null || studioFetching) {
+            return;
+        }
+        if (!force && new File(d, ".complete").isFile()) {
+            return;
+        }
+        studioFetching = true;
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    downloadStudioIcons(ctx, d);
+                } catch (Throwable e) {
+                    com.goydevv.studrblx.core.OutputLog.INSTANCE.warn("Studio icons: " + e.getMessage());
+                } finally {
+                    studioFetching = false;
+                }
+            }
+        }, "studio-icons");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private static void downloadStudioIcons(Context ctx, File d) throws IOException {
+        List<String> names = new ArrayList<>();
+        try (InputStream in = ctx.getAssets().open("studio_icons.txt")) {
+            for (String line : new String(ByteStreamsKt.readBytes(in), "UTF-8").split("\n")) {
+                String n = line.trim();
+                if (n.matches("[A-Za-z0-9_]+")) {
+                    names.add(n);
+                }
+            }
+        }
+        int ok = 0;
+        int failed = 0;
+        for (String theme : new String[]{"Dark", "Light"}) {
+            File out = new File(d, theme.toLowerCase(Locale.ROOT) + "/instance");
+            out.mkdirs();
+            for (String n : names) {
+                File f = new File(out, n + ".png");
+                if (f.isFile() && f.length() > 0) {
+                    ok++;
+                    continue;
+                }
+                if (fetchPng(STUDIO_ICON_BASE + theme + "/Standard/" + n + "@2x.png", f)) {
+                    ok++;
+                } else {
+                    failed++;
+                }
+            }
+        }
+        synchronized (cache) {
+            cache.clear();
+        }
+        if (failed == 0) {
+            new File(d, ".complete").createNewFile();
+        } else {
+            com.goydevv.studrblx.core.OutputLog.INSTANCE.warn("Studio icons: " + failed + " of " + (ok + failed) + " icons could not be downloaded");
+        }
+        Iterator it = listeners.iterator();
+        while (it.hasNext()) {
+            ((Function0) it.next()).invoke();
+        }
+    }
+
+    private static boolean fetchPng(String url, File dest) {
+        java.net.HttpURLConnection c = null;
+        try {
+            c = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+            c.setConnectTimeout(10000);
+            c.setReadTimeout(15000);
+            if (c.getResponseCode() != 200) {
+                return false;
+            }
+            byte[] data;
+            try (InputStream in = c.getInputStream()) {
+                data = ByteStreamsKt.readBytes(in);
+            }
+            if (data.length < 8 || (data[0] & 0xFF) != 0x89 || data[1] != 'P' || data[2] != 'N' || data[3] != 'G') {
+                return false;
+            }
+            File tmp = new File(dest.getPath() + ".part");
+            try (FileOutputStream o = new FileOutputStream(tmp)) {
+                o.write(data);
+            }
+            return tmp.renameTo(dest);
+        } catch (Exception e) {
+            return false;
+        } finally {
+            if (c != null) {
+                c.disconnect();
+            }
         }
     }
 
@@ -92,6 +201,15 @@ public final class Icons {
                 try {
                     bitmapDecodeFile = BitmapFactory.decodeFile(file2.getPath());
                 } catch (Throwable th) {
+                }
+            }
+            if (bitmapDecodeFile == null && Intrinsics.areEqual(kind, "instance") && studioDir != null) {
+                File sf = new File(studioDir, (light ? "light" : "dark") + "/instance/" + name + ".png");
+                if (sf.isFile()) {
+                    try {
+                        bitmapDecodeFile = BitmapFactory.decodeFile(sf.getPath());
+                    } catch (Throwable th) {
+                    }
                 }
             }
             cache.put(key, bitmapDecodeFile);

@@ -2208,7 +2208,7 @@ public final class InstanceApi {
                 return tbl;
             }
             case "GetPropertyChangedSignal": {
-                return new LuaUserdata(new SignalRef(inst, "prop:" + args.checkjstring(2)), this.signalMeta);
+                return new LuaUserdata(new SignalRef(inst, "Changed:" + args.checkjstring(2)), this.signalMeta);
             }
             case "GetService": case "FindService": {
                 String sn = args.checkjstring(2);
@@ -2306,8 +2306,10 @@ public final class InstanceApi {
         if (inst.isA("BasePart")) return partCall(inst, name, args);
         try {
             return RobloxServices.INSTANCE.call(this, this.rt, inst, name, args);
+        } catch (LuaError e) {
+            throw e;
         } catch (Exception e) {
-            return LuaValue.NIL;
+            throw new LuaError(name + ": " + e);
         }
     }
 

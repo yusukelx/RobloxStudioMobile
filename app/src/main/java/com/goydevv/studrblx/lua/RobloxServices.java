@@ -894,7 +894,27 @@ public final class RobloxServices {
                 if ("IsRunning".equals(name) || "IsRunMode".equals(name)) return LuaValue.valueOf(rt.getPlay() != null);
                 return LuaValue.NIL;
             case "HttpService":
-                return http(rt, svc, name, a);
+                if ("JSONEncode".equals(name)) {
+                    return LuaValue.valueOf(Json.INSTANCE.encode(a.arg(2)));
+                }
+                if ("JSONDecode".equals(name)) {
+                    return Json.INSTANCE.decode(rt, a.checkjstring(2));
+                }
+                if ("GenerateGUID".equals(name)) {
+                    String g = java.util.UUID.randomUUID().toString().toUpperCase(java.util.Locale.ROOT);
+                    return LuaValue.valueOf(a.arg(2).isnil() || a.arg(2).toboolean() ? "{" + g + "}" : g);
+                }
+                if ("UrlEncode".equals(name)) {
+                    try {
+                        return LuaValue.valueOf(java.net.URLEncoder.encode(a.checkjstring(2), "UTF-8").replace("+", "%20"));
+                    } catch (java.io.UnsupportedEncodingException e) {
+                        throw new LuaError(e.getMessage());
+                    }
+                }
+                if ("GetAsync".equals(name) || "PostAsync".equals(name) || "RequestAsync".equals(name)) {
+                    return http(rt, svc, name, a);
+                }
+                throw new LuaError(name + " is not a valid member of HttpService \"HttpService\"");
             case "DataStoreService":
                 if ("GetDataStore".equals(name) || "GetOrderedDataStore".equals(name)) {
                     return dataStore(rt, a.checkjstring(2));

@@ -820,12 +820,31 @@ public final class PlaySession implements TreeListener {
             folder.setArchivable(false);
             folder.attachRaw(tcs);
         }
+        ensureChatConfig(tcs, "ChatWindowConfiguration", new Object[]{"Enabled", true, "BackgroundColor3", new Color3(0.0980f, 0.1059f, 0.1137f), "BackgroundTransparency", 0.3f, "TextColor3", new Color3(1.0f, 1.0f, 1.0f), "TextSize", 14.0f, "TextStrokeColor3", new Color3(0.0f, 0.0f, 0.0f), "TextStrokeTransparency", 0.5f, "HeightScale", 1.0f, "WidthScale", 1.0f, "HorizontalAlignment", new EnumValue(0), "VerticalAlignment", new EnumValue(0)});
+        ensureChatConfig(tcs, "ChatInputBarConfiguration", new Object[]{"Enabled", true, "BackgroundColor3", new Color3(0.0980f, 0.1059f, 0.1137f), "BackgroundTransparency", 0.2f, "TextColor3", new Color3(1.0f, 1.0f, 1.0f), "PlaceholderColor3", new Color3(0.698f, 0.698f, 0.698f), "TextSize", 14.0f, "TextStrokeColor3", new Color3(0.0f, 0.0f, 0.0f), "TextStrokeTransparency", 0.5f, "AutocompleteEnabled", true});
+        ensureChatConfig(tcs, "BubbleChatConfiguration", new Object[]{"Enabled", true, "BackgroundColor3", new Color3(0.9804f, 0.9804f, 0.9804f), "BackgroundTransparency", 0.1f, "TextColor3", new Color3(0.2235f, 0.2314f, 0.2392f), "TextSize", 16.0f, "MaxDistance", 100.0f, "BubbleDuration", 15.0f, "BubblesSpacing", 6.0f, "VerticalStudsOffset", 0.0f});
+        ensureChatConfig(tcs, "ChannelTabsConfiguration", new Object[]{"Enabled", false, "BackgroundColor3", new Color3(0.0980f, 0.1059f, 0.1137f), "BackgroundTransparency", 0.0f, "TextColor3", new Color3(0.6863f, 0.6863f, 0.6863f), "SelectedTabTextColor3", new Color3(1.0f, 1.0f, 1.0f), "TextSize", 18.0f});
         for (String n : CollectionsKt.listOf(new String[]{"RBXGeneral", "RBXSystem"})) {
             if (Instance.findFirstChild$default(folder, n, false, 2, null) == null) {
                 Instance instanceCreate = InstanceFactory.INSTANCE.create("TextChannel");
                 instanceCreate.setName(n);
                 instanceCreate.setArchivable(false);
                 instanceCreate.attachRaw(folder);
+            }
+        }
+    }
+
+    private static void ensureChatConfig(Instance tcs, String cls, Object[] defaults) {
+        Instance cfg = Instance.findFirstChild$default(tcs, cls, false, 2, null);
+        if (cfg == null) {
+            cfg = InstanceFactory.INSTANCE.create(cls);
+            cfg.setName(cls);
+            cfg.attachRaw(tcs);
+        }
+        for (int i = 0; i + 1 < defaults.length; i += 2) {
+            String k = (String) defaults[i];
+            if (!cfg.getProps().containsKey(k)) {
+                cfg.set(k, defaults[i + 1], false);
             }
         }
     }

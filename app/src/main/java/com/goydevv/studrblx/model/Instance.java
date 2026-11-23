@@ -189,11 +189,22 @@ public class Instance {
         if (!this.propTypes.containsKey(name)) {
             this.propTypes.put(name, Integer.valueOf(PropType.INSTANCE.infer(value)));
         }
-        if (!notify || (dataModelRoot = root()) == null) {
+        if (!notify) {
+            return;
+        }
+        dataModelRoot = root();
+        if (dataModelRoot == null) {
+            if (!detachedListeners.isEmpty()) {
+                for (TreeListener l : detachedListeners) {
+                    l.propChanged(this, name);
+                }
+            }
             return;
         }
         dataModelRoot.firePropChanged(this, name);
     }
+
+    public static final java.util.concurrent.CopyOnWriteArrayList<TreeListener> detachedListeners = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     /* JADX WARN: Failed to restore switch over string. Please report as a decompilation issue */
     private final boolean affectsParentShape() {

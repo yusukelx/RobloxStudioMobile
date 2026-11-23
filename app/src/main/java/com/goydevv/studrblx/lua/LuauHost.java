@@ -23,7 +23,7 @@ public final class LuauHost {
             "shared", "_G", "_VERSION", "assert", "error", "getmetatable", "setmetatable", "ipairs", "pairs", "next",
             "pcall", "xpcall", "ypcall", "rawequal", "rawget", "rawset", "rawlen", "select", "tonumber", "tostring",
             "type", "typeof", "unpack", "collectgarbage", "newproxy", "gcinfo", "getfenv", "setfenv", "__iter",
-            "coroutine", "utf8", "buffer", "bit32", "vector"));
+            "coroutine", "utf8", "buffer", "bit32", "vector", "package"));
 
     private static final Set<String> MERGED = new HashSet<>(Arrays.asList(
             "string", "table", "math", "os", "debug"));
@@ -33,6 +33,9 @@ public final class LuauHost {
 
     public static Globals javaGlobals() {
         Globals g = new Globals();
+        LuaTable pkg = new LuaTable();
+        pkg.set("loaded", new LuaTable());
+        g.set("package", pkg);
         g.load(new JseBaseLib());
         g.load(new Bit32Lib());
         g.load(new TableLib());

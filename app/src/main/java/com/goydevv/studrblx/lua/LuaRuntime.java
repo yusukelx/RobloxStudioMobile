@@ -253,6 +253,7 @@ public final class LuaRuntime {
         RobloxGlobals.INSTANCE.install(this);
         this.luau = LuauHost.create(this);
         this.dm.getListeners().add(this.treeListener);
+        Instance.detachedListeners.add(this.treeListener);
         this.timers = new ArrayList<>();
         this.extraEnvForModules = MapsKt.emptyMap();
         this.moduleLoading = new IdentityHashMap<>();
@@ -412,6 +413,7 @@ public final class LuaRuntime {
         this.stopped = true;
         this.luau.requestStop();
         this.dm.getListeners().remove(this.treeListener);
+        Instance.detachedListeners.remove(this.treeListener);
         this.waiting.clear();
         this.deferred.clear();
         this.childWaits.clear();

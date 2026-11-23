@@ -11,6 +11,7 @@ import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import androidx.emoji2.text.EmojiCompat;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
 import android.view.KeyEvent;
@@ -684,7 +685,12 @@ public final class PlayHud extends FrameLayout {
                         this.btp.setTypeface(this.this$0.regular);
                     }
                     this.btp.setColor((((int) (fade * 255.0f)) << 24) | (b.textColor & 0xFFFFFF));
-                    StaticLayout layout = StaticLayout.Builder.obtain(b.getText(), 0, b.getText().length(), this.btp, maxW).setAlignment(Layout.Alignment.ALIGN_CENTER).setIncludePad(false).build();
+                    CharSequence bubbleText = b.getText();
+                    try {
+                        bubbleText = EmojiCompat.get().process(bubbleText);
+                    } catch (IllegalStateException ignored) {
+                    }
+                    StaticLayout layout = StaticLayout.Builder.obtain(bubbleText, 0, bubbleText.length(), this.btp, maxW).setAlignment(Layout.Alignment.ALIGN_CENTER).setIncludePad(false).build();
                     float lineW = 0.0f;
                     for (int li = 0; li < layout.getLineCount(); li++) {
                         lineW = Math.max(lineW, layout.getLineWidth(li));

@@ -189,10 +189,13 @@ public final class StudioApp extends Application {
                                 break;
                             }
                             int reason = info.getReason();
+                            if (reason == ApplicationExitInfo.REASON_LOW_MEMORY) {
+                                sp.edit().putLong(KEY_LAST_EXIT_TS, ts).apply();
+                                continue;
+                            }
                             boolean isCrash = reason == ApplicationExitInfo.REASON_CRASH
                                     || reason == ApplicationExitInfo.REASON_CRASH_NATIVE
                                     || reason == ApplicationExitInfo.REASON_ANR
-                                    || reason == ApplicationExitInfo.REASON_LOW_MEMORY
                                     || reason == ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE
                                     || reason == ApplicationExitInfo.REASON_SIGNALED;
                             if (!isCrash) {

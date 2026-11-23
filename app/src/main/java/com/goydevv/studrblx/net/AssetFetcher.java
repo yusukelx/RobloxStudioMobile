@@ -31,7 +31,7 @@ public final class AssetFetcher {
     private static final ConcurrentHashMap<Long, Long> imageFailed;
     private static final ConcurrentHashMap.KeySetView<Long, Boolean> imagePending;
     public static final AssetFetcher INSTANCE = new AssetFetcher();
-    private static final ExecutorService pool = Executors.newFixedThreadPool(3);
+    private static final ExecutorService pool = Executors.newFixedThreadPool(2);
     private static final ConcurrentHashMap.KeySetView<Long, Boolean> pending = ConcurrentHashMap.newKeySet();
     private static final ConcurrentHashMap<Long, Long> failed = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Long, String> errors = new ConcurrentHashMap<>();
@@ -42,7 +42,7 @@ public final class AssetFetcher {
 
     /* JADX WARN: Type inference failed for: r1v0, types: [com.goydevv.studrblx.net.AssetFetcher$bitmaps$1] */
     static {
-        final int iMin = (int) Math.min(50331648L, Runtime.getRuntime().maxMemory() / 8);
+        final int iMin = (int) Math.min(8388608L, Runtime.getRuntime().maxMemory() / 24);
         bitmaps = new LruCache<Long, Bitmap>(iMin) { // from class: com.goydevv.studrblx.net.AssetFetcher$bitmaps$1
             @Override // android.util.LruCache
             public /* bridge */ /* synthetic */ int sizeOf(Long l, Bitmap bitmap) {
@@ -173,6 +173,11 @@ public final class AssetFetcher {
         failed.remove(Long.valueOf(id));
         errors.remove(Long.valueOf(id));
         return bytes;
+    }
+
+    public final void trimMemory(int level) {
+        bitmaps.trimToSize(level >= 80 ? 0 : bitmaps.maxSize() / 2);
+        if (level >= 80) imageFailed.clear();
     }
 
     public final int getImageEpoch() {

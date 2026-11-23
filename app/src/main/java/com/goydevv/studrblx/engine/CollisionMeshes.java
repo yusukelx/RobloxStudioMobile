@@ -359,6 +359,12 @@ public final class CollisionMeshes {
         return collisionMeshes.forPart(instance, z);
     }
 
+    public final void trimMemory() {
+        synchronized (cache) {
+            cache.clear();
+        }
+    }
+
     public final Mesh getCached(Instance p) {
         Intrinsics.checkNotNullParameter(p, "p");
         synchronized (cache) {

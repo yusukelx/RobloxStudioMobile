@@ -1,6 +1,7 @@
 package com.goydevv.studrblx.ui;
 
 import android.text.SpannableStringBuilder;
+import androidx.emoji2.text.EmojiCompat;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;

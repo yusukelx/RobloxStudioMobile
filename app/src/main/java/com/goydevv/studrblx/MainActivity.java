@@ -308,10 +308,6 @@ public final class MainActivity extends AppCompatActivity implements MainActions
         StudioApp.logBreadcrumb("MainActivity.onCreate started");
         try {
             com.goydevv.studrblx.net.AssetFetcher.INSTANCE.init(getApplicationContext());
-            long[] warmAnims = new long[]{507766666L, 507766951L, 913402848L, 913376220L, 507765000L, 507767968L, 507765644L, 180435571L, 180435792L, 180426354L, 125750702L, 180436148L, 180436334L};
-            for (long aid : warmAnims) {
-                com.goydevv.studrblx.engine.AnimLibrary.INSTANCE.get(aid);
-            }
         } catch (Throwable ignored) {
         }
         Settings.INSTANCE.init(this);
@@ -435,15 +431,14 @@ public final class MainActivity extends AppCompatActivity implements MainActions
             Intrinsics.checkNotNullExpressionValue(applicationContext6, "getApplicationContext(...)");
             avatar.refresh(applicationContext6);
         }
-        if (savedInstanceState == null) {
-            handleIntent(getIntent());
-        }
+        boolean recovered = false;
+        Intent launchIntent = getIntent();
+        boolean externalOpen = Intrinsics.areEqual(launchIntent != null ? launchIntent.getAction() : null, "android.intent.action.VIEW");
+        if (firstLaunch && !externalOpen) recovered = restoreRecoverySnapshot();
+        if (savedInstanceState == null) handleIntent(getIntent());
         boolean noPlace = app == null || !app.getPlaceOpened();
-        if (firstLaunch || noPlace) {
-            Intent intent = getIntent();
-            if (!Intrinsics.areEqual(intent != null ? intent.getAction() : null, "android.intent.action.VIEW")) {
-                showStart();
-            }
+        if ((firstLaunch || noPlace) && !recovered) {
+            if (!externalOpen) showStart();
         }
     }
 
@@ -923,39 +918,91 @@ public final class MainActivity extends AppCompatActivity implements MainActions
         }
     }
 
+    private final void saveRecoverySnapshot() {
+        Application application = getApplication();
+        StudioApp app = application instanceof StudioApp ? (StudioApp) application : null;
+        Studio current = this.studio;
+        if (app == null || current == null || !app.getPlaceOpened()) return;
+        try {
+            byte[] bytes = current.serializePlace();
+            if (bytes == null || bytes.length == 0) return;
+            java.io.File target = new java.io.File(getFilesDir(), "studio_recovery.rbxl");
+            android.util.AtomicFile atomic = new android.util.AtomicFile(target);
+            java.io.FileOutputStream stream = atomic.startWrite();
+            try {
+                stream.write(bytes);
+                atomic.finishWrite(stream);
+                getSharedPreferences("studio_recovery", 0).edit().putString("name", current.getFileName()).commit();
+                StudioApp.logBreadcrumb("Recovery snapshot saved (" + bytes.length + " bytes)");
+            } catch (Throwable error) {
+                atomic.failWrite(stream);
+                throw error;
+            }
+        } catch (OutOfMemoryError error) {
+            ImageLoader.INSTANCE.trimMemory(80);
+            AssetFetcher.INSTANCE.trimMemory(80);
+            RobloxTextures.trimMemory(80);
+            com.goydevv.studrblx.engine.AnimLibrary.INSTANCE.trimMemory(80);
+            System.gc();
+            StudioApp.logBreadcrumb("Recovery snapshot skipped: low memory");
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private final boolean restoreRecoverySnapshot() {
+        java.io.File file = new java.io.File(getFilesDir(), "studio_recovery.rbxl");
+        if (!file.isFile() || file.length() == 0) return false;
+        try {
+            byte[] bytes = kotlin.io.FilesKt.readBytes(file);
+            RbxDocument document = RbxFile.INSTANCE.read(bytes);
+            if (!RbxFile.INSTANCE.isPlace(document)) return false;
+            DataModel model = PlaceFactory.INSTANCE.fromDocument(document);
+            String name = getSharedPreferences("studio_recovery", 0).getString("name", "RecoveredPlace.rbxl");
+            if (name == null || name.isEmpty()) name = "RecoveredPlace.rbxl";
+            Studio current = this.studio;
+            if (current == null) return false;
+            Studio.replaceEditModel$default(current, model, null, name, false, null, 16, null);
+            Application application = getApplication();
+            StudioApp app = application instanceof StudioApp ? (StudioApp) application : null;
+            if (app != null) app.setPlaceOpened(true);
+            int count = Instance.descendants$default(model, null, 1, null).size();
+            OutputLog.INSTANCE.warn("Recovered previous session (" + count + " instances)");
+            return true;
+        } catch (Throwable error) {
+            OutputLog.INSTANCE.error("Recovery failed: " + error.getMessage());
+            return false;
+        }
+    }
+
     @Override // androidx.fragment.app.FragmentActivity, android.app.Activity
     protected void onResume() {
         super.onResume();
         ViewportView viewportView = this.viewport;
-        if (viewportView == null) {
-            return;
-        }
-        viewportView.onResume();
+        if (viewportView != null) viewportView.onResume();
     }
 
     @Override // androidx.fragment.app.FragmentActivity, android.app.Activity
     protected void onPause() {
         super.onPause();
         ViewportView viewportView = this.viewport;
-        if (viewportView == null) {
-            return;
-        }
-        viewportView.onPause();
+        if (viewportView != null) viewportView.onPause();
         Iterable iterableValues = this.openEditors.values();
-        Intrinsics.checkNotNullExpressionValue(iterableValues, "<get-values>(...)");
-        Iterator it = iterableValues.iterator();
-        while (it.hasNext()) {
-            ((ScriptEditor) it.next()).commit();
-        }
+        for (Object editor : iterableValues) ((ScriptEditor) editor).commit();
+        saveRecoverySnapshot();
+        ImageLoader.INSTANCE.trimMemory(80);
+        AssetFetcher.INSTANCE.trimMemory(80);
+        RobloxTextures.trimMemory(80);
+        com.goydevv.studrblx.engine.AnimLibrary.INSTANCE.trimMemory(80);
     }
 
     @Override
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);
-        if (level < 40) return;
+        if (level < 20) return;
         ImageLoader.INSTANCE.trimMemory(level);
         AssetFetcher.INSTANCE.trimMemory(level);
         RobloxTextures.trimMemory(level);
+        if (level >= 40) com.goydevv.studrblx.engine.AnimLibrary.INSTANCE.trimMemory(level);
     }
 
     @Override
@@ -964,6 +1011,7 @@ public final class MainActivity extends AppCompatActivity implements MainActions
         ImageLoader.INSTANCE.trimMemory(80);
         AssetFetcher.INSTANCE.trimMemory(80);
         RobloxTextures.trimMemory(80);
+        com.goydevv.studrblx.engine.AnimLibrary.INSTANCE.trimMemory(80);
     }
 
     static final Unit webAsker$lambda$33(final MainActivity this$0, final String host, final String who, final Function1 answer) {

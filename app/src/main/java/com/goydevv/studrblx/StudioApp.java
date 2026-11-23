@@ -14,6 +14,7 @@ import com.goydevv.studrblx.core.OutputLog;
 import com.goydevv.studrblx.core.Settings;
 import com.goydevv.studrblx.core.Studio;
 import com.goydevv.studrblx.ui.Ui;
+import com.goydevv.studrblx.ui.RichText;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -432,6 +433,16 @@ public final class StudioApp extends Application {
                     flushSessionLog(StudioApp.this);
                 }
             }, 3L, 4L, TimeUnit.SECONDS);
+        } catch (Throwable ignored) {
+        }
+
+        try {
+            EmojiCompat.init(new BundledEmojiCompatConfig(this)).registerInitCallback(new EmojiCompat.InitCallback() {
+                @Override
+                public void onInitialized() {
+                    RichText.INSTANCE.clearCache();
+                }
+            });
         } catch (Throwable ignored) {
         }
 

@@ -1069,7 +1069,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                     if (this.qualityTimer > 1.5f && this.frames > 60) {
                         this.qualityTimer = 0.0f;
                         f = this.fps;
-                        if (f > 1.0f && f <= 24.0f) {
+                        if (f > 1.0f && f <= 40.0f) {
                             this.quality = RangesKt.coerceAtLeast(this.quality * 0.8f, 0.5f);
                         } else if (this.fps > 45.0f) {
                             this.quality = RangesKt.coerceAtMost(this.quality * 1.12f, 2.2f);
@@ -1086,7 +1086,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                     if (this.qualityTimer > 1.5f) {
                         this.qualityTimer = 0.0f;
                         f = this.fps;
-                        if (f > 1.0f && f <= 24.0f) {
+                        if (f > 1.0f && f <= 40.0f) {
                             this.quality = RangesKt.coerceAtLeast(this.quality * 0.8f, 0.5f);
                         } else if (this.fps > 45.0f) {
                             this.quality = RangesKt.coerceAtMost(this.quality * 1.12f, 2.2f);
@@ -1101,7 +1101,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                     if (this.qualityTimer > 1.5f) {
                         this.qualityTimer = 0.0f;
                         f = this.fps;
-                        if (f > 1.0f && f <= 24.0f) {
+                        if (f > 1.0f && f <= 40.0f) {
                             this.quality = RangesKt.coerceAtLeast(this.quality * 0.8f, 0.5f);
                         } else if (this.fps > 45.0f) {
                             this.quality = RangesKt.coerceAtMost(this.quality * 1.12f, 2.2f);
@@ -1118,7 +1118,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                     if (this.qualityTimer > 1.5f) {
                         this.qualityTimer = 0.0f;
                         f = this.fps;
-                        if (f > 1.0f && f <= 24.0f) {
+                        if (f > 1.0f && f <= 40.0f) {
                             this.quality = RangesKt.coerceAtLeast(this.quality * 0.8f, 0.5f);
                         } else if (this.fps > 45.0f) {
                             this.quality = RangesKt.coerceAtMost(this.quality * 1.12f, 2.2f);
@@ -1134,7 +1134,7 @@ public final class SceneRenderer implements GLSurfaceView.Renderer {
                 if (this.qualityTimer > 1.5f) {
                     this.qualityTimer = 0.0f;
                     f = this.fps;
-                    if (f > 1.0f && f <= 24.0f) {
+                    if (f > 1.0f && f <= 40.0f) {
                         this.quality = RangesKt.coerceAtLeast(this.quality * 0.8f, 0.5f);
                     } else if (this.fps > 45.0f) {
                         this.quality = RangesKt.coerceAtMost(this.quality * 1.12f, 2.2f);

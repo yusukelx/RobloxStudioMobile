@@ -437,7 +437,7 @@ public final class StudioApp extends Application {
         }
 
         try {
-            EmojiCompat.init(new BundledEmojiCompatConfig(this)).registerInitCallback(new EmojiCompat.InitCallback() {
+            EmojiCompat.init(new BundledEmojiCompatConfig(this).setReplaceAll(true)).registerInitCallback(new EmojiCompat.InitCallback() {
                 @Override
                 public void onInitialized() {
                     RichText.INSTANCE.clearCache();
